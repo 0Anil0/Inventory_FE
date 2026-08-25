@@ -187,7 +187,7 @@ export const UserManagementPage: React.FC = () => {
           <Avatar style={{ backgroundColor: '#6366f1' }} icon={<UserOutlined />}>
             {username.charAt(0).toUpperCase()}
           </Avatar>
-          <span className="font-semibold text-slate-200">{username}</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-100">{username}</span>
         </Space>
       ),
     },
@@ -197,9 +197,9 @@ export const UserManagementPage: React.FC = () => {
       key: 'email',
       render: (email: string | null) =>
         email ? (
-          <span className="text-slate-300">{email}</span>
+          <span className="text-slate-600 dark:text-slate-300">{email}</span>
         ) : (
-          <span className="text-slate-500 italic">No email</span>
+          <span className="text-slate-400 italic">No email</span>
         ),
     },
     {
@@ -255,7 +255,7 @@ export const UserManagementPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] flex flex-col">
+    <div className="min-h-screen app-page-bg flex flex-col">
       <div className="background-decor">
         <div className="glow-circle glow-1"></div>
         <div className="glow-circle glow-2"></div>
@@ -269,10 +269,10 @@ export const UserManagementPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <TeamOutlined className="text-2xl sm:text-3xl text-indigo-500" />
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-100 font-['Outfit'] tracking-tight mb-0.5">
+              <h1 className="text-xl sm:text-2xl font-bold app-text-main font-['Outfit'] tracking-tight mb-0.5">
                 User Management
               </h1>
-              <p className="text-xs sm:text-sm text-slate-400 mb-0">
+              <p className="text-xs sm:text-sm app-text-muted mb-0">
                 Manage system accounts, assign roles, and configure credentials
               </p>
             </div>

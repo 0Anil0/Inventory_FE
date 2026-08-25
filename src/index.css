@@ -1,21 +1,83 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  --bg-dark: #0b0f19;
-  --bg-card: rgba(18, 24, 38, 0.85);
-  --border-color: rgba(255, 255, 255, 0.08);
   --primary: #6366f1;
 }
 
-body {
-  background-color: var(--bg-dark);
-  color: #f8fafc;
+/* Light Theme Variables (Default) */
+html, html.light, html:not(.dark) {
+  --bg-main: #f1f5f9;
+  --bg-header: #ffffff;
+  --bg-card: #ffffff;
+  --border-color: #e2e8f0;
+  --text-main: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --logo-text: #0f172a;
+  --table-header-bg: #f8fafc;
+  --table-header-text: #475569;
+  --table-body-text: #0f172a;
+  --table-row-hover: #f1f5f9;
+  --modal-bg: #ffffff;
+  --input-bg: #ffffff;
+  --input-text: #0f172a;
+  --input-border: #cbd5e1;
+}
+
+/* Dark Theme Variables */
+html.dark {
+  --bg-main: #0b0f19;
+  --bg-header: #121826;
+  --bg-card: #121826;
+  --border-color: rgba(255, 255, 255, 0.1);
+  --text-main: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --logo-text: #ffffff;
+  --table-header-bg: rgba(30, 41, 59, 0.5);
+  --table-header-text: #94a3b8;
+  --table-body-text: #f8fafc;
+  --table-row-hover: rgba(99, 102, 241, 0.08);
+  --modal-bg: #111827;
+  --input-bg: #1e293b;
+  --input-text: #f8fafc;
+  --input-border: rgba(255, 255, 255, 0.15);
+}
+
+html, body {
+  background-color: var(--bg-main) !important;
+  color: var(--text-main) !important;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   min-height: 100vh;
   margin: 0;
   padding: 0;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Theme Helper Classes */
+.app-page-bg {
+  background-color: var(--bg-main) !important;
+  color: var(--text-main) !important;
+}
+
+.app-text-main {
+  color: var(--text-main) !important;
+}
+
+.app-text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+.app-text-muted {
+  color: var(--text-muted) !important;
+}
+
+.app-logo-text {
+  color: var(--logo-text) !important;
 }
 
 /* Background Glowing Accents */
@@ -34,8 +96,12 @@ body {
   position: absolute;
   border-radius: 50%;
   filter: blur(140px);
-  opacity: 0.35;
+  opacity: 0.15;
   animation: float 14s ease-in-out infinite alternate;
+}
+
+html.dark .glow-circle {
+  opacity: 0.35;
 }
 
 .glow-1 {
@@ -60,71 +126,100 @@ body {
   100% { transform: translate(40px, 50px) scale(1.1); }
 }
 
-/* Custom Antd Overrides for Dark Aesthetic */
+/* Antd Component Theme Overrides */
 .ant-layout {
   background: transparent !important;
 }
 
 .ant-layout-header {
-  background: rgba(18, 24, 38, 0.85) !important;
+  background: var(--bg-header) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-  padding: 0 2rem !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  padding: 0 1.5rem !important;
   height: 68px !important;
   line-height: 68px !important;
-}
-
-.ant-menu-dark {
-  background: transparent !important;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .ant-card {
-  background: rgba(18, 24, 38, 0.85) !important;
+  background: var(--bg-card) !important;
   backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid var(--border-color) !important;
   border-radius: 16px !important;
+  transition: background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+html, html.light, html:not(.dark) .ant-card {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02) !important;
+}
+
+html.dark .ant-card {
   box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5) !important;
 }
 
 .ant-table {
   background: transparent !important;
+  color: var(--text-main) !important;
 }
 
 .ant-table-wrapper .ant-table-thead > tr > th {
-  background: rgba(30, 41, 59, 0.5) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-  color: #94a3b8 !important;
-  font-weight: 600 !important;
-  font-size: 0.8rem !important;
+  background: var(--table-header-bg) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  color: var(--table-header-text) !important;
+  font-weight: 700 !important;
+  font-size: 0.75rem !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
+  letter-spacing: 0.6px !important;
 }
 
 .ant-table-wrapper .ant-table-tbody > tr > td {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
-  color: #f1f5f9 !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  color: var(--table-body-text) !important;
+  font-size: 0.875rem !important;
 }
 
 .ant-table-wrapper .ant-table-tbody > tr:hover > td {
-  background: rgba(99, 102, 241, 0.08) !important;
+  background: var(--table-row-hover) !important;
 }
 
 .ant-modal-content {
-  background: #111827 !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: var(--modal-bg) !important;
+  border: 1px solid var(--border-color) !important;
   border-radius: 16px !important;
+  transition: background-color 0.25s ease;
+}
+
+html, html.light, html:not(.dark) .ant-modal-content {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+html.dark .ant-modal-content {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;
 }
 
 .ant-modal-header {
   background: transparent !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 1px solid var(--border-color) !important;
   padding-bottom: 1rem !important;
 }
 
 .ant-modal-title {
-  color: #f8fafc !important;
+  color: var(--text-main) !important;
   font-family: 'Outfit', sans-serif !important;
   font-size: 1.25rem !important;
+}
+
+.ant-form-item-label > label {
+  color: var(--text-main) !important;
+}
+
+.ant-input, .ant-input-password, .ant-select-selector {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border-color: var(--input-border) !important;
+}
+
+.ant-input::placeholder {
+  color: var(--text-muted) !important;
 }

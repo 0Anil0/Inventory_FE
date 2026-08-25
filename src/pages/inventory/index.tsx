@@ -196,7 +196,7 @@ export const InventoryTrackerPage: React.FC = () => {
       key: 'code',
       width: 140,
       render: (_, record) => (
-        <span className="font-mono text-indigo-400 font-bold">
+        <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">
           {record.item_type?.code || 'N/A'}
         </span>
       ),
@@ -206,9 +206,9 @@ export const InventoryTrackerPage: React.FC = () => {
       key: 'name',
       render: (_, record) => (
         <div>
-          <div className="font-semibold text-slate-100">{record.item_type?.name || 'Unnamed Item'}</div>
+          <div className="font-semibold text-slate-800 dark:text-slate-100">{record.item_type?.name || 'Unnamed Item'}</div>
           {record.item_type?.description && (
-            <div className="text-xs text-slate-400">{record.item_type.description}</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">{record.item_type.description}</div>
           )}
         </div>
       ),
@@ -218,9 +218,9 @@ export const InventoryTrackerPage: React.FC = () => {
       dataIndex: 'quantity',
       key: 'quantity',
       render: (qty: number, record) => (
-        <span className="text-base font-bold font-mono text-slate-100">
+        <span className="text-base font-bold font-mono text-slate-800 dark:text-slate-100">
           {qty.toLocaleString()}{' '}
-          <span className="text-xs font-normal text-slate-400">{record.item_type?.unit || 'pcs'}</span>
+          <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{record.item_type?.unit || 'pcs'}</span>
         </span>
       ),
     },
@@ -248,7 +248,7 @@ export const InventoryTrackerPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] flex flex-col">
+    <div className="min-h-screen app-page-bg flex flex-col">
       <div className="background-decor">
         <div className="glow-circle glow-1"></div>
         <div className="glow-circle glow-2"></div>
@@ -258,21 +258,21 @@ export const InventoryTrackerPage: React.FC = () => {
 
       <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
         {/* Top Header & Project Selector */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900/80 backdrop-blur-xl p-6 rounded-2xl border border-white/10 shadow-2xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 shadow-md dark:shadow-2xl transition-colors duration-300">
           <div className="flex items-center gap-3">
             <DatabaseOutlined className="text-3xl text-indigo-500" />
             <div>
-              <h1 className="text-2xl font-bold text-slate-100 font-['Outfit'] mb-0.5">
+              <h1 className="text-2xl font-bold app-text-main font-['Outfit'] mb-0.5">
                 Project Stock Quantity Tracker
               </h1>
-              <p className="text-xs text-slate-400 mb-0">
+              <p className="text-xs app-text-muted mb-0">
                 Select a project site to track and update item stock quantities
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-xs text-slate-300 font-semibold uppercase tracking-wider">
+            <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wider">
               Selected Project:
             </span>
             <Select
@@ -347,9 +347,9 @@ export const InventoryTrackerPage: React.FC = () => {
             />
 
             <Space className="justify-between sm:justify-end">
-              <span className="text-xs text-slate-400">
-                Showing <strong className="text-slate-200">{filteredInventory.length}</strong> items in{' '}
-                <strong className="text-indigo-400">{selectedProject?.name || 'Project'}</strong>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Showing <strong className="text-slate-800 dark:text-slate-200">{filteredInventory.length}</strong> items in{' '}
+                <strong className="text-indigo-600 dark:text-indigo-400">{selectedProject?.name || 'Project'}</strong>
               </span>
 
               <Button

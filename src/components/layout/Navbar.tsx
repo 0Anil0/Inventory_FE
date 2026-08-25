@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Avatar, Tag, Dropdown, Button, Drawer } from 'antd';
+import { Layout, Menu, Avatar, Tag, Dropdown, Button, Drawer, Tooltip } from 'antd';
 import type { MenuProps } from 'antd';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import {
   SafetyCertificateFilled,
   DashboardOutlined,
@@ -14,12 +15,15 @@ import {
   CodeSandboxOutlined,
   DatabaseOutlined,
   TagsOutlined,
+  SunOutlined,
+  MoonOutlined,
 } from '@ant-design/icons';
 
 const { Header } = Layout;
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState<boolean>(false);
@@ -89,8 +93,8 @@ export const Navbar: React.FC = () => {
       disabled: true,
       label: (
         <div className="py-1 px-1">
-          <div className="font-semibold text-gray-200">{user?.username}</div>
-          <div className="text-xs text-gray-400">{user?.email || 'No email attached'}</div>
+          <div className="font-semibold text-slate-800 dark:text-gray-200">{user?.username}</div>
+          <div className="text-xs text-slate-500 dark:text-gray-400">{user?.email || 'No email attached'}</div>
         </div>
       ),
     },
@@ -116,14 +120,14 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <Header className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-8 shadow-lg">
+    <Header className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-8 shadow-md">
       {/* Brand Logo */}
       <div
         className="flex items-center gap-3 cursor-pointer select-none"
         onClick={() => navigate('/dashboard')}
       >
         <SafetyCertificateFilled className="text-2xl text-indigo-500" />
-        <span className="font-bold text-lg tracking-wider text-white font-['Outfit']">
+        <span className="font-bold text-lg tracking-wider app-logo-text font-['Outfit']">
           RAVI INVENTORY
         </span>
       </div>
@@ -138,11 +142,21 @@ export const Navbar: React.FC = () => {
         />
       </div>
 
-      {/* Desktop Right User Profile Dropdown */}
-      {user && (
-        <div className="hidden lg:flex items-center">
+      {/* Desktop Right Controls (Theme Toggle & Profile) */}
+      <div className="hidden lg:flex items-center gap-3">
+        <Tooltip title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+          <Button
+            type="text"
+            shape="circle"
+            icon={isDark ? <SunOutlined className="text-amber-400 text-lg" /> : <MoonOutlined className="text-indigo-500 text-lg" />}
+            onClick={toggleTheme}
+            className="hover:bg-black/5 dark:hover:bg-white/10"
+          />
+        </Tooltip>
+
+        {user && (
           <Dropdown menu={{ items: profileMenuItems }} placement="bottomRight" arrow>
-            <div className="flex items-center gap-3 cursor-pointer px-3 py-1.5 rounded-xl hover:bg-white/5 transition-all select-none border border-white/10">
+            <div className="flex items-center gap-3 cursor-pointer px-3 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-all select-none border border-slate-200 dark:border-white/10">
               <Avatar
                 style={{ backgroundColor: '#6366f1' }}
                 icon={<UserOutlined />}
@@ -151,8 +165,8 @@ export const Navbar: React.FC = () => {
                 {user.username.charAt(0).toUpperCase()}
               </Avatar>
               <div className="flex flex-col text-left leading-tight">
-                <span className="text-sm font-semibold text-slate-200">{user.username}</span>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-sm font-semibold app-text-main">{user.username}</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">
                   <Tag color={getTagColor(roleName)} className="mr-0 mt-0.5 text-[10px] py-0 px-1.5 border-none font-bold">
                     {roleName}
                   </Tag>
@@ -160,14 +174,23 @@ export const Navbar: React.FC = () => {
               </div>
             </div>
           </Dropdown>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Mobile Hamburger Button */}
+      {/* Mobile Right Controls */}
       <div className="flex lg:hidden items-center gap-2">
+        <Tooltip title={isDark ? 'Light Mode' : 'Dark Mode'}>
+          <Button
+            type="text"
+            shape="circle"
+            icon={isDark ? <SunOutlined className="text-amber-400 text-lg" /> : <MoonOutlined className="text-indigo-500 text-lg" />}
+            onClick={toggleTheme}
+          />
+        </Tooltip>
+
         <Button
           type="text"
-          icon={<MenuOutlined className="text-lg text-slate-200" />}
+          icon={<MenuOutlined className="text-lg text-slate-700 dark:text-slate-200" />}
           onClick={() => setMobileDrawerOpen(true)}
         />
       </div>
@@ -180,7 +203,7 @@ export const Navbar: React.FC = () => {
               {user?.username.charAt(0).toUpperCase()}
             </Avatar>
             <div>
-              <div className="font-semibold text-sm text-slate-100">{user?.username}</div>
+              <div className="font-semibold text-sm text-slate-800 dark:text-slate-100">{user?.username}</div>
               <Tag color={getTagColor(roleName)} className="text-[10px] py-0 px-1.5 font-bold border-none">
                 {roleName}
               </Tag>
@@ -200,7 +223,15 @@ export const Navbar: React.FC = () => {
             className="border-none bg-transparent"
           />
 
-          <div className="pt-4 border-t border-white/10">
+          <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex flex-col gap-3">
+            <Button
+              block
+              icon={isDark ? <SunOutlined className="text-amber-400" /> : <MoonOutlined className="text-indigo-500" />}
+              onClick={toggleTheme}
+            >
+              {isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+            </Button>
+
             <Button
               danger
               block
@@ -218,3 +249,5 @@ export const Navbar: React.FC = () => {
     </Header>
   );
 };
+
+export default Navbar;

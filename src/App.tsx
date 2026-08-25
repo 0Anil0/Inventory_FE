@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ConfigProvider, theme, Spin } from 'antd';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { LoginPage } from './pages/login';
 import { DashboardPage } from './pages/dashboard';
@@ -13,10 +14,11 @@ import { ProjectsPage } from './pages/projects';
 
 const RootRedirect: React.FC = () => {
   const { user, loading } = useAuth();
+  const { isDark } = useTheme();
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0b0f19]">
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-[#0b0f19]' : 'bg-slate-50'}`}>
         <Spin size="large" />
       </div>
     );
@@ -25,15 +27,17 @@ const RootRedirect: React.FC = () => {
   return user ? <Navigate to="/inventory" replace /> : <Navigate to="/login" replace />;
 };
 
-export const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { isDark } = useTheme();
+
   return (
     <ConfigProvider
       theme={{
-        algorithm: theme.darkAlgorithm,
+        algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
           colorPrimary: '#6366f1',
-          colorBgContainer: '#121826',
-          colorBgElevated: '#111827',
+          colorBgContainer: isDark ? '#121826' : '#ffffff',
+          colorBgElevated: isDark ? '#111827' : '#ffffff',
           borderRadius: 10,
           fontFamily: "'Plus Jakarta Sans', sans-serif",
         },
@@ -57,6 +61,14 @@ export const App: React.FC = () => {
         </BrowserRouter>
       </AuthProvider>
     </ConfigProvider>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 };
 

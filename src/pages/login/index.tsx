@@ -66,24 +66,24 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen app-page-bg flex items-center justify-center p-6 relative overflow-hidden">
       <div className="background-decor">
         <div className="glow-circle glow-1"></div>
         <div className="glow-circle glow-2"></div>
       </div>
 
       <div className="relative z-10 w-full max-w-md">
-        <Card className="shadow-2xl border border-white/10 backdrop-blur-2xl">
+        <Card className="shadow-xl dark:shadow-2xl border border-slate-200 dark:border-white/10 backdrop-blur-2xl">
           {/* Header */}
           <div className="text-center mb-6">
-            <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 py-1 px-4 rounded-full text-xs font-bold tracking-widest mb-3">
+            <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 py-1 px-4 rounded-full text-xs font-bold tracking-widest mb-3">
               <SafetyCertificateFilled />
               RAVI INVENTORY
             </div>
-            <h1 className="text-2xl font-bold text-slate-100 font-['Outfit'] mb-1">
+            <h1 className="text-2xl font-bold app-text-main font-['Outfit'] mb-1">
               {isSignUpMode ? 'Create Account' : 'Welcome Back'}
             </h1>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs app-text-muted">
               {isSignUpMode
                 ? 'Register to access the inventory system'
                 : 'Enter your credentials to manage inventory'}

@@ -106,13 +106,13 @@ export const ProjectsPage: React.FC = () => {
       dataIndex: 'code',
       key: 'code',
       width: 140,
-      render: (code: string) => <span className="font-mono font-bold text-indigo-400">{code}</span>,
+      render: (code: string) => <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{code}</span>,
     },
     {
       title: 'Project Name',
       dataIndex: 'name',
       key: 'name',
-      render: (name: string) => <span className="font-semibold text-slate-100">{name}</span>,
+      render: (name: string) => <span className="font-semibold text-slate-800 dark:text-slate-100">{name}</span>,
     },
     {
       title: 'Location',
@@ -120,19 +120,24 @@ export const ProjectsPage: React.FC = () => {
       key: 'location',
       render: (loc: string | null) =>
         loc ? (
-          <span className="text-slate-300">
-            <EnvironmentOutlined className="mr-1 text-rose-400" />
+          <span className="text-slate-700 dark:text-slate-300">
+            <EnvironmentOutlined className="mr-1 text-rose-500" />
             {loc}
           </span>
         ) : (
-          <span className="text-slate-500 italic">No location</span>
+          <span className="text-slate-400 italic">No location</span>
         ),
     },
     {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
-      render: (desc: string | null) => desc || <span className="text-slate-500 italic">No description</span>,
+      render: (desc: string | null) =>
+        desc ? (
+          <span className="text-slate-600 dark:text-slate-300">{desc}</span>
+        ) : (
+          <span className="text-slate-400 italic">No description</span>
+        ),
     },
     {
       title: 'Actions',
@@ -160,7 +165,7 @@ export const ProjectsPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] flex flex-col">
+    <div className="min-h-screen app-page-bg flex flex-col">
       <div className="background-decor">
         <div className="glow-circle glow-1"></div>
         <div className="glow-circle glow-2"></div>
@@ -173,10 +178,10 @@ export const ProjectsPage: React.FC = () => {
           <div className="flex items-center gap-3">
             <AppstoreOutlined className="text-3xl text-indigo-500" />
             <div>
-              <h1 className="text-2xl font-bold text-slate-100 font-['Outfit'] mb-0.5">
+              <h1 className="text-2xl font-bold app-text-main font-['Outfit'] mb-0.5">
                 Projects Management
               </h1>
-              <p className="text-xs sm:text-sm text-slate-400 mb-0">
+              <p className="text-xs sm:text-sm app-text-muted mb-0">
                 Configure project sites, construction locations, and site warehouses
               </p>
             </div>
