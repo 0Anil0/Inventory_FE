@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, InputNumber, Modal, Form, Popconfirm, Space, Tag, message } from 'antd';
+import { Table, Card, Button, Input, InputNumber, Modal, Form, Select, Popconfirm, Space, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -10,13 +10,15 @@ import {
   ReloadOutlined,
   TagOutlined,
   DatabaseOutlined,
+  TagsOutlined,
 } from '@ant-design/icons';
-import type { ItemType } from '../../types/inventory';
-import { itemTypeApi } from '../../services/api';
+import type { ItemType, Unit } from '../../types/inventory';
+import { itemTypeApi, unitApi } from '../../services/api';
 import { Navbar } from '../../components/layout/Navbar';
 
 export const ItemTypesPage: React.FC = () => {
   const [items, setItems] = useState<ItemType[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -27,9 +29,16 @@ export const ItemTypesPage: React.FC = () => {
   const fetchItemTypes = async () => {
     setLoading(true);
     try {
-      const res = await itemTypeApi.getAll();
-      if (res.success && res.items) {
-        setItems(res.items);
+      const [itemRes, unitRes] = await Promise.all([
+        itemTypeApi.getAll(),
+        unitApi.getAll().catch(() => ({ success: false, units: [] })),
+      ]);
+
+      if (itemRes.success && itemRes.items) {
+        setItems(itemRes.items);
+      }
+      if (unitRes.success && unitRes.units) {
+        setUnits(unitRes.units);
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to load item types catalog');
@@ -45,14 +54,29 @@ export const ItemTypesPage: React.FC = () => {
   const handleOpenAdd = () => {
     setItemToEdit(null);
     form.resetFields();
+    // Default unit_id to first unit if available
+    if (units.length > 0) {
+      form.setFieldValue('unit_id', units[0].id);
+    }
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (item: ItemType) => {
     setItemToEdit(item);
+
+    // Find unit matching item.unit_id or item.unit code
+    let matchingUnitId = item.unit_id;
+    if (!matchingUnitId && item.unit) {
+      const found = units.find(
+        (u) => u.code.toLowerCase() === item.unit.toLowerCase() || u.name.toLowerCase() === item.unit.toLowerCase()
+      );
+      if (found) matchingUnitId = found.id;
+    }
+
     form.setFieldsValue({
       name: item.name,
       code: item.code,
+      unit_id: matchingUnitId,
       unit: item.unit,
       total_quantity: item.total_quantity || 0,
       description: item.description || '',
@@ -74,14 +98,21 @@ export const ItemTypesPage: React.FC = () => {
 
   const handleFinish = async (values: any) => {
     try {
+      // Find selected unit code for backward compatibility
+      const selectedUnitObj = units.find((u) => u.id === values.unit_id);
+      const payload = {
+        ...values,
+        unit: selectedUnitObj ? selectedUnitObj.code : values.unit || 'PCS',
+      };
+
       if (itemToEdit) {
-        const res = await itemTypeApi.update(itemToEdit.id, values);
+        const res = await itemTypeApi.update(itemToEdit.id, payload);
         if (res.success && res.item) {
           setItems(items.map((i) => (i.id === itemToEdit.id ? res.item : i)));
           message.success('Item type updated successfully');
         }
       } else {
-        const res = await itemTypeApi.create(values);
+        const res = await itemTypeApi.create(payload);
         if (res.success && res.item) {
           setItems([...items, res.item]);
           message.success('Item type created successfully');
@@ -95,10 +126,11 @@ export const ItemTypesPage: React.FC = () => {
 
   const filteredItems = items.filter((i) => {
     const q = searchQuery.toLowerCase();
+    const unitText = i.unit_details ? `${i.unit_details.code} ${i.unit_details.name}` : i.unit;
     return (
       i.name.toLowerCase().includes(q) ||
       i.code.toLowerCase().includes(q) ||
-      i.unit.toLowerCase().includes(q)
+      unitText.toLowerCase().includes(q)
     );
   });
 
@@ -120,12 +152,15 @@ export const ItemTypesPage: React.FC = () => {
       title: 'Measurement Unit',
       dataIndex: 'unit',
       key: 'unit',
-      width: 150,
-      render: (unit: string) => (
-        <span className="font-mono bg-slate-800 text-slate-300 py-1 px-2.5 rounded-md border border-white/10 text-xs">
-          {unit}
-        </span>
-      ),
+      width: 170,
+      render: (unitStr: string, record) => {
+        const displayUnit = record.unit_details ? `${record.unit_details.code}` : unitStr;
+        return (
+          <Tag color="purple" icon={<TagsOutlined />} className="font-mono font-bold text-xs py-0.5 px-2">
+            {displayUnit.toUpperCase()}
+          </Tag>
+        );
+      },
     },
     {
       title: 'Central Available Stock',
@@ -233,16 +268,35 @@ export const ItemTypesPage: React.FC = () => {
         centered
       >
         <Form form={form} layout="vertical" onFinish={handleFinish} className="mt-4">
-          <Form.Item name="name" label="Item Name" rules={[{ required: true }]}>
+          <Form.Item name="name" label="Item Name" rules={[{ required: true, message: 'Item Name is required' }]}>
             <Input placeholder="e.g. Steel Bar 12mm" />
           </Form.Item>
 
-          <Form.Item name="code" label="Item Code / SKU" rules={[{ required: true }]}>
+          <Form.Item name="code" label="Item Code / SKU" rules={[{ required: true, message: 'Item Code is required' }]}>
             <Input prefix={<TagOutlined className="text-gray-400" />} placeholder="e.g. ITM-STL-12" />
           </Form.Item>
 
-          <Form.Item name="unit" label="Measurement Unit" rules={[{ required: true }]}>
-            <Input placeholder="e.g. pcs, kg, meters, bags, boxes" />
+          <Form.Item
+            name="unit_id"
+            label="Measurement Unit"
+            rules={[{ required: true, message: 'Please select a measurement unit' }]}
+          >
+            <Select
+              placeholder="Select measurement unit..."
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
+              }
+              options={units.map((u) => ({
+                value: u.id,
+                label: `${u.code} - ${u.name}`,
+              }))}
+              notFoundContent={
+                <div className="p-2 text-center text-xs text-gray-400">
+                  No units found. Add units in the Units menu first.
+                </div>
+              }
+            />
           </Form.Item>
 
           <Form.Item
@@ -262,4 +316,5 @@ export const ItemTypesPage: React.FC = () => {
     </div>
   );
 };
+
 export default ItemTypesPage;

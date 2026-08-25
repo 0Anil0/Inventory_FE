@@ -1,6 +1,6 @@
 import { API_BASE_URL, AUTH_ENDPOINTS, USER_ENDPOINTS } from '../constants/api.constants';
 import type { User, Role, AuthResponse, LoginCredentials, SignupCredentials } from '../types/auth';
-import type { ItemType, Project, ProjectInventory } from '../types/inventory';
+import type { ItemType, Project, ProjectInventory, Unit } from '../types/inventory';
 
 // Token Helper
 const getAuthHeaders = (): HeadersInit => {
@@ -112,6 +112,7 @@ export const itemTypeApi = {
     name: string;
     code: string;
     unit?: string;
+    unit_id?: number;
     description?: string;
   }): Promise<{ success: boolean; item: ItemType }> => {
     const res = await fetch(`${API_BASE_URL}/item-types`, {
@@ -124,7 +125,7 @@ export const itemTypeApi = {
 
   update: async (
     id: number,
-    data: { name?: string; code?: string; unit?: string; description?: string }
+    data: { name?: string; code?: string; unit?: string; unit_id?: number; description?: string }
   ): Promise<{ success: boolean; item: ItemType }> => {
     const res = await fetch(`${API_BASE_URL}/item-types/${id}`, {
       method: 'PUT',
@@ -212,20 +213,55 @@ export const inventoryApi = {
     });
     return handleResponse(res);
   },
+};
 
-  batchAdjustQuantity: async (data: {
-    project_id: number;
-    items: Array<{
-      item_type_id: number;
-      quantity: number;
-      min_quantity?: number;
-    }>;
-  }): Promise<{ success: boolean; inventoryItems: ProjectInventory[] }> => {
-    const res = await fetch(`${API_BASE_URL}/inventory/batch-adjust`, {
+// Unit API Client
+export const unitApi = {
+  getAll: async (): Promise<{ success: boolean; units: Unit[] }> => {
+    const res = await fetch(`${API_BASE_URL}/units`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getById: async (id: number): Promise<{ success: boolean; unit: Unit }> => {
+    const res = await fetch(`${API_BASE_URL}/units/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  create: async (data: {
+    name: string;
+    code: string;
+    description?: string;
+  }): Promise<{ success: boolean; message: string; unit: Unit }> => {
+    const res = await fetch(`${API_BASE_URL}/units`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
     });
     return handleResponse(res);
   },
+
+  update: async (
+    id: number,
+    data: { name?: string; code?: string; description?: string }
+  ): Promise<{ success: boolean; message: string; unit: Unit }> => {
+    const res = await fetch(`${API_BASE_URL}/units/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  delete: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const res = await fetch(`${API_BASE_URL}/units/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
 };
+

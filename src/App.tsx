@@ -8,6 +8,7 @@ import { DashboardPage } from './pages/dashboard';
 import { UserManagementPage } from './pages/user-management';
 import { InventoryTrackerPage } from './pages/inventory';
 import { ItemTypesPage } from './pages/item-types';
+import { UnitsPage } from './pages/units';
 import { ProjectsPage } from './pages/projects';
 
 const RootRedirect: React.FC = () => {
@@ -47,6 +48,7 @@ export const App: React.FC = () => {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/inventory" element={<InventoryTrackerPage />} />
               <Route path="/item-types" element={<ItemTypesPage />} />
+              <Route path="/units" element={<UnitsPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/users" element={<UserManagementPage />} />
             </Route>

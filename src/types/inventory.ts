@@ -1,8 +1,19 @@
+export interface Unit {
+  id: number;
+  name: string;
+  code: string;
+  description?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface ItemType {
   id: number;
   name: string;
   code: string;
   unit: string;
+  unit_id?: number | null;
+  unit_details?: Unit;
   total_quantity?: number;
   description?: string | null;
   createdAt?: string;

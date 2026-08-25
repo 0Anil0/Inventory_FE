@@ -13,6 +13,7 @@ import {
   AppstoreOutlined,
   CodeSandboxOutlined,
   DatabaseOutlined,
+  TagsOutlined,
 } from '@ant-design/icons';
 
 const { Header } = Layout;
@@ -50,6 +51,15 @@ export const Navbar: React.FC = () => {
       label: 'Item Types',
       onClick: () => {
         navigate('/item-types');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
+      key: '/units',
+      icon: <TagsOutlined />,
+      label: 'Units',
+      onClick: () => {
+        navigate('/units');
         setMobileDrawerOpen(false);
       },
     },
