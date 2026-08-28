@@ -17,6 +17,9 @@ import {
   TagsOutlined,
   SunOutlined,
   MoonOutlined,
+  ShoppingOutlined,
+  FileDoneOutlined,
+  ShopOutlined,
 } from '@ant-design/icons';
 
 const { Header } = Layout;
@@ -28,7 +31,7 @@ export const Navbar: React.FC = () => {
   const location = useLocation();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState<boolean>(false);
 
-  const roleName = (typeof user?.role === 'object' ? user.role.name : (user?.role || 'user')).toUpperCase();
+  const roleName = (typeof user?.role === 'object' ? user.role.name : user?.role || 'user').toUpperCase();
 
   const navMenuItems: MenuProps['items'] = [
     {
@@ -50,11 +53,38 @@ export const Navbar: React.FC = () => {
       },
     },
     {
+      key: '/purchase-orders',
+      icon: <ShoppingOutlined />,
+      label: 'Purchase Orders',
+      onClick: () => {
+        navigate('/purchase-orders');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
+      key: '/material-issues',
+      icon: <FileDoneOutlined />,
+      label: 'Material Issues',
+      onClick: () => {
+        navigate('/material-issues');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
       key: '/item-types',
       icon: <CodeSandboxOutlined />,
-      label: 'Item Types',
+      label: 'Catalog Items',
       onClick: () => {
         navigate('/item-types');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
+      key: '/vendors',
+      icon: <ShopOutlined />,
+      label: 'Suppliers',
+      onClick: () => {
+        navigate('/vendors');
         setMobileDrawerOpen(false);
       },
     },
@@ -123,7 +153,7 @@ export const Navbar: React.FC = () => {
     <Header className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-8 shadow-md">
       {/* Brand Logo */}
       <div
-        className="flex items-center gap-3 cursor-pointer select-none"
+        className="flex items-center gap-3 cursor-pointer select-none shrink-0"
         onClick={() => navigate('/dashboard')}
       >
         <SafetyCertificateFilled className="text-2xl text-indigo-500" />
@@ -133,7 +163,7 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* Desktop Main Nav Menu */}
-      <div className="hidden lg:flex flex-1 max-w-xl mx-6">
+      <div className="hidden xl:flex flex-1 max-w-4xl mx-6">
         <Menu
           mode="horizontal"
           selectedKeys={[location.pathname]}
@@ -143,7 +173,7 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* Desktop Right Controls (Theme Toggle & Profile) */}
-      <div className="hidden lg:flex items-center gap-3">
+      <div className="hidden xl:flex items-center gap-3 shrink-0">
         <Tooltip title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
           <Button
             type="text"
@@ -178,7 +208,7 @@ export const Navbar: React.FC = () => {
       </div>
 
       {/* Mobile Right Controls */}
-      <div className="flex lg:hidden items-center gap-2">
+      <div className="flex xl:hidden items-center gap-2">
         <Tooltip title={isDark ? 'Light Mode' : 'Dark Mode'}>
           <Button
             type="text"
@@ -213,7 +243,7 @@ export const Navbar: React.FC = () => {
         placement="right"
         onClose={() => setMobileDrawerOpen(false)}
         open={mobileDrawerOpen}
-        width={280}
+        width={300}
       >
         <div className="flex flex-col justify-between h-full">
           <Menu
@@ -249,5 +279,4 @@ export const Navbar: React.FC = () => {
     </Header>
   );
 };
-
 export default Navbar;

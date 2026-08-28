@@ -21,14 +21,20 @@ import {
   PlusOutlined,
   CheckCircleFilled,
   CloseCircleFilled,
+  AlertOutlined,
   AppstoreOutlined,
   CodeSandboxOutlined,
+  DownloadOutlined,
+  HistoryOutlined,
+  SwapOutlined,
 } from '@ant-design/icons';
 import type { Project, ProjectInventory, ItemType } from '../../types/inventory';
 import { projectApi, inventoryApi, itemTypeApi } from '../../services/api';
 import { Navbar } from '../../components/layout/Navbar';
 import { QuantityModal } from '../../components/inventory/QuantityModal';
 import { AddItemModal } from '../../components/inventory/AddItemModal';
+import { StockLedgerDrawer } from '../../components/inventory/StockLedgerDrawer';
+import { TransferStockModal } from '../../components/inventory/TransferStockModal';
 
 export const InventoryTrackerPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -37,11 +43,14 @@ export const InventoryTrackerPage: React.FC = () => {
   const [catalogItemTypes, setCatalogItemTypes] = useState<ItemType[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [filterMode, setFilterMode] = useState<'ALL' | 'LOW_STOCK'>('ALL');
 
-  // Modals state
+  // Modals & Drawer states
   const [isQuantityModalOpen, setIsQuantityModalOpen] = useState<boolean>(false);
   const [selectedItemForQty, setSelectedItemForQty] = useState<ProjectInventory | null>(null);
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState<boolean>(false);
+  const [isLedgerOpen, setIsLedgerOpen] = useState<boolean>(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState<boolean>(false);
 
   // Fetch all projects and item types on mount
   useEffect(() => {
@@ -103,12 +112,16 @@ export const InventoryTrackerPage: React.FC = () => {
     project_id: number;
     item_type_id: number;
     quantity: number;
+    min_quantity?: number;
+    notes?: string;
   }) => {
     const res = await inventoryApi.adjustQuantity({
       project_id: data.project_id,
       item_type_id: data.item_type_id,
       adjustment_type: 'SET',
       amount: data.quantity,
+      min_quantity: data.min_quantity,
+      notes: data.notes,
     });
     if (res.success && res.inventoryItem) {
       setInventoryList((prev) => {
@@ -139,6 +152,7 @@ export const InventoryTrackerPage: React.FC = () => {
         item_type_id: i.item_type_id,
         quantity: i.initial_quantity,
       })),
+      notes: 'Added to project stock catalog',
     });
 
     if (res.success && res.inventoryItems) {
@@ -154,6 +168,40 @@ export const InventoryTrackerPage: React.FC = () => {
     }
   };
 
+  const exportCSV = () => {
+    if (!inventoryList.length) {
+      message.warning('No inventory data to export');
+      return;
+    }
+    const headers = ['Item Code', 'Item Name', 'Current Quantity', 'Unit', 'Min Threshold', 'Status'];
+    const rows = filteredInventory.map((i) => [
+      `"${i.item_type?.code || ''}"`,
+      `"${i.item_type?.name || ''}"`,
+      i.quantity,
+      `"${i.item_type?.unit || ''}"`,
+      i.min_quantity || 0,
+      i.quantity === 0
+        ? 'OUT OF STOCK'
+        : i.quantity <= (i.min_quantity || 10)
+        ? 'LOW STOCK'
+        : 'IN STOCK',
+    ]);
+
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    const projName = projects.find((p) => p.id === selectedProjectId)?.name || 'Project';
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `${projName}_Stock_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    message.success('Stock report CSV downloaded!');
+  };
+
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
   // Available catalog item types (filters items already present in current project)
@@ -164,22 +212,38 @@ export const InventoryTrackerPage: React.FC = () => {
     const item = inv.item_type;
     if (!item) return false;
     const q = searchQuery.toLowerCase();
-    return (
+    const matchesSearch =
       item.name.toLowerCase().includes(q) ||
       item.code.toLowerCase().includes(q) ||
-      item.unit.toLowerCase().includes(q)
-    );
+      item.unit.toLowerCase().includes(q);
+
+    if (filterMode === 'LOW_STOCK') {
+      const isLow = inv.quantity <= (inv.min_quantity || 10);
+      return matchesSearch && isLow;
+    }
+
+    return matchesSearch;
   });
 
   // Calculate statistics
   const totalStockUnits = inventoryList.reduce((sum, item) => sum + item.quantity, 0);
   const outOfStockCount = inventoryList.filter((item) => item.quantity === 0).length;
+  const lowStockCount = inventoryList.filter(
+    (item) => item.quantity > 0 && item.quantity <= (item.min_quantity || 10)
+  ).length;
 
-  const getStockStatusTag = (qty: number) => {
+  const getStockStatusTag = (qty: number, minQty: number = 10) => {
     if (qty === 0) {
       return (
         <Tag icon={<CloseCircleFilled />} color="error" className="font-bold border-none py-0.5 px-2.5">
           OUT OF STOCK
+        </Tag>
+      );
+    }
+    if (qty <= minQty) {
+      return (
+        <Tag icon={<AlertOutlined />} color="warning" className="font-bold border-none py-0.5 px-2.5">
+          LOW STOCK
         </Tag>
       );
     }
@@ -206,7 +270,9 @@ export const InventoryTrackerPage: React.FC = () => {
       key: 'name',
       render: (_, record) => (
         <div>
-          <div className="font-semibold text-slate-800 dark:text-slate-100">{record.item_type?.name || 'Unnamed Item'}</div>
+          <div className="font-semibold text-slate-800 dark:text-slate-100">
+            {record.item_type?.name || 'Unnamed Item'}
+          </div>
           {record.item_type?.description && (
             <div className="text-xs text-slate-500 dark:text-slate-400">{record.item_type.description}</div>
           )}
@@ -220,14 +286,26 @@ export const InventoryTrackerPage: React.FC = () => {
       render: (qty: number, record) => (
         <span className="text-base font-bold font-mono text-slate-800 dark:text-slate-100">
           {qty.toLocaleString()}{' '}
-          <span className="text-xs font-normal text-slate-500 dark:text-slate-400">{record.item_type?.unit || 'pcs'}</span>
+          <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+            {record.item_type?.unit || 'pcs'}
+          </span>
+        </span>
+      ),
+    },
+    {
+      title: 'Min Reorder Threshold',
+      dataIndex: 'min_quantity',
+      key: 'min_quantity',
+      render: (min: number, record) => (
+        <span className="text-xs font-mono text-slate-400">
+          {min || 10} {record.item_type?.unit || 'pcs'}
         </span>
       ),
     },
     {
       title: 'Status',
       key: 'status',
-      render: (_, record) => getStockStatusTag(record.quantity),
+      render: (_, record) => getStockStatusTag(record.quantity, record.min_quantity || 10),
     },
     {
       title: 'Actions',
@@ -241,7 +319,7 @@ export const InventoryTrackerPage: React.FC = () => {
           size="small"
           onClick={() => handleOpenQuantityModal(record)}
         >
-          Update Quantity
+          Update Stock
         </Button>
       ),
     },
@@ -256,7 +334,7 @@ export const InventoryTrackerPage: React.FC = () => {
 
       <Navbar />
 
-      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
         {/* Top Header & Project Selector */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 shadow-md dark:shadow-2xl transition-colors duration-300">
           <div className="flex items-center gap-3">
@@ -266,7 +344,7 @@ export const InventoryTrackerPage: React.FC = () => {
                 Project Stock Quantity Tracker
               </h1>
               <p className="text-xs app-text-muted mb-0">
-                Select a project site to track and update item stock quantities
+                Manage stock allocations, threshold alerts, transfers, and movement history
               </p>
             </div>
           </div>
@@ -295,12 +373,28 @@ export const InventoryTrackerPage: React.FC = () => {
               onClick={() => selectedProjectId && fetchProjectInventory(selectedProjectId)}
               loading={loading}
             />
+
+            <Button
+              icon={<HistoryOutlined />}
+              onClick={() => setIsLedgerOpen(true)}
+              className="border-indigo-500/50 text-indigo-400 hover:text-indigo-300"
+            >
+              Stock Ledger History
+            </Button>
+
+            <Button
+              icon={<SwapOutlined />}
+              onClick={() => setIsTransferModalOpen(true)}
+              disabled={projects.length < 2}
+            >
+              Transfer Stock
+            </Button>
           </div>
         </div>
 
         {/* Summary Statistics Grid */}
         <Row gutter={[16, 16]}>
-          <Col xs={24} sm={8}>
+          <Col xs={24} sm={6}>
             <Card className="shadow-lg">
               <Statistic
                 title={<span className="text-xs text-slate-400 uppercase font-semibold">Total Stock Units</span>}
@@ -311,7 +405,7 @@ export const InventoryTrackerPage: React.FC = () => {
             </Card>
           </Col>
 
-          <Col xs={12} sm={8}>
+          <Col xs={12} sm={6}>
             <Card className="shadow-lg">
               <Statistic
                 title={<span className="text-xs text-indigo-400/80 uppercase font-semibold">Item Categories</span>}
@@ -322,7 +416,18 @@ export const InventoryTrackerPage: React.FC = () => {
             </Card>
           </Col>
 
-          <Col xs={12} sm={8}>
+          <Col xs={12} sm={6}>
+            <Card className="shadow-lg">
+              <Statistic
+                title={<span className="text-xs text-amber-400 uppercase font-semibold">Low Stock Items</span>}
+                value={lowStockCount}
+                valueStyle={{ color: '#f59e0b', fontWeight: 'bold' }}
+                prefix={<AlertOutlined className="mr-2 text-amber-400" />}
+              />
+            </Card>
+          </Col>
+
+          <Col xs={12} sm={6}>
             <Card className="shadow-lg">
               <Statistic
                 title={<span className="text-xs text-rose-400/80 uppercase font-semibold">Out of Stock Items</span>}
@@ -337,20 +442,30 @@ export const InventoryTrackerPage: React.FC = () => {
         {/* Inventory Items Table Card */}
         <Card className="shadow-2xl">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
-            <Input
-              placeholder="Search items by code, name, or unit..."
-              prefix={<SearchOutlined className="text-gray-400" />}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-md w-full"
-              allowClear
-            />
+            <div className="flex items-center gap-3 max-w-md w-full">
+              <Input
+                placeholder="Search items by code, name, or unit..."
+                prefix={<SearchOutlined className="text-gray-400" />}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                allowClear
+                className="w-full"
+              />
 
-            <Space className="justify-between sm:justify-end">
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                Showing <strong className="text-slate-800 dark:text-slate-200">{filteredInventory.length}</strong> items in{' '}
-                <strong className="text-indigo-600 dark:text-indigo-400">{selectedProject?.name || 'Project'}</strong>
-              </span>
+              <Button
+                type={filterMode === 'LOW_STOCK' ? 'primary' : 'default'}
+                danger={filterMode === 'LOW_STOCK'}
+                icon={<AlertOutlined />}
+                onClick={() => setFilterMode(filterMode === 'ALL' ? 'LOW_STOCK' : 'ALL')}
+              >
+                {filterMode === 'LOW_STOCK' ? 'Show All' : 'Low Stock Only'}
+              </Button>
+            </div>
+
+            <Space className="justify-between sm:justify-end flex-wrap">
+              <Button icon={<DownloadOutlined />} onClick={exportCSV}>
+                Export CSV Report
+              </Button>
 
               <Button
                 type="primary"
@@ -369,7 +484,7 @@ export const InventoryTrackerPage: React.FC = () => {
             dataSource={filteredInventory}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 750 }}
+            scroll={{ x: 800 }}
             pagination={{
               pageSize: 8,
               showSizeChanger: false,
@@ -393,6 +508,22 @@ export const InventoryTrackerPage: React.FC = () => {
         onSubmitBatch={handleBatchAddItemsSubmit}
         availableItemTypes={availableItemTypes}
         projectName={selectedProject?.name}
+      />
+
+      <StockLedgerDrawer
+        isOpen={isLedgerOpen}
+        onClose={() => setIsLedgerOpen(false)}
+        projectId={selectedProjectId}
+        projectName={selectedProject?.name}
+      />
+
+      <TransferStockModal
+        isOpen={isTransferModalOpen}
+        onClose={() => setIsTransferModalOpen(false)}
+        onSuccess={() => selectedProjectId && fetchProjectInventory(selectedProjectId)}
+        projects={projects}
+        currentProjectId={selectedProjectId}
+        currentInventory={inventoryList}
       />
     </div>
   );

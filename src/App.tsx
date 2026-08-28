@@ -11,6 +11,9 @@ import { InventoryTrackerPage } from './pages/inventory';
 import { ItemTypesPage } from './pages/item-types';
 import { UnitsPage } from './pages/units';
 import { ProjectsPage } from './pages/projects';
+import { VendorsPage } from './pages/vendors';
+import { PurchaseOrdersPage } from './pages/purchase-orders';
+import { MaterialIssuesPage } from './pages/material-issues';
 
 const RootRedirect: React.FC = () => {
   const { user, loading } = useAuth();
@@ -24,7 +27,7 @@ const RootRedirect: React.FC = () => {
     );
   }
 
-  return user ? <Navigate to="/inventory" replace /> : <Navigate to="/login" replace />;
+  return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
 };
 
 const AppContent: React.FC = () => {
@@ -51,7 +54,10 @@ const AppContent: React.FC = () => {
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/inventory" element={<InventoryTrackerPage />} />
+              <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
+              <Route path="/material-issues" element={<MaterialIssuesPage />} />
               <Route path="/item-types" element={<ItemTypesPage />} />
+              <Route path="/vendors" element={<VendorsPage />} />
               <Route path="/units" element={<UnitsPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/users" element={<UserManagementPage />} />

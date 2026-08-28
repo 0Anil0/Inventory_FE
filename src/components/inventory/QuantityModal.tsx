@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
-import { Modal, Form, InputNumber, Tag, message } from 'antd';
-import { EditOutlined, DatabaseOutlined } from '@ant-design/icons';
+import { Modal, Form, InputNumber, Input, Tag, message } from 'antd';
+import { EditOutlined, DatabaseOutlined, AlertOutlined } from '@ant-design/icons';
 import type { ProjectInventory } from '../../types/inventory';
 
 interface QuantityModalProps {
@@ -10,6 +10,8 @@ interface QuantityModalProps {
     project_id: number;
     item_type_id: number;
     quantity: number;
+    min_quantity?: number;
+    notes?: string;
   }) => Promise<void>;
   inventoryItem: ProjectInventory | null;
   projectId: number;
@@ -37,6 +39,8 @@ export const QuantityModal: React.FC<QuantityModalProps> = ({
     if (isOpen && inventoryItem) {
       form.setFieldsValue({
         quantity: inventoryItem.quantity,
+        min_quantity: inventoryItem.min_quantity || 10,
+        notes: '',
       });
       setInputVal(inventoryItem.quantity);
     }
@@ -58,8 +62,10 @@ export const QuantityModal: React.FC<QuantityModalProps> = ({
         project_id: projectId,
         item_type_id: inventoryItem!.item_type_id,
         quantity: qtyToAllocate,
+        min_quantity: values.min_quantity !== undefined ? Number(values.min_quantity) : undefined,
+        notes: values.notes,
       });
-      message.success('Item quantity updated successfully');
+      message.success('Item stock updated successfully');
       onClose();
     } catch (err: any) {
       message.error(err.message || 'Failed to update quantity');
@@ -75,7 +81,7 @@ export const QuantityModal: React.FC<QuantityModalProps> = ({
       title={
         <div className="flex items-center gap-2">
           <EditOutlined className="text-indigo-400" />
-          <span>Update Quantity: <strong className="text-indigo-400">{itemType?.name || 'Item'}</strong></span>
+          <span>Update Stock: <strong className="text-indigo-400">{itemType?.name || 'Item'}</strong></span>
         </div>
       }
       open={isOpen}
@@ -107,31 +113,50 @@ export const QuantityModal: React.FC<QuantityModalProps> = ({
       </div>
 
       <Form form={form} layout="vertical" onFinish={handleFinish}>
-        <Form.Item
-          name="quantity"
-          label={`Quantity Allocated to Project (${itemType?.unit || 'pcs'})`}
-          rules={[
-            { required: true, message: 'Please enter quantity' },
-            {
-              validator: (_, value) => {
-                if (value !== undefined && value > maxAvailableForProject) {
-                  return Promise.reject(
-                    new Error(`Exceeds maximum available stock in DB (${maxAvailableForProject} ${itemType?.unit || 'pcs'})`)
-                  );
-                }
-                return Promise.resolve();
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Form.Item
+            name="quantity"
+            label={`Allocated Quantity (${itemType?.unit || 'pcs'})`}
+            rules={[
+              { required: true, message: 'Please enter quantity' },
+              {
+                validator: (_, value) => {
+                  if (value !== undefined && value > maxAvailableForProject) {
+                    return Promise.reject(
+                      new Error(`Exceeds maximum available stock in DB (${maxAvailableForProject} ${itemType?.unit || 'pcs'})`)
+                    );
+                  }
+                  return Promise.resolve();
+                },
               },
-            },
-          ]}
-        >
-          <InputNumber
-            min={0}
-            max={maxAvailableForProject}
-            size="large"
-            className="w-full"
-            onChange={(v) => setInputVal(v || 0)}
-            status={isExceeded ? 'error' : ''}
-          />
+            ]}
+          >
+            <InputNumber
+              min={0}
+              max={maxAvailableForProject}
+              size="large"
+              className="w-full"
+              onChange={(v) => setInputVal(v || 0)}
+              status={isExceeded ? 'error' : ''}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="min_quantity"
+            label={
+              <span className="flex items-center gap-1">
+                <AlertOutlined className="text-amber-400" /> Min Reorder Threshold
+              </span>
+            }
+            tooltip="Triggers Low-Stock Alert when item quantity falls to or below this amount"
+            rules={[{ required: true, message: 'Please enter min threshold' }]}
+          >
+            <InputNumber min={0} size="large" className="w-full" />
+          </Form.Item>
+        </div>
+
+        <Form.Item name="notes" label="Audit Reason / Reference Notes (Optional)">
+          <Input.TextArea placeholder="e.g. Received Delivery Batch #401 or Usage for Phase 2" rows={2} />
         </Form.Item>
 
         {isExceeded && (
