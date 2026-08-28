@@ -18,6 +18,7 @@ import {
   MoonOutlined,
   ShoppingOutlined,
   FileDoneOutlined,
+  FileSearchOutlined,
   ShopOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -155,6 +156,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         },
       ],
     },
+    {
+      key: '/reports',
+      icon: <FileSearchOutlined style={{ fontSize: '18px' }} />,
+      label: '5. Reports & Analytics Hub',
+      onClick: () => {
+        navigate('/reports');
+        setMobileDrawerOpen(false);
+      },
+    },
   ];
 
   const profileMenuItems: MenuProps['items'] = [
@@ -195,7 +205,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   };
 
   return (
-    <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
+    <Layout style={{ minHeight: '100vh', maxHeight: '100vh', height: '100vh', overflow: 'hidden', background: 'transparent' }}>
       <div className="background-decor">
         <div className="glow-circle glow-1"></div>
         <div className="glow-circle glow-2"></div>
@@ -222,9 +232,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           if (broken) setCollapsed(true);
         }}
       >
-        <div className="flex flex-col h-full justify-between">
+        <div className="flex flex-col h-full overflow-hidden">
           {/* Top Brand Logo */}
-          <div>
+          <div className="shrink-0">
             <div
               className="flex items-center gap-3 px-5 h-[68px] border-b cursor-pointer select-none overflow-hidden"
               style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0' }}
@@ -244,45 +254,29 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 </div>
               )}
             </div>
-
-            {/* Main Navigation Menu */}
-            <div className="py-4">
-              <Menu
-                mode="inline"
-                theme={isDark ? 'dark' : 'light'}
-                selectedKeys={[location.pathname]}
-                defaultOpenKeys={['sub-setup', 'sub-procure', 'sub-issue']}
-                items={navMenuItems}
-                style={{
-                  background: 'transparent',
-                  borderRight: 0,
-                  fontSize: '14px',
-                  fontWeight: 500,
-                }}
-              />
-            </div>
           </div>
 
-          {/* Bottom Sidebar Collapse Action Footer */}
-          <div
-            className="p-3 border-t text-center"
-            style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0' }}
-          >
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined className="text-lg text-indigo-400" /> : <MenuFoldOutlined className="text-lg text-indigo-400" />}
-              onClick={() => setCollapsed(!collapsed)}
-              className="w-full flex items-center justify-center gap-2 hover:bg-indigo-500/10"
-              style={{ color: isDark ? '#cbd5e1' : '#475569' }}
-            >
-              {!collapsed && <span className="text-xs font-semibold uppercase tracking-wider">Collapse Navigation</span>}
-            </Button>
+          {/* Main Navigation Menu - Independent Sidebar Scrolling */}
+          <div className="flex-1 overflow-y-auto py-2">
+            <Menu
+              mode="inline"
+              theme={isDark ? 'dark' : 'light'}
+              selectedKeys={[location.pathname]}
+              defaultOpenKeys={['sub-setup', 'sub-procure', 'sub-issue']}
+              items={navMenuItems}
+              style={{
+                background: 'transparent',
+                borderRight: 0,
+                fontSize: '14px',
+                fontWeight: 500,
+              }}
+            />
           </div>
         </div>
       </Sider>
 
       {/* Right Main Page Layout Container */}
-      <Layout style={{ background: 'transparent' }}>
+      <Layout style={{ background: 'transparent', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {/* Top Control Header */}
         <Header
           style={{
@@ -299,6 +293,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexShrink: 0,
           }}
         >
           {/* Header Left: Toggle & Active Section Title */}
@@ -357,8 +352,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           </div>
         </Header>
 
-        {/* Content Body */}
-        <Content style={{ position: 'relative', zIndex: 10, flex: 1 }}>
+        {/* Content Body with Independent Scrollbar */}
+        <Content style={{ position: 'relative', zIndex: 10, flex: 1, overflowY: 'auto' }}>
           {children}
         </Content>
       </Layout>

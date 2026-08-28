@@ -14,6 +14,7 @@ import { ProjectsPage } from './pages/projects';
 import { VendorsPage } from './pages/vendors';
 import { PurchaseOrdersPage } from './pages/purchase-orders';
 import { MaterialIssuesPage } from './pages/material-issues';
+import { ReportsPage } from './pages/reports';
 
 const RootRedirect: React.FC = () => {
   const { user, loading } = useAuth();
@@ -56,6 +57,7 @@ const AppContent: React.FC = () => {
               <Route path="/inventory" element={<InventoryTrackerPage />} />
               <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
               <Route path="/material-issues" element={<MaterialIssuesPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
               <Route path="/item-types" element={<ItemTypesPage />} />
               <Route path="/vendors" element={<VendorsPage />} />
               <Route path="/units" element={<UnitsPage />} />

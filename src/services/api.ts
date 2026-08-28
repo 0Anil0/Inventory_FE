@@ -493,3 +493,46 @@ export const unitApi = {
     return handleResponse(res);
   },
 };
+
+// Reports API Client
+export const reportApi = {
+  getStockSummary: async (params?: any): Promise<{ success: boolean; reports: any[] }> => {
+    const query = new URLSearchParams(params || {}).toString();
+    const res = await fetch(`${API_BASE_URL}/reports/stock-summary?${query}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getPurchaseOrders: async (params?: any): Promise<{ success: boolean; reports: any[] }> => {
+    const query = new URLSearchParams(params || {}).toString();
+    const res = await fetch(`${API_BASE_URL}/reports/purchase-orders?${query}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getMaterialIssues: async (params?: any): Promise<{ success: boolean; reports: any[] }> => {
+    const query = new URLSearchParams(params || {}).toString();
+    const res = await fetch(`${API_BASE_URL}/reports/material-issues?${query}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getStockTransfers: async (params?: any): Promise<{ success: boolean; reports: any[] }> => {
+    const query = new URLSearchParams(params || {}).toString();
+    const res = await fetch(`${API_BASE_URL}/reports/stock-transfers?${query}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getAuditLedger: async (params?: any): Promise<{ success: boolean; reports: any[] }> => {
+    const query = new URLSearchParams(params || {}).toString();
+    const res = await fetch(`${API_BASE_URL}/reports/audit-ledger?${query}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+};

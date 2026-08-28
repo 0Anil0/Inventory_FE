@@ -123,26 +123,26 @@ export const VendorsPage: React.FC = () => {
       key: 'contact_person',
       render: (cp: string | null) =>
         cp ? (
-          <span className="text-sm font-semibold flex items-center gap-1.5 text-slate-300">
-            <UserOutlined className="text-indigo-400" /> {cp}
+          <span className="text-sm font-semibold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+            <UserOutlined className="text-indigo-500" /> {cp}
           </span>
         ) : (
-          <span className="text-xs text-slate-500 italic">N/A</span>
+          <span className="text-xs text-slate-400 italic">N/A</span>
         ),
     },
     {
       title: 'Phone & Email',
       key: 'contact',
       render: (_, record) => (
-        <div className="text-xs space-y-0.5">
+        <div className="text-xs space-y-0.5 font-mono">
           {record.phone && (
-            <div className="flex items-center gap-1 text-slate-300">
-              <PhoneOutlined className="text-emerald-400" /> {record.phone}
+            <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300 font-semibold">
+              <PhoneOutlined className="text-emerald-500" /> {record.phone}
             </div>
           )}
           {record.email && (
-            <div className="flex items-center gap-1 text-slate-400">
-              <MailOutlined className="text-sky-400" /> {record.email}
+            <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
+              <MailOutlined className="text-sky-500" /> {record.email}
             </div>
           )}
         </div>
@@ -153,7 +153,7 @@ export const VendorsPage: React.FC = () => {
       dataIndex: 'address',
       key: 'address',
       render: (addr: string | null) =>
-        addr ? <span className="text-xs text-slate-400">{addr}</span> : <span className="text-xs text-slate-500 italic">N/A</span>,
+        addr ? <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{addr}</span> : <span className="text-xs text-slate-400 italic">N/A</span>,
     },
     {
       title: 'Actions',

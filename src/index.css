@@ -3,7 +3,6 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-
 :root {
   --primary: #6366f1;
 }
@@ -13,13 +12,13 @@ html, html.light, html:not(.dark) {
   --bg-main: #f1f5f9;
   --bg-header: #ffffff;
   --bg-card: #ffffff;
-  --border-color: #e2e8f0;
+  --border-color: #cbd5e1;
   --text-main: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
+  --text-secondary: #1e293b;
+  --text-muted: #475569;
   --logo-text: #0f172a;
   --table-header-bg: #f8fafc;
-  --table-header-text: #475569;
+  --table-header-text: #1e293b;
   --table-body-text: #0f172a;
   --table-row-hover: #f1f5f9;
   --modal-bg: #ffffff;
@@ -56,6 +55,19 @@ html, body {
   margin: 0;
   padding: 0;
   transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Global Light Mode High-Contrast Typography Fixes */
+html:not(.dark) .text-slate-300 {
+  color: #1e293b !important;
+}
+
+html:not(.dark) .text-slate-400 {
+  color: #334155 !important;
+}
+
+html:not(.dark) .text-slate-500 {
+  color: #475569 !important;
 }
 
 /* Theme Helper Classes */
@@ -151,7 +163,7 @@ html.dark .glow-circle {
 }
 
 html, html.light, html:not(.dark) .ant-card {
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02) !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04) !important;
 }
 
 html.dark .ant-card {
