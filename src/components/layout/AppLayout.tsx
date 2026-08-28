@@ -211,13 +211,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <div className="glow-circle glow-2"></div>
       </div>
 
-      {/* Desktop Left Collapsible Sidebar Sider */}
+      {/* Desktop Left Collapsible Sidebar Sider (Hidden on Mobile) */}
       <Sider
         trigger={null}
         collapsible
         collapsed={collapsed}
         width={260}
-        collapsedWidth={80}
+        collapsedWidth={0}
+        className="hidden lg:block"
         style={{
           background: isDark ? '#0f172a' : '#ffffff',
           borderRight: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #e2e8f0',
@@ -353,7 +354,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </Header>
 
         {/* Content Body */}
-        <Content style={{ position: 'relative', zIndex: 10, flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <Content style={{ position: 'relative', zIndex: 10, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
           {children}
         </Content>
       </Layout>

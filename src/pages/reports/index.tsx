@@ -372,22 +372,22 @@ export const ReportsPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 flex flex-col h-full overflow-hidden print:p-0">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-2 sm:px-6 py-3 sm:py-4 flex flex-col min-h-full print:p-0">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 mb-3 print:hidden">
-          <div className="flex items-center gap-3">
-            <FileSearchOutlined className="text-2xl text-indigo-500" />
+          <div className="flex items-center gap-2.5">
+            <FileSearchOutlined className="text-xl sm:text-2xl text-indigo-500 shrink-0" />
             <div>
-              <h1 className="text-xl font-bold app-text-main font-['Outfit'] mb-0">
+              <h1 className="text-lg sm:text-xl font-bold app-text-main font-['Outfit'] mb-0">
                 Enterprise Reports & Analytics Center
               </h1>
-              <p className="text-xs app-text-muted mb-0">
+              <p className="text-[11px] sm:text-xs app-text-muted mb-0">
                 Generate, filter, print, and export CSV reports for Stock Valuation, Procurement, Material Issues, and Audit Trail
               </p>
             </div>
           </div>
 
-          <Space>
+          <Space wrap className="justify-start sm:justify-end">
             <Button icon={<ReloadOutlined />} onClick={fetchReportData} loading={loading} size="small">
               Refresh
             </Button>
@@ -401,7 +401,7 @@ export const ReportsPage: React.FC = () => {
         </div>
 
         {/* Report Selector Tabs */}
-        <Card className="shadow-2xl flex-1 flex flex-col overflow-hidden print:shadow-none print:border-none">
+        <Card className="shadow-2xl flex-1 flex flex-col print:shadow-none print:border-none">
           <Tabs
             activeKey={reportType}
             onChange={setReportType}
@@ -502,8 +502,8 @@ export const ReportsPage: React.FC = () => {
             <div className="text-[10px] text-gray-500 mt-0.5">Generated on: {new Date().toLocaleString()}</div>
           </div>
 
-          {/* Internal Scrollable Table Section */}
-          <div className="flex-1 overflow-hidden">
+          {/* Table Section */}
+          <div className="w-full overflow-x-auto">
             <Table
               columns={
                 reportType === 'stock-summary'
@@ -517,8 +517,8 @@ export const ReportsPage: React.FC = () => {
               dataSource={filteredData}
               rowKey="id"
               loading={loading}
-              scroll={{ y: 'calc(100vh - 350px)', x: 750 }}
-              pagination={{ pageSize: 12 }}
+              scroll={{ x: 750 }}
+              pagination={{ pageSize: 10 }}
               size="small"
             />
           </div>
