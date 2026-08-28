@@ -121,8 +121,8 @@ export const MaterialIssuesPage: React.FC = () => {
       dataIndex: 'issued_to',
       key: 'issued_to',
       render: (recipient: string) => (
-        <span className="font-semibold text-slate-200 flex items-center gap-1.5 font-['Outfit']">
-          <UserOutlined className="text-emerald-400" /> {recipient}
+        <span className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 font-['Outfit']">
+          <UserOutlined className="text-emerald-500" /> {recipient}
         </span>
       ),
     },
@@ -130,7 +130,7 @@ export const MaterialIssuesPage: React.FC = () => {
       title: 'Project Site',
       key: 'project',
       render: (_, record) => (
-        <span className="text-slate-300">
+        <span className="text-slate-700 dark:text-slate-300">
           {record.project?.name || `Project #${record.project_id}`}
         </span>
       ),

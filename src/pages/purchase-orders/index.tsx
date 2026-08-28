@@ -137,7 +137,7 @@ export const PurchaseOrdersPage: React.FC = () => {
       title: 'Supplier / Vendor',
       key: 'vendor',
       render: (_, record) => (
-        <span className="font-semibold text-slate-200">
+        <span className="font-semibold text-slate-800 dark:text-slate-200 font-['Outfit']">
           {record.vendor?.name || `Vendor #${record.vendor_id}`}
         </span>
       ),

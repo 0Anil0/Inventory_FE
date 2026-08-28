@@ -107,6 +107,32 @@ export const userApi = {
     });
     return handleResponse(res);
   },
+
+  createRole: async (data: { name: string; description?: string }): Promise<{ success: boolean; role?: Role }> => {
+    const res = await fetch(`${API_BASE_URL}${USER_ENDPOINTS.ROLES}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  updateRole: async (id: number, data: { name?: string; description?: string }): Promise<{ success: boolean; role?: Role }> => {
+    const res = await fetch(`${API_BASE_URL}${USER_ENDPOINTS.ROLES}/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  deleteRole: async (id: number): Promise<{ success: boolean; message?: string }> => {
+    const res = await fetch(`${API_BASE_URL}${USER_ENDPOINTS.ROLES}/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
 };
 
 // Item Type API Client
