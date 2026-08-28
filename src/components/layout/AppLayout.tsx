@@ -352,8 +352,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           </div>
         </Header>
 
-        {/* Content Body with Independent Scrollbar */}
-        <Content style={{ position: 'relative', zIndex: 10, flex: 1, overflowY: 'auto' }}>
+        {/* Content Body */}
+        <Content style={{ position: 'relative', zIndex: 10, flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {children}
         </Content>
       </Layout>

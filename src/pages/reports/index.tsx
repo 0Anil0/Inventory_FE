@@ -372,36 +372,36 @@ export const ReportsPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6 print:p-0">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-4 flex flex-col h-full overflow-hidden print:p-0">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 mb-3 print:hidden">
           <div className="flex items-center gap-3">
-            <FileSearchOutlined className="text-3xl text-indigo-500" />
+            <FileSearchOutlined className="text-2xl text-indigo-500" />
             <div>
-              <h1 className="text-2xl font-bold app-text-main font-['Outfit'] mb-0.5">
+              <h1 className="text-xl font-bold app-text-main font-['Outfit'] mb-0">
                 Enterprise Reports & Analytics Center
               </h1>
-              <p className="text-xs sm:text-sm app-text-muted mb-0">
+              <p className="text-xs app-text-muted mb-0">
                 Generate, filter, print, and export CSV reports for Stock Valuation, Procurement, Material Issues, and Audit Trail
               </p>
             </div>
           </div>
 
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={fetchReportData} loading={loading}>
-              Refresh Data
+            <Button icon={<ReloadOutlined />} onClick={fetchReportData} loading={loading} size="small">
+              Refresh
             </Button>
-            <Button icon={<PrinterOutlined />} onClick={handlePrint}>
-              Print Report
+            <Button icon={<PrinterOutlined />} onClick={handlePrint} size="small">
+              Print
             </Button>
-            <Button type="primary" icon={<DownloadOutlined />} onClick={handleExportCSV}>
-              Export CSV Report
+            <Button type="primary" icon={<DownloadOutlined />} onClick={handleExportCSV} size="small">
+              Export CSV
             </Button>
           </Space>
         </div>
 
         {/* Report Selector Tabs */}
-        <Card className="shadow-2xl print:shadow-none print:border-none">
+        <Card className="shadow-2xl flex-1 flex flex-col overflow-hidden print:shadow-none print:border-none">
           <Tabs
             activeKey={reportType}
             onChange={setReportType}
@@ -447,11 +447,11 @@ export const ReportsPage: React.FC = () => {
                 ),
               },
             ]}
-            className="mb-4 print:hidden"
+            className="mb-3 shrink-0 print:hidden"
           />
 
           {/* Filter Bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6 print:hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 shrink-0 print:hidden">
             <Input
               placeholder="Search in report data..."
               prefix={<SearchOutlined className="text-gray-400" />}
@@ -496,29 +496,32 @@ export const ReportsPage: React.FC = () => {
           </div>
 
           {/* Print Header */}
-          <div className="hidden print:block mb-6 border-b pb-4">
-            <div className="text-2xl font-bold font-['Outfit']">RAVI INVENTORY CONTROL PORTAL</div>
-            <div className="text-sm font-bold uppercase text-indigo-600 mt-1">Official {reportType.replace('-', ' ')} Report</div>
-            <div className="text-xs text-gray-500 mt-0.5">Generated on: {new Date().toLocaleString()}</div>
+          <div className="hidden print:block mb-4 border-b pb-2">
+            <div className="text-xl font-bold font-['Outfit']">RAVI INVENTORY CONTROL PORTAL</div>
+            <div className="text-xs font-bold uppercase text-indigo-600 mt-0.5">Official {reportType.replace('-', ' ')} Report</div>
+            <div className="text-[10px] text-gray-500 mt-0.5">Generated on: {new Date().toLocaleString()}</div>
           </div>
 
-          {/* Report Table */}
-          <Table
-            columns={
-              reportType === 'stock-summary'
-                ? stockSummaryColumns
-                : reportType === 'purchase-orders'
-                ? poColumns
-                : reportType === 'material-issues'
-                ? issueColumns
-                : auditColumns
-            }
-            dataSource={filteredData}
-            rowKey="id"
-            loading={loading}
-            scroll={{ x: 750 }}
-            pagination={{ pageSize: 10 }}
-          />
+          {/* Internal Scrollable Table Section */}
+          <div className="flex-1 overflow-hidden">
+            <Table
+              columns={
+                reportType === 'stock-summary'
+                  ? stockSummaryColumns
+                  : reportType === 'purchase-orders'
+                  ? poColumns
+                  : reportType === 'material-issues'
+                  ? issueColumns
+                  : auditColumns
+              }
+              dataSource={filteredData}
+              rowKey="id"
+              loading={loading}
+              scroll={{ y: 'calc(100vh - 350px)', x: 750 }}
+              pagination={{ pageSize: 12 }}
+              size="small"
+            />
+          </div>
         </Card>
       </main>
     </AppLayout>
