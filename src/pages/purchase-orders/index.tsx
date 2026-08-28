@@ -10,10 +10,11 @@ import {
   ClockCircleOutlined,
   CheckCircleFilled,
   FileTextOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import type { PurchaseOrder, Vendor, Project, ItemType } from '../../types/inventory';
 import { poApi, vendorApi, projectApi, itemTypeApi } from '../../services/api';
-import { Navbar } from '../../components/layout/Navbar';
+import { AppLayout } from '../../components/layout/AppLayout';
 
 export const PurchaseOrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
@@ -142,12 +143,12 @@ export const PurchaseOrdersPage: React.FC = () => {
       ),
     },
     {
-      title: 'Destination Site',
+      title: 'Receiving Stock Target',
       key: 'project',
       render: (_, record) => (
-        <span className="text-slate-300">
+        <Tag color="cyan" className="font-bold border-none">
           {record.project?.name || 'Central Warehouse'}
-        </span>
+        </Tag>
       ),
     },
     {
@@ -211,13 +212,7 @@ export const PurchaseOrdersPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen app-page-bg flex flex-col">
-      <div className="background-decor">
-        <div className="glow-circle glow-1"></div>
-        <div className="glow-circle glow-2"></div>
-      </div>
-
-      <Navbar />
+    <AppLayout>
 
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -276,31 +271,26 @@ export const PurchaseOrdersPage: React.FC = () => {
         centered
       >
         <Form form={form} layout="vertical" onFinish={handleFinish} className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Form.Item
-              name="vendor_id"
-              label="Select Supplier / Vendor"
-              rules={[{ required: true, message: 'Select supplier' }]}
-            >
-              <Select placeholder="Select Supplier">
-                {vendors.map((v) => (
-                  <Select.Option key={v.id} value={v.id}>
-                    {v.name}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-
-            <Form.Item name="project_id" label="Destination Project Site (Optional)">
-              <Select placeholder="Select Project (or Central Stock)">
-                {projects.map((p) => (
-                  <Select.Option key={p.id} value={p.id}>
-                    {p.name} ({p.code})
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
+          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 text-xs text-indigo-300 mb-4 flex items-center gap-2">
+            <InfoCircleOutlined className="text-base text-indigo-400 shrink-0" />
+            <span>
+              <strong>Central Stock Procurement:</strong> Purchase Orders buy materials from suppliers into your Central Warehouse Stock. Once received, you can assign/allocate stock to specific Project Sites in the <strong>Stock Tracker</strong>.
+            </span>
           </div>
+
+          <Form.Item
+            name="vendor_id"
+            label="Select Supplier / Vendor"
+            rules={[{ required: true, message: 'Select supplier' }]}
+          >
+            <Select placeholder="Select Supplier">
+              {vendors.map((v) => (
+                <Select.Option key={v.id} value={v.id}>
+                  {v.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
 
           <div className="font-bold text-sm text-indigo-400 mb-2">PO Line Items</div>
 
@@ -361,7 +351,7 @@ export const PurchaseOrdersPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </AppLayout>
   );
 };
 export default PurchaseOrdersPage;

@@ -17,7 +17,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Navbar } from '../../components/layout/Navbar';
+import { AppLayout } from '../../components/layout/AppLayout';
 import { dashboardApi } from '../../services/api';
 import type { DashboardStats, ProjectInventory, StockMovement, ProjectBreakdown } from '../../types/inventory';
 
@@ -190,13 +190,8 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen app-page-bg flex flex-col">
-      <div className="background-decor">
-        <div className="glow-circle glow-1"></div>
-        <div className="glow-circle glow-2"></div>
-      </div>
+    <AppLayout>
 
-      <Navbar />
 
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 flex flex-col gap-6">
         {/* Welcome Card */}
@@ -399,7 +394,7 @@ export const DashboardPage: React.FC = () => {
           </>
         )}
       </main>
-    </div>
+    </AppLayout>
   );
 };
 export default DashboardPage;

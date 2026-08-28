@@ -12,7 +12,7 @@ import {
 } from '@ant-design/icons';
 import type { Unit } from '../../types/inventory';
 import { unitApi } from '../../services/api';
-import { Navbar } from '../../components/layout/Navbar';
+import { AppLayout } from '../../components/layout/AppLayout';
 
 export const UnitsPage: React.FC = () => {
   const [units, setUnits] = useState<Unit[]>([]);
@@ -155,13 +155,7 @@ export const UnitsPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen app-page-bg flex flex-col">
-      <div className="background-decor">
-        <div className="glow-circle glow-1"></div>
-        <div className="glow-circle glow-2"></div>
-      </div>
-
-      <Navbar />
+    <AppLayout>
 
       <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -232,7 +226,7 @@ export const UnitsPage: React.FC = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </AppLayout>
   );
 };
 

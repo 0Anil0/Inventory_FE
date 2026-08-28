@@ -13,7 +13,7 @@ import {
 } from '@ant-design/icons';
 import type { User, Role } from '../../types/auth';
 import { userApi } from '../../services/api';
-import { Navbar } from '../../components/layout/Navbar';
+import { AppLayout } from '../../components/layout/AppLayout';
 import { UserModal } from '../../components/users/UserModal';
 import { FilterModal } from '../../components/common/FilterModal';
 import type { FilterValues } from '../../components/common/FilterModal';
@@ -255,13 +255,7 @@ export const UserManagementPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen app-page-bg flex flex-col">
-      <div className="background-decor">
-        <div className="glow-circle glow-1"></div>
-        <div className="glow-circle glow-2"></div>
-      </div>
-
-      <Navbar />
+    <AppLayout>
 
       <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
         {/* Page Header */}
@@ -361,7 +355,7 @@ export const UserManagementPage: React.FC = () => {
         roles={roles}
         initialValues={activeFilters}
       />
-    </div>
+    </AppLayout>
   );
 };
 export default UserManagementPage;

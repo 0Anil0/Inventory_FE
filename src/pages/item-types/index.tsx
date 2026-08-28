@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, InputNumber, Modal, Form, Select, Popconfirm, Space, Tag, message } from 'antd';
+import { Table, Card, Button, Input, Modal, Form, Select, Popconfirm, Space, Tag, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -11,10 +11,11 @@ import {
   TagOutlined,
   DatabaseOutlined,
   TagsOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import type { ItemType, Unit } from '../../types/inventory';
 import { itemTypeApi, unitApi } from '../../services/api';
-import { Navbar } from '../../components/layout/Navbar';
+import { AppLayout } from '../../components/layout/AppLayout';
 
 export const ItemTypesPage: React.FC = () => {
   const [items, setItems] = useState<ItemType[]>([]);
@@ -102,6 +103,7 @@ export const ItemTypesPage: React.FC = () => {
       const selectedUnitObj = units.find((u) => u.id === values.unit_id);
       const payload = {
         ...values,
+        total_quantity: values.total_quantity !== undefined ? values.total_quantity : 0,
         unit: selectedUnitObj ? selectedUnitObj.code : values.unit || 'PCS',
       };
 
@@ -209,13 +211,7 @@ export const ItemTypesPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen app-page-bg flex flex-col">
-      <div className="background-decor">
-        <div className="glow-circle glow-1"></div>
-        <div className="glow-circle glow-2"></div>
-      </div>
-
-      <Navbar />
+    <AppLayout>
 
       <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -304,21 +300,19 @@ export const ItemTypesPage: React.FC = () => {
             />
           </Form.Item>
 
-          <Form.Item
-            name="total_quantity"
-            label="Central Catalog Available Quantity"
-            rules={[{ required: true, message: 'Please specify available stock' }]}
-            tooltip="Master stock quantity available in central inventory for allocation to projects"
-          >
-            <InputNumber min={0} className="w-full" size="large" placeholder="Enter initial quantity (e.g. 50, 100)" />
-          </Form.Item>
+          <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-3 text-xs text-indigo-300 mb-4 flex items-center gap-2">
+            <InfoCircleOutlined className="text-base text-indigo-400 shrink-0" />
+            <span>
+              <strong>Catalog Item Profile:</strong> Creating an item registers its name & code in your master catalog (Stock starts at 0). Actual stock is added when you receive a <strong>Purchase Order</strong> from a supplier.
+            </span>
+          </div>
 
           <Form.Item name="description" label="Description">
             <Input.TextArea placeholder="Item specifications or description..." rows={3} />
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </AppLayout>
   );
 };
 
