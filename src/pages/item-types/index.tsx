@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, Modal, Form, Select, Popconfirm, Space, Tag, message } from 'antd';
+import { Table, Card, Button, Input, Modal, Form, Select, Popconfirm, Space, Tag, DatePicker, Badge, message } from 'antd';
+const { RangePicker } = DatePicker;
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -22,6 +23,7 @@ export const ItemTypesPage: React.FC = () => {
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [dateRange, setDateRange] = useState<[string, string] | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [itemToEdit, setItemToEdit] = useState<ItemType | null>(null);
@@ -55,31 +57,19 @@ export const ItemTypesPage: React.FC = () => {
   const handleOpenAdd = () => {
     setItemToEdit(null);
     form.resetFields();
-    // Default unit_id to first unit if available
     if (units.length > 0) {
-      form.setFieldValue('unit_id', units[0].id);
+      form.setFieldsValue({ unit_id: units[0].id, unit: units[0].code });
     }
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (item: ItemType) => {
     setItemToEdit(item);
-
-    // Find unit matching item.unit_id or item.unit code
-    let matchingUnitId = item.unit_id;
-    if (!matchingUnitId && item.unit) {
-      const found = units.find(
-        (u) => u.code.toLowerCase() === item.unit.toLowerCase() || u.name.toLowerCase() === item.unit.toLowerCase()
-      );
-      if (found) matchingUnitId = found.id;
-    }
-
     form.setFieldsValue({
-      name: item.name,
       code: item.code,
-      unit_id: matchingUnitId,
+      name: item.name,
+      unit_id: item.unit_id,
       unit: item.unit,
-      total_quantity: item.total_quantity || 0,
       description: item.description || '',
     });
     setIsModalOpen(true);
@@ -89,8 +79,8 @@ export const ItemTypesPage: React.FC = () => {
     try {
       const res = await itemTypeApi.delete(id);
       if (res.success) {
-        message.success('Item type deleted successfully');
         setItems(items.filter((i) => i.id !== id));
+        message.success('Item type deleted successfully');
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to delete item type');
@@ -99,7 +89,6 @@ export const ItemTypesPage: React.FC = () => {
 
   const handleFinish = async (values: any) => {
     try {
-      // Find selected unit code for backward compatibility
       const selectedUnitObj = units.find((u) => u.id === values.unit_id);
       const payload = {
         ...values,
@@ -116,7 +105,7 @@ export const ItemTypesPage: React.FC = () => {
       } else {
         const res = await itemTypeApi.create(payload);
         if (res.success && res.item) {
-          setItems([...items, res.item]);
+          setItems([res.item, ...items]);
           message.success('Item type created successfully');
         }
       }
@@ -126,17 +115,39 @@ export const ItemTypesPage: React.FC = () => {
     }
   };
 
-  const filteredItems = items.filter((i) => {
+  const filteredItems = items.filter((item) => {
     const q = searchQuery.toLowerCase();
-    const unitText = i.unit_details ? `${i.unit_details.code} ${i.unit_details.name}` : i.unit;
-    return (
-      i.name.toLowerCase().includes(q) ||
-      i.code.toLowerCase().includes(q) ||
-      unitText.toLowerCase().includes(q)
-    );
+    const unitText = item.unit_details ? `${item.unit_details.name} (${item.unit_details.code})` : item.unit || '';
+    const matchesSearch =
+      !q ||
+      item.name.toLowerCase().includes(q) ||
+      item.code.toLowerCase().includes(q) ||
+      unitText.toLowerCase().includes(q);
+
+    if (!matchesSearch) return false;
+
+    if (dateRange && (item as any).createdAt) {
+      const createdStr = new Date((item as any).createdAt).toISOString().slice(0, 10);
+      if (createdStr < dateRange[0] || createdStr > dateRange[1]) {
+        return false;
+      }
+    }
+
+    return true;
   });
 
   const columns: ColumnsType<ItemType> = [
+    {
+      title: 'S.No.',
+      key: 'sno',
+      width: 70,
+      align: 'center',
+      render: (_, __, index: number) => (
+        <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
+          {index + 1}
+        </span>
+      ),
+    },
     {
       title: 'Code',
       dataIndex: 'code',
@@ -238,15 +249,58 @@ export const ItemTypesPage: React.FC = () => {
         </div>
 
         <Card className="shadow-2xl">
-          <div className="mb-6">
+          {/* Total Records Counter Header & Action Bar */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-3">
+              <Badge count={filteredItems.length} overflowCount={999} color="#6366f1">
+                <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
+                  Total Records: {filteredItems.length} Catalog Items
+                </Tag>
+              </Badge>
+              {filteredItems.length !== items.length && (
+                <span className="text-xs text-slate-500 font-medium">
+                  (Filtered from {items.length} total catalog items)
+                </span>
+              )}
+            </div>
+
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30">
+              + Add Catalog Item Type
+            </Button>
+          </div>
+
+          {/* Full Enterprise Toolbar: Keyword Search + Date Range */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
             <Input
-              placeholder="Search item types by code, name, or unit..."
+              placeholder="Search by code, name, or unit..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-md w-full"
               allowClear
+              className="w-full"
             />
+
+            <RangePicker
+              onChange={(dates) => {
+                if (dates && dates[0] && dates[1]) {
+                  setDateRange([dates[0].format('YYYY-MM-DD'), dates[1].format('YYYY-MM-DD')]);
+                } else {
+                  setDateRange(null);
+                }
+              }}
+              className="w-full"
+            />
+
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                setSearchQuery('');
+                setDateRange(null);
+              }}
+              className="w-full"
+            >
+              Reset Filters
+            </Button>
           </div>
 
           <Table
@@ -254,8 +308,8 @@ export const ItemTypesPage: React.FC = () => {
             dataSource={filteredItems}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 750 }}
-            pagination={{ pageSize: 8 }}
+            scroll={{ x: 750, y: 360 }}
+            pagination={{ pageSize: 15, showSizeChanger: true }}
           />
         </Card>
       </main>

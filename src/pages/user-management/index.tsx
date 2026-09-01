@@ -213,7 +213,18 @@ export const UserManagementPage: React.FC = () => {
 
   const userColumns: ColumnsType<User> = [
     {
-      title: 'ID',
+      title: 'S.No.',
+      key: 'sno',
+      width: 70,
+      align: 'center',
+      render: (_, __, index: number) => (
+        <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
+          {index + 1}
+        </span>
+      ),
+    },
+    {
+      title: 'User ID',
       dataIndex: 'id',
       key: 'id',
       width: 70,
@@ -412,8 +423,21 @@ export const UserManagementPage: React.FC = () => {
                 ),
                 children: (
                   <div className="pt-2">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
-                      <div className="flex items-center gap-2 flex-1 max-w-lg">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-200 dark:border-white/10">
+                      <div className="flex items-center gap-3">
+                        <Badge count={filteredUsers.length} overflowCount={999} color="#6366f1">
+                          <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
+                            Total Records: {filteredUsers.length} Users
+                          </Tag>
+                        </Badge>
+                        {filteredUsers.length !== users.length && (
+                          <span className="text-xs text-slate-500 font-medium">
+                            (Filtered from {users.length} total users)
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 max-w-lg">
                         <Input
                           placeholder="Search users by name, email, or role..."
                           prefix={<SearchOutlined className="text-gray-400" />}
@@ -433,11 +457,6 @@ export const UserManagementPage: React.FC = () => {
                           </Button>
                         </Badge>
                       </div>
-
-                      <span className="text-xs text-slate-400 text-right">
-                        Showing <strong className="text-slate-200">{filteredUsers.length}</strong> of{' '}
-                        <strong className="text-slate-200">{users.length}</strong> users
-                      </span>
                     </div>
 
                     <Table
@@ -445,8 +464,8 @@ export const UserManagementPage: React.FC = () => {
                       dataSource={filteredUsers}
                       rowKey="id"
                       loading={loading}
-                      scroll={{ x: 750 }}
-                      pagination={{ pageSize: 8 }}
+                      scroll={{ x: 750, y: 360 }}
+                      pagination={{ pageSize: 15, showSizeChanger: true }}
                     />
                   </div>
                 ),
@@ -474,7 +493,7 @@ export const UserManagementPage: React.FC = () => {
                       dataSource={roles}
                       rowKey="id"
                       loading={loading}
-                      scroll={{ x: 700 }}
+                      scroll={{ x: 700, y: 360 }}
                       pagination={false}
                     />
                   </div>

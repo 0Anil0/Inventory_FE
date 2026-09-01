@@ -10,8 +10,12 @@ import {
   Col,
   Statistic,
   Space,
+  DatePicker,
+  Badge,
   message,
 } from 'antd';
+
+const { RangePicker } = DatePicker;
 import type { ColumnsType } from 'antd/es/table';
 import {
   DatabaseOutlined,
@@ -44,6 +48,7 @@ export const InventoryTrackerPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterMode, setFilterMode] = useState<'ALL' | 'LOW_STOCK'>('ALL');
+  const [dateRange, setDateRange] = useState<[string, string] | null>(null);
 
   // Modals & Drawer states
   const [isQuantityModalOpen, setIsQuantityModalOpen] = useState<boolean>(false);
@@ -217,12 +222,21 @@ export const InventoryTrackerPage: React.FC = () => {
       item.code.toLowerCase().includes(q) ||
       item.unit.toLowerCase().includes(q);
 
+    if (!matchesSearch) return false;
+
     if (filterMode === 'LOW_STOCK') {
       const isLow = inv.quantity <= (inv.min_quantity || 10);
-      return matchesSearch && isLow;
+      if (!isLow) return false;
     }
 
-    return matchesSearch;
+    if (dateRange && (inv as any).updatedAt) {
+      const itemDate = new Date((inv as any).updatedAt).toISOString().slice(0, 10);
+      if (itemDate < dateRange[0] || itemDate > dateRange[1]) {
+        return false;
+      }
+    }
+
+    return true;
   });
 
   // Calculate statistics
@@ -255,6 +269,17 @@ export const InventoryTrackerPage: React.FC = () => {
   };
 
   const columns: ColumnsType<ProjectInventory> = [
+    {
+      title: 'S.No.',
+      key: 'sno',
+      width: 70,
+      align: 'center',
+      render: (_, __, index: number) => (
+        <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
+          {index + 1}
+        </span>
+      ),
+    },
     {
       title: 'Item Code',
       key: 'code',
@@ -435,25 +460,19 @@ export const InventoryTrackerPage: React.FC = () => {
 
         {/* Inventory Items Table Card */}
         <Card className="shadow-2xl">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3 max-w-md w-full">
-              <Input
-                placeholder="Search items by code, name, or unit..."
-                prefix={<SearchOutlined className="text-gray-400" />}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                allowClear
-                className="w-full"
-              />
-
-              <Button
-                type={filterMode === 'LOW_STOCK' ? 'primary' : 'default'}
-                danger={filterMode === 'LOW_STOCK'}
-                icon={<AlertOutlined />}
-                onClick={() => setFilterMode(filterMode === 'ALL' ? 'LOW_STOCK' : 'ALL')}
-              >
-                {filterMode === 'LOW_STOCK' ? 'Show All' : 'Low Stock Only'}
-              </Button>
+          {/* Total Records Counter Header & Action Bar */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-3">
+              <Badge count={filteredInventory.length} overflowCount={999} color="#6366f1">
+                <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
+                  Total Records: {filteredInventory.length} Items
+                </Tag>
+              </Badge>
+              {filteredInventory.length !== inventoryList.length && (
+                <span className="text-xs text-slate-500 font-medium">
+                  (Filtered from {inventoryList.length} total items)
+                </span>
+              )}
             </div>
 
             <Space className="justify-between sm:justify-end flex-wrap">
@@ -473,15 +492,60 @@ export const InventoryTrackerPage: React.FC = () => {
             </Space>
           </div>
 
+          {/* Full Enterprise Toolbar: Keyword Search + Date Range + Filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <Input
+              placeholder="Search by code, name, or unit..."
+              prefix={<SearchOutlined className="text-gray-400" />}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              allowClear
+              className="w-full"
+            />
+
+            <RangePicker
+              onChange={(dates) => {
+                if (dates && dates[0] && dates[1]) {
+                  setDateRange([dates[0].format('YYYY-MM-DD'), dates[1].format('YYYY-MM-DD')]);
+                } else {
+                  setDateRange(null);
+                }
+              }}
+              className="w-full"
+            />
+
+            <Button
+              type={filterMode === 'LOW_STOCK' ? 'primary' : 'default'}
+              danger={filterMode === 'LOW_STOCK'}
+              icon={<AlertOutlined />}
+              onClick={() => setFilterMode(filterMode === 'ALL' ? 'LOW_STOCK' : 'ALL')}
+              className="w-full"
+            >
+              {filterMode === 'LOW_STOCK' ? 'Showing Low Stock' : 'Filter Low Stock Only'}
+            </Button>
+
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                setSearchQuery('');
+                setDateRange(null);
+                setFilterMode('ALL');
+              }}
+              className="w-full"
+            >
+              Reset Filters
+            </Button>
+          </div>
+
           <Table
             columns={columns}
             dataSource={filteredInventory}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 800 }}
+            scroll={{ x: 800, y: 360 }}
             pagination={{
-              pageSize: 8,
-              showSizeChanger: false,
+              pageSize: 15,
+              showSizeChanger: true,
               showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} stock items`,
             }}
           />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, Modal, Form, Popconfirm, Space, Tag, message } from 'antd';
+import { Table, Card, Button, Input, Modal, Form, Popconfirm, Space, Tag, DatePicker, Badge, message } from 'antd';
+const { RangePicker } = DatePicker;
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -18,6 +19,7 @@ export const UnitsPage: React.FC = () => {
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [dateRange, setDateRange] = useState<[string, string] | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [unitToEdit, setUnitToEdit] = useState<Unit | null>(null);
@@ -31,7 +33,7 @@ export const UnitsPage: React.FC = () => {
         setUnits(res.units);
       }
     } catch (err: any) {
-      message.error(err.message || 'Failed to load units catalog');
+      message.error(err.message || 'Failed to load measurement units');
     } finally {
       setLoading(false);
     }
@@ -61,8 +63,8 @@ export const UnitsPage: React.FC = () => {
     try {
       const res = await unitApi.delete(id);
       if (res.success) {
-        message.success('Unit deleted successfully');
         setUnits(units.filter((u) => u.id !== id));
+        message.success('Unit deleted successfully');
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to delete unit');
@@ -80,7 +82,7 @@ export const UnitsPage: React.FC = () => {
       } else {
         const res = await unitApi.create(values);
         if (res.success && res.unit) {
-          setUnits([...units, res.unit]);
+          setUnits([res.unit, ...units]);
           message.success('Unit created successfully');
         }
       }
@@ -92,14 +94,36 @@ export const UnitsPage: React.FC = () => {
 
   const filteredUnits = units.filter((u) => {
     const q = searchQuery.toLowerCase();
-    return (
+    const matchesSearch =
+      !q ||
       u.name.toLowerCase().includes(q) ||
       u.code.toLowerCase().includes(q) ||
-      (u.description && u.description.toLowerCase().includes(q))
-    );
+      (u.description && u.description.toLowerCase().includes(q));
+
+    if (!matchesSearch) return false;
+
+    if (dateRange && (u as any).createdAt) {
+      const createdStr = new Date((u as any).createdAt).toISOString().slice(0, 10);
+      if (createdStr < dateRange[0] || createdStr > dateRange[1]) {
+        return false;
+      }
+    }
+
+    return true;
   });
 
   const columns: ColumnsType<Unit> = [
+    {
+      title: 'S.No.',
+      key: 'sno',
+      width: 70,
+      align: 'center',
+      render: (_, __, index: number) => (
+        <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
+          {index + 1}
+        </span>
+      ),
+    },
     {
       title: 'Unit Code',
       dataIndex: 'code',
@@ -182,15 +206,58 @@ export const UnitsPage: React.FC = () => {
         </div>
 
         <Card className="shadow-2xl">
-          <div className="mb-6">
+          {/* Total Records Counter Header & Action Bar */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-3">
+              <Badge count={filteredUnits.length} overflowCount={999} color="#6366f1">
+                <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
+                  Total Records: {filteredUnits.length} Units
+                </Tag>
+              </Badge>
+              {filteredUnits.length !== units.length && (
+                <span className="text-xs text-slate-500 font-medium">
+                  (Filtered from {units.length} total units)
+                </span>
+              )}
+            </div>
+
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30">
+              + Add New Unit
+            </Button>
+          </div>
+
+          {/* Full Enterprise Toolbar: Keyword Search + Date Range */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
             <Input
-              placeholder="Search units by code, name, or description..."
+              placeholder="Search by code, name, or description..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-md w-full"
               allowClear
+              className="w-full"
             />
+
+            <RangePicker
+              onChange={(dates) => {
+                if (dates && dates[0] && dates[1]) {
+                  setDateRange([dates[0].format('YYYY-MM-DD'), dates[1].format('YYYY-MM-DD')]);
+                } else {
+                  setDateRange(null);
+                }
+              }}
+              className="w-full"
+            />
+
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                setSearchQuery('');
+                setDateRange(null);
+              }}
+              className="w-full"
+            >
+              Reset Filters
+            </Button>
           </div>
 
           <Table
@@ -198,8 +265,8 @@ export const UnitsPage: React.FC = () => {
             dataSource={filteredUnits}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 600 }}
-            pagination={{ pageSize: 8 }}
+            scroll={{ x: 600, y: 360 }}
+            pagination={{ pageSize: 15, showSizeChanger: true }}
           />
         </Card>
       </main>

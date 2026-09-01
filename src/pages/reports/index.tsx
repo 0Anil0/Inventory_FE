@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, Select, DatePicker, Tag, Space, Tabs, message } from 'antd';
+import { Table, Card, Button, Input, Select, DatePicker, Tag, Space, Tabs, Badge, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   FileSearchOutlined,
@@ -177,6 +177,17 @@ export const ReportsPage: React.FC = () => {
   // Columns per Report Type
   const stockSummaryColumns: ColumnsType<any> = [
     {
+      title: 'S.No.',
+      key: 'sno',
+      width: 70,
+      align: 'center',
+      render: (_, __, index: number) => (
+        <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
+          {index + 1}
+        </span>
+      ),
+    },
+    {
       title: 'Project Site',
       key: 'project',
       render: (_, r) => <span className="font-semibold font-['Outfit']">{r.project?.name || 'Central Warehouse'}</span>,
@@ -228,6 +239,17 @@ export const ReportsPage: React.FC = () => {
 
   const poColumns: ColumnsType<any> = [
     {
+      title: 'S.No.',
+      key: 'sno',
+      width: 70,
+      align: 'center',
+      render: (_, __, index: number) => (
+        <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
+          {index + 1}
+        </span>
+      ),
+    },
+    {
       title: 'PO Number & Date',
       key: 'po',
       render: (_, r) => (
@@ -278,6 +300,17 @@ export const ReportsPage: React.FC = () => {
 
   const issueColumns: ColumnsType<any> = [
     {
+      title: 'S.No.',
+      key: 'sno',
+      width: 70,
+      align: 'center',
+      render: (_, __, index: number) => (
+        <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
+          {index + 1}
+        </span>
+      ),
+    },
+    {
       title: 'Voucher # & Date',
       key: 'issue',
       render: (_, r) => (
@@ -320,6 +353,17 @@ export const ReportsPage: React.FC = () => {
   ];
 
   const auditColumns: ColumnsType<any> = [
+    {
+      title: 'S.No.',
+      key: 'sno',
+      width: 70,
+      align: 'center',
+      render: (_, __, index: number) => (
+        <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
+          {index + 1}
+        </span>
+      ),
+    },
     {
       title: 'Timestamp & User',
       key: 'time',
@@ -450,6 +494,34 @@ export const ReportsPage: React.FC = () => {
             className="mb-3 shrink-0 print:hidden"
           />
 
+          {/* Total Records Counter Header */}
+          <div className="flex items-center justify-between gap-3 mb-3 pb-2 border-b border-slate-200 dark:border-white/10 shrink-0 print:hidden">
+            <div className="flex items-center gap-2">
+              <Badge count={filteredData.length} overflowCount={999} color="#6366f1">
+                <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
+                  Total Records: {filteredData.length} Entries
+                </Tag>
+              </Badge>
+              {filteredData.length !== data.length && (
+                <span className="text-xs text-slate-500 font-medium">
+                  (Filtered from {data.length} total entries)
+                </span>
+              )}
+            </div>
+            <Button
+              size="small"
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedProjectId(undefined);
+                setHealthFilter('ALL');
+                setDateRange(null);
+              }}
+            >
+              Reset All Filters
+            </Button>
+          </div>
+
           {/* Filter Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 shrink-0 print:hidden">
             <Input
@@ -517,8 +589,8 @@ export const ReportsPage: React.FC = () => {
               dataSource={filteredData}
               rowKey="id"
               loading={loading}
-              scroll={{ x: 750 }}
-              pagination={{ pageSize: 10 }}
+              scroll={{ x: 750, y: 360 }}
+              pagination={{ pageSize: 15, showSizeChanger: true }}
               size="small"
             />
           </div>

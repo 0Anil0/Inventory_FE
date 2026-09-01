@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, Modal, Form, Select, InputNumber, Tag, Space, message, Popover } from 'antd';
+import { Table, Card, Button, Input, Modal, Form, Select, InputNumber, Tag, Space, DatePicker, Badge, message, Popover } from 'antd';
+const { RangePicker } = DatePicker;
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -17,9 +18,11 @@ export const MaterialIssuesPage: React.FC = () => {
   const [issues, setIssues] = useState<MaterialIssue[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [filterProjectId, setFilterProjectId] = useState<number | null>(null);
   const [projectInventory, setProjectInventory] = useState<ProjectInventory[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [dateRange, setDateRange] = useState<[string, string] | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [form] = Form.useForm();
@@ -35,9 +38,6 @@ export const MaterialIssuesPage: React.FC = () => {
       if (issueRes.success && issueRes.issues) setIssues(issueRes.issues);
       if (pRes.success && pRes.projects) {
         setProjects(pRes.projects);
-        if (pRes.projects.length > 0 && !selectedProjectId) {
-          setSelectedProjectId(pRes.projects[0].id);
-        }
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to load material issue vouchers');
@@ -50,32 +50,29 @@ export const MaterialIssuesPage: React.FC = () => {
     fetchIssuesAndProjects();
   }, []);
 
-  const fetchProjectInventory = async (projId: number) => {
-    try {
-      const res = await inventoryApi.getByProject(projId);
+  useEffect(() => {
+    if (selectedProjectId && isModalOpen) {
+      inventoryApi.getByProject(selectedProjectId).then((res) => {
+        if (res.success && res.inventory) {
+          setProjectInventory(res.inventory);
+        }
+      });
+    }
+  }, [selectedProjectId, isModalOpen]);
+
+  const handleProjectSelectInForm = (projId: number) => {
+    setSelectedProjectId(projId);
+    inventoryApi.getByProject(projId).then((res) => {
       if (res.success && res.inventory) {
         setProjectInventory(res.inventory);
       }
-    } catch (err: any) {
-      message.error('Failed to load project stock items');
-    }
+    });
   };
 
   const handleOpenCreateModal = () => {
     form.resetFields();
-    if (projects.length > 0) {
-      const initialProjId = selectedProjectId || projects[0].id;
-      form.setFieldValue('project_id', initialProjId);
-      fetchProjectInventory(initialProjId);
-    }
-    form.setFieldsValue({
-      items: [{ item_type_id: undefined, quantity: 1 }],
-    });
+    if (projects.length > 0) setSelectedProjectId(projects[0].id);
     setIsModalOpen(true);
-  };
-
-  const handleProjectSelectInForm = (projId: number) => {
-    fetchProjectInventory(projId);
   };
 
   const handleFinish = async (values: any) => {
@@ -94,16 +91,42 @@ export const MaterialIssuesPage: React.FC = () => {
   const filteredIssues = issues.filter((iss) => {
     const q = searchQuery.toLowerCase();
     const projName = iss.project?.name || '';
-    return (
+    const matchesSearch =
+      !q ||
       iss.issue_number.toLowerCase().includes(q) ||
       iss.issued_to.toLowerCase().includes(q) ||
-      projName.toLowerCase().includes(q)
-    );
+      projName.toLowerCase().includes(q);
+
+    if (!matchesSearch) return false;
+
+    if (filterProjectId && iss.project_id !== filterProjectId) {
+      return false;
+    }
+
+    if (dateRange && iss.issue_date) {
+      const issueDateStr = new Date(iss.issue_date).toISOString().slice(0, 10);
+      if (issueDateStr < dateRange[0] || issueDateStr > dateRange[1]) {
+        return false;
+      }
+    }
+
+    return true;
   });
 
   const availableStockItems = projectInventory.filter((inv) => inv.quantity > 0);
 
   const columns: ColumnsType<MaterialIssue> = [
+    {
+      title: 'S.No.',
+      key: 'sno',
+      width: 70,
+      align: 'center',
+      render: (_, __, index: number) => (
+        <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
+          {index + 1}
+        </span>
+      ),
+    },
     {
       title: 'Voucher # & Date',
       key: 'issue_number',
@@ -196,15 +219,73 @@ export const MaterialIssuesPage: React.FC = () => {
         </div>
 
         <Card className="shadow-2xl">
-          <div className="mb-6">
+          {/* Total Records Counter Header & Action Bar */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-3">
+              <Badge count={filteredIssues.length} overflowCount={999} color="#6366f1">
+                <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
+                  Total Records: {filteredIssues.length} Vouchers
+                </Tag>
+              </Badge>
+              {filteredIssues.length !== issues.length && (
+                <span className="text-xs text-slate-500 font-medium">
+                  (Filtered from {issues.length} total vouchers)
+                </span>
+              )}
+            </div>
+
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal} className="shadow-lg shadow-indigo-500/30">
+              + Issue Material Voucher
+            </Button>
+          </div>
+
+          {/* Full Enterprise Toolbar: Keyword Search + Project Site + Date Range */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <Input
-              placeholder="Search issue vouchers by Voucher #, Recipient, or Project Site..."
+              placeholder="Search by Voucher # or Recipient..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-md w-full"
               allowClear
+              className="w-full"
             />
+
+            <Select
+              placeholder="Filter by Project Site"
+              value={filterProjectId}
+              onChange={setFilterProjectId}
+              allowClear
+              className="w-full"
+            >
+              {projects.map((p) => (
+                <Select.Option key={p.id} value={p.id}>
+                  {p.name} ({p.code})
+                </Select.Option>
+              ))}
+            </Select>
+
+            <RangePicker
+              onChange={(dates) => {
+                if (dates && dates[0] && dates[1]) {
+                  setDateRange([dates[0].format('YYYY-MM-DD'), dates[1].format('YYYY-MM-DD')]);
+                } else {
+                  setDateRange(null);
+                }
+              }}
+              className="w-full"
+            />
+
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                setSearchQuery('');
+                setFilterProjectId(null);
+                setDateRange(null);
+              }}
+              className="w-full"
+            >
+              Reset Filters
+            </Button>
           </div>
 
           <Table
@@ -212,8 +293,8 @@ export const MaterialIssuesPage: React.FC = () => {
             dataSource={filteredIssues}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 800 }}
-            pagination={{ pageSize: 8 }}
+            scroll={{ x: 800, y: 360 }}
+            pagination={{ pageSize: 15, showSizeChanger: true }}
           />
         </Card>
       </main>

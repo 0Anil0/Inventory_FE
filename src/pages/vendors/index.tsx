@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, Modal, Form, Popconfirm, Space, message } from 'antd';
+import { Table, Card, Button, Input, Modal, Form, Popconfirm, Space, Tag, DatePicker, Badge, message } from 'antd';
+const { RangePicker } = DatePicker;
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -20,6 +21,7 @@ export const VendorsPage: React.FC = () => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [dateRange, setDateRange] = useState<[string, string] | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [vendorToEdit, setVendorToEdit] = useState<Vendor | null>(null);
@@ -49,15 +51,15 @@ export const VendorsPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (v: Vendor) => {
-    setVendorToEdit(v);
+  const handleOpenEdit = (vendor: Vendor) => {
+    setVendorToEdit(vendor);
     form.setFieldsValue({
-      name: v.name,
-      contact_person: v.contact_person || '',
-      phone: v.phone || '',
-      email: v.email || '',
-      address: v.address || '',
-      tax_id: v.tax_id || '',
+      name: vendor.name,
+      contact_person: vendor.contact_person,
+      phone: vendor.phone,
+      email: vendor.email,
+      tax_id: vendor.tax_id,
+      address: vendor.address,
     });
     setIsModalOpen(true);
   };
@@ -66,8 +68,8 @@ export const VendorsPage: React.FC = () => {
     try {
       const res = await vendorApi.delete(id);
       if (res.success) {
-        message.success('Vendor deleted successfully');
         setVendors(vendors.filter((v) => v.id !== id));
+        message.success('Supplier removed successfully');
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to delete vendor');
@@ -80,32 +82,57 @@ export const VendorsPage: React.FC = () => {
         const res = await vendorApi.update(vendorToEdit.id, values);
         if (res.success && res.vendor) {
           setVendors(vendors.map((v) => (v.id === vendorToEdit.id ? res.vendor : v)));
-          message.success('Vendor updated successfully');
+          message.success('Supplier details updated successfully');
         }
       } else {
         const res = await vendorApi.create(values);
         if (res.success && res.vendor) {
-          setVendors([...vendors, res.vendor]);
-          message.success('Vendor created successfully');
+          setVendors([res.vendor, ...vendors]);
+          message.success('New supplier added successfully');
         }
       }
       setIsModalOpen(false);
     } catch (err: any) {
-      message.error(err.message || 'Failed to save vendor details');
+      message.error(err.message || 'Failed to save supplier details');
     }
   };
 
   const filteredVendors = vendors.filter((v) => {
     const q = searchQuery.toLowerCase();
-    return (
+    const cp = v.contact_person || '';
+    const phone = v.phone || '';
+    const tax = v.tax_id || '';
+    const matchesSearch =
+      !q ||
       v.name.toLowerCase().includes(q) ||
-      (v.contact_person && v.contact_person.toLowerCase().includes(q)) ||
-      (v.phone && v.phone.includes(q)) ||
-      (v.tax_id && v.tax_id.toLowerCase().includes(q))
-    );
+      cp.toLowerCase().includes(q) ||
+      phone.toLowerCase().includes(q) ||
+      tax.toLowerCase().includes(q);
+
+    if (!matchesSearch) return false;
+
+    if (dateRange && (v as any).createdAt) {
+      const createdStr = new Date((v as any).createdAt).toISOString().slice(0, 10);
+      if (createdStr < dateRange[0] || createdStr > dateRange[1]) {
+        return false;
+      }
+    }
+
+    return true;
   });
 
   const columns: ColumnsType<Vendor> = [
+    {
+      title: 'S.No.',
+      key: 'sno',
+      width: 70,
+      align: 'center',
+      render: (_, __, index: number) => (
+        <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
+          {index + 1}
+        </span>
+      ),
+    },
     {
       title: 'Supplier / Vendor Name',
       dataIndex: 'name',
@@ -208,15 +235,58 @@ export const VendorsPage: React.FC = () => {
         </div>
 
         <Card className="shadow-2xl">
-          <div className="mb-6">
+          {/* Total Records Counter Header & Action Bar */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-3">
+              <Badge count={filteredVendors.length} overflowCount={999} color="#6366f1">
+                <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
+                  Total Records: {filteredVendors.length} Suppliers
+                </Tag>
+              </Badge>
+              {filteredVendors.length !== vendors.length && (
+                <span className="text-xs text-slate-500 font-medium">
+                  (Filtered from {vendors.length} total suppliers)
+                </span>
+              )}
+            </div>
+
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30">
+              + Add New Supplier
+            </Button>
+          </div>
+
+          {/* Full Enterprise Toolbar: Keyword Search + Date Range */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
             <Input
-              placeholder="Search vendors by name, contact person, phone, or GST/Tax ID..."
+              placeholder="Search by name, contact, phone, or Tax ID..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-md w-full"
               allowClear
+              className="w-full"
             />
+
+            <RangePicker
+              onChange={(dates) => {
+                if (dates && dates[0] && dates[1]) {
+                  setDateRange([dates[0].format('YYYY-MM-DD'), dates[1].format('YYYY-MM-DD')]);
+                } else {
+                  setDateRange(null);
+                }
+              }}
+              className="w-full"
+            />
+
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                setSearchQuery('');
+                setDateRange(null);
+              }}
+              className="w-full"
+            >
+              Reset Filters
+            </Button>
           </div>
 
           <Table
@@ -224,8 +294,8 @@ export const VendorsPage: React.FC = () => {
             dataSource={filteredVendors}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 750 }}
-            pagination={{ pageSize: 8 }}
+            scroll={{ x: 750, y: 360 }}
+            pagination={{ pageSize: 15, showSizeChanger: true }}
           />
         </Card>
       </main>

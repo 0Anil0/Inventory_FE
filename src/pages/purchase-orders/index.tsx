@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, Modal, Form, Select, InputNumber, Tag, Space, message, Popover } from 'antd';
+import { Table, Card, Button, Input, Modal, Form, Select, InputNumber, Tag, Space, DatePicker, Badge, message, Popover } from 'antd';
+const { RangePicker } = DatePicker;
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -23,6 +24,9 @@ export const PurchaseOrdersPage: React.FC = () => {
   const [itemTypes, setItemTypes] = useState<ItemType[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedVendorId, setSelectedVendorId] = useState<number | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<[string, string] | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [form] = Form.useForm();
@@ -92,11 +96,30 @@ export const PurchaseOrdersPage: React.FC = () => {
     const q = searchQuery.toLowerCase();
     const vendorName = po.vendor?.name || '';
     const projName = po.project?.name || '';
-    return (
+    const matchesSearch =
+      !q ||
       po.po_number.toLowerCase().includes(q) ||
       vendorName.toLowerCase().includes(q) ||
-      projName.toLowerCase().includes(q)
-    );
+      projName.toLowerCase().includes(q);
+
+    if (!matchesSearch) return false;
+
+    if (selectedVendorId && po.vendor_id !== selectedVendorId) {
+      return false;
+    }
+
+    if (selectedStatus && po.status !== selectedStatus) {
+      return false;
+    }
+
+    if (dateRange && po.order_date) {
+      const orderDateStr = new Date(po.order_date).toISOString().slice(0, 10);
+      if (orderDateStr < dateRange[0] || orderDateStr > dateRange[1]) {
+        return false;
+      }
+    }
+
+    return true;
   });
 
   const getStatusTag = (status: PurchaseOrder['status']) => {
@@ -121,6 +144,17 @@ export const PurchaseOrdersPage: React.FC = () => {
   };
 
   const columns: ColumnsType<PurchaseOrder> = [
+    {
+      title: 'S.No.',
+      key: 'sno',
+      width: 70,
+      align: 'center',
+      render: (_, __, index: number) => (
+        <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
+          {index + 1}
+        </span>
+      ),
+    },
     {
       title: 'PO Number & Date',
       key: 'po_number',
@@ -239,15 +273,85 @@ export const PurchaseOrdersPage: React.FC = () => {
         </div>
 
         <Card className="shadow-2xl">
-          <div className="mb-6">
+          {/* Total Records Counter Header & Action Bar */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-3">
+              <Badge count={filteredOrders.length} overflowCount={999} color="#6366f1">
+                <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
+                  Total Records: {filteredOrders.length} Purchase Orders
+                </Tag>
+              </Badge>
+              {filteredOrders.length !== orders.length && (
+                <span className="text-xs text-slate-500 font-medium">
+                  (Filtered from {orders.length} total orders)
+                </span>
+              )}
+            </div>
+
+            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreatePO} className="shadow-lg shadow-indigo-500/30">
+              + Create Purchase Order
+            </Button>
+          </div>
+
+          {/* Full Enterprise Toolbar: Keyword Search + Supplier + Status + Date Range */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
             <Input
-              placeholder="Search purchase orders by PO Number, Supplier, or Project Site..."
+              placeholder="Search by PO Number or notes..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-md w-full"
               allowClear
+              className="w-full"
             />
+
+            <Select
+              placeholder="Filter by Supplier"
+              value={selectedVendorId}
+              onChange={setSelectedVendorId}
+              allowClear
+              className="w-full"
+            >
+              {vendors.map((v) => (
+                <Select.Option key={v.id} value={v.id}>
+                  {v.name}
+                </Select.Option>
+              ))}
+            </Select>
+
+            <Select
+              placeholder="Filter by Status"
+              value={selectedStatus}
+              onChange={setSelectedStatus}
+              allowClear
+              className="w-full"
+            >
+              <Select.Option value="RECEIVED">🟢 Stock Received</Select.Option>
+              <Select.Option value="ORDERED">🔵 Ordered (Pending)</Select.Option>
+            </Select>
+
+            <RangePicker
+              onChange={(dates) => {
+                if (dates && dates[0] && dates[1]) {
+                  setDateRange([dates[0].format('YYYY-MM-DD'), dates[1].format('YYYY-MM-DD')]);
+                } else {
+                  setDateRange(null);
+                }
+              }}
+              className="w-full"
+            />
+
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedVendorId(null);
+                setSelectedStatus(null);
+                setDateRange(null);
+              }}
+              className="w-full"
+            >
+              Reset Filters
+            </Button>
           </div>
 
           <Table
@@ -255,8 +359,8 @@ export const PurchaseOrdersPage: React.FC = () => {
             dataSource={filteredOrders}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 850 }}
-            pagination={{ pageSize: 8 }}
+            scroll={{ x: 850, y: 360 }}
+            pagination={{ pageSize: 15, showSizeChanger: true }}
           />
         </Card>
       </main>

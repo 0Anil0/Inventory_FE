@@ -1,0 +1,293 @@
+===============================================================================
+     INVENTORY MANAGEMENT SYSTEM - STEP-BY-STEP FRONTEND CLIENT GUIDE
+===============================================================================
+Document Purpose : Comprehensive Client Guide with Real-World Examples for Every Route
+Target Audience  : Client / End Users / Quality Assurance / System Administrators
+Project Path     : C:\Users\pc\Desktop\Live Project\ravi_inventory\fe
+Tech Stack       : React + TypeScript + Ant Design + Tailwind CSS
+===============================================================================
+
+-------------------------------------------------------------------------------
+TABLE OF CONTENTS
+-------------------------------------------------------------------------------
+1. Overview & System Access
+2. Authentication Route
+   2.1. Login Page                         -> /login
+3. Main Operational Modules (With Input Examples)
+   3.1. Dashboard Overview                 -> /dashboard
+   3.2. Inventory Tracker                  -> /inventory
+   3.3. Purchase Orders                    -> /purchase-orders
+   3.4. Material Issues                    -> /material-issues
+   3.5. Reports & Analytics                -> /reports
+4. Master Data & System Management Modules (With Input Examples)
+   4.1. Item Types Configuration           -> /item-types
+   4.2. Vendor Management                  -> /vendors
+   4.3. Units of Measurement               -> /units
+   4.4. Project Management                 -> /projects
+   4.5. User Access & Roles                -> /users
+5. Interface Controls (Theme & Navigation)
+6. Complete Step-by-Step Client Testing & Data Walkthrough
+===============================================================================
+
+-------------------------------------------------------------------------------
+1. OVERVIEW & SYSTEM ACCESS
+-------------------------------------------------------------------------------
+- Default System Route: `/`
+  Description: When accessing the root web URL, the application checks your session.
+  - If authenticated -> Redirects to Dashboard (`/dashboard`).
+  - If unauthenticated -> Redirects to Login (`/login`).
+
+* DATABASE CLEANUP NOTE:
+  To clear all inventory data tables while preserving User Accounts intact, navigate 
+  to backend folder `C:\Users\pc\Desktop\Live Project\ravi_inventory\be` and run:
+  npm run reset:inventory
+
+
+-------------------------------------------------------------------------------
+2. AUTHENTICATION ROUTE
+-------------------------------------------------------------------------------
+
+2.1. LOGIN PAGE
+     Route URL: /login
+     Purpose  : Secure authentication portal.
+     
+     Step-by-Step Instructions:
+       Step 1: Open browser and navigate to `/login`.
+       Step 2: Enter registered credentials.
+       Step 3: Click "Sign In" button.
+       Step 4: Redirected to `/dashboard`.
+       
+     EXAMPLE DATA TO ENTER:
+       +--------------------+------------------------------------+
+       | Field Name         | Example Input                      |
+       +--------------------+------------------------------------+
+       | Email / Username   | admin@inventory.com                |
+       | Password           | AdminPass@2026                     |
+       +--------------------+------------------------------------+
+
+
+-------------------------------------------------------------------------------
+3. MAIN OPERATIONAL MODULES
+-------------------------------------------------------------------------------
+
+3.1. DASHBOARD OVERVIEW
+     Route URL: /dashboard
+     Purpose  : Executive summary of stock counts, low stock alerts, active POs, and projects.
+     
+     Step-by-Step Instructions:
+       Step 1: Navigate to `/dashboard`.
+       Step 2: Review real-time status cards.
+       
+     EXAMPLE METRICS DISPLAYED:
+       - Total Items In Stock : 142 items
+       - Low Stock Alerts     : 4 items (Highlighted in Red)
+       - Active POs           : 8 Orders Pending Delivery
+       - Active Projects      : 5 Ongoing Sites
+
+3.2. INVENTORY TRACKER
+     Route URL: /inventory
+     Purpose  : Primary stock register for adding, editing, and checking item quantities.
+     
+     Step-by-Step Instructions:
+       Step 1: Click "Inventory" in sidebar or visit `/inventory`.
+       Step 2: Click "Add Item" button to register new stock.
+       Step 3: Fill in item details and save.
+       
+     EXAMPLE DATA TO ENTER WHEN CREATING AN ITEM:
+       +---------------------------+----------------------------------------------+
+       | Field Name                | Example Input                                |
+       +---------------------------+----------------------------------------------+
+       | Item Code                 | ITM-ELEC-001                                 |
+       | Item Name                 | Copper Armored Cable 4-Core 16sqmm           |
+       | Item Type (Category)      | Electrical & Wiring                          |
+       | Unit of Measurement       | Meters                                       |
+       | Opening Stock Quantity    | 500                                          |
+       | Minimum Alert Threshold   | 50  (Triggers alert when stock drops <= 50)  |
+       | Unit Rate / Price         | $12.50 per Meter                             |
+       | Storage Location          | Warehouse Rack A-3                           |
+       +---------------------------+----------------------------------------------+
+
+3.3. PURCHASE ORDERS (PROCUREMENT)
+     Route URL: /purchase-orders
+     Purpose  : Create and manage purchase orders to vendors for restocking materials.
+     
+     Step-by-Step Instructions:
+       Step 1: Go to `/purchase-orders` -> Click "Create PO".
+       Step 2: Select Vendor and Target Project.
+       Step 3: Add items, quantities, and agreed prices.
+       Step 4: Save PO and mark as "Received" when shipment arrives.
+       
+     EXAMPLE DATA TO ENTER FOR A PURCHASE ORDER:
+       +---------------------------+----------------------------------------------+
+       | Field Name                | Example Input                                |
+       +---------------------------+----------------------------------------------+
+       | PO Number                 | PO-2026-0089                                 |
+       | Vendor Name               | Asian Electricals Pvt Ltd                    |
+       | Destination Project       | Metro Line Extension - Station 5             |
+       | Order Date                | 2026-09-01                                   |
+       | Expected Delivery Date    | 2026-09-10                                   |
+       | Item Line 1               | Copper Armored Cable (Qty: 200 Mtr @ $12.50) |
+       | Item Line 2               | PVC Conduit Pipes 25mm (Qty: 100 Pcs @ $4.00)|
+       | Total PO Value            | $2,900.00                                    |
+       | PO Status Workflow        | Draft -> Pending Approval -> Received        |
+       +---------------------------+----------------------------------------------+
+       *Note: Marking status as "Received" automatically increases inventory stock!
+
+3.4. MATERIAL ISSUES (STOCK DISPATCH)
+     Route URL: /material-issues
+     Purpose  : Record dispatch of items from warehouse to specific project sites or staff.
+     
+     Step-by-Step Instructions:
+       Step 1: Go to `/material-issues` -> Click "Issue Material".
+       Step 2: Select destination project, recipient engineer, and items to dispatch.
+       Step 3: Submit voucher to update stock levels.
+       
+     EXAMPLE DATA TO ENTER FOR MATERIAL ISSUANCE:
+       +---------------------------+----------------------------------------------+
+       | Field Name                | Example Input                                |
+       +---------------------------+----------------------------------------------+
+       | Issue Voucher No          | MI-2026-0312                                 |
+       | Issue Date                | 2026-09-01                                   |
+       | Destination Project       | Commercial Tower Block B                     |
+       | Issued To (Person Name)   | Rajesh Sharma (Site Engineer)                |
+       | Item Issued               | Copper Armored Cable                         |
+       | Quantity Issued           | 150 Meters                                   |
+       | Remarks / Purpose         | Main Floor Power Distribution Wiring         |
+       +---------------------------+----------------------------------------------+
+       *Result: System checks stock availability, issues 150 Mtr, and reduces 
+        stock balance from 500 Mtr -> 350 Mtr automatically!
+
+3.5. REPORTS & ANALYTICS
+     Route URL: /reports
+     Purpose  : Generate stock summaries, movement logs, and material consumption reports.
+     
+     Step-by-Step Instructions:
+       Step 1: Go to `/reports`.
+       Step 2: Choose report type, filter parameters, and click "Generate Report".
+       
+     EXAMPLE REPORT FILTER SETUP:
+       +---------------------------+----------------------------------------------+
+       | Field Name                | Example Input                                |
+       +---------------------------+----------------------------------------------+
+       | Report Type               | Material Issue Consumption Report            |
+       | Date Range                | 2026-08-01 to 2026-08-31                     |
+       | Filter by Project         | Commercial Tower Block B                     |
+       | Output Format             | Export to Excel (.xlsx) / PDF                |
+       +---------------------------+----------------------------------------------+
+
+
+-------------------------------------------------------------------------------
+4. MASTER DATA & SYSTEM MANAGEMENT MODULES
+-------------------------------------------------------------------------------
+
+4.1. ITEM TYPES CONFIGURATION
+     Route URL: /item-types
+     Purpose  : Maintain product categories.
+     
+     EXAMPLE DATA TO ENTER:
+       +---------------------------+----------------------------------------------+
+       | Field Name                | Example Input                                |
+       +---------------------------+----------------------------------------------+
+       | Item Type Name            | Electrical & Wiring                          |
+       | Code                      | CAT-ELEC                                     |
+       | Description               | Cables, switches, breakers, and conduits     |
+       +---------------------------+----------------------------------------------+
+
+4.2. VENDOR MANAGEMENT
+     Route URL: /vendors
+     Purpose  : Maintain supplier directory.
+     
+     EXAMPLE DATA TO ENTER:
+       +---------------------------+----------------------------------------------+
+       | Field Name                | Example Input                                |
+       +---------------------------+----------------------------------------------+
+       | Vendor Name               | Asian Electricals Pvt Ltd                    |
+       | Contact Person            | Mr. Amit Verma                               |
+       | Phone Number              | +91 98765 43210                              |
+       | Email Address             | sales@asianelectricals.com                   |
+       | GSTIN / Tax ID            | 27AAACA1234F1Z5                              |
+       | Address                   | Plot 45, Industrial Zone Phase 2, Mumbai     |
+       +---------------------------+----------------------------------------------+
+
+4.3. UNITS OF MEASUREMENT
+     Route URL: /units
+     Purpose  : Units used across items.
+     
+     EXAMPLE DATA TO ENTER:
+       +---------------------------+----------------------------------------------+
+       | Unit Symbol               | Full Unit Name                               |
+       +---------------------------+----------------------------------------------+
+       | Mtr                       | Meters                                       |
+       | Kg                        | Kilograms                                    |
+       | Pcs                       | Pieces                                       |
+       | Box                       | Box (100 Pcs)                                |
+       +---------------------------+----------------------------------------------+
+
+4.4. PROJECT MANAGEMENT
+     Route URL: /projects
+     Purpose  : Register project sites.
+     
+     EXAMPLE DATA TO ENTER:
+       +---------------------------+----------------------------------------------+
+       | Field Name                | Example Input                                |
+       +---------------------------+----------------------------------------------+
+       | Project Code              | PRJ-2026-MTR                                 |
+       | Project Name              | Metro Line Extension - Station 5             |
+       | Client Name               | Urban Transport Authority                    |
+       | Site Location             | Sector 62, Noida                             |
+       | Project Manager           | Suresh Kumar                                 |
+       | Status                    | Active                                       |
+       +---------------------------+----------------------------------------------+
+
+4.5. USER MANAGEMENT
+     Route URL: /users
+     Purpose  : User account access control.
+     
+     EXAMPLE DATA TO ENTER:
+       +---------------------------+----------------------------------------------+
+       | Field Name                | Example Input                                |
+       +---------------------------+----------------------------------------------+
+       | Full Name                 | Vikas Mehta                                  |
+       | Email Address             | vikas.m@company.com                          |
+       | Role                      | Store Manager (Read / Write Access)          |
+       | Status                    | Active                                       |
+       +---------------------------+----------------------------------------------+
+
+
+-------------------------------------------------------------------------------
+5. INTERFACE CONTROLS (THEME & NAVIGATION)
+-------------------------------------------------------------------------------
+- Dark / Light Theme: Toggle icon in top bar to switch between Dark & Light modes.
+- Sidebar Navigation: Quick menu links for instant navigation across all modules.
+- User Profile: Top right menu to view current profile or click "Logout".
+
+
+-------------------------------------------------------------------------------
+6. COMPLETE STEP-BY-STEP CLIENT TESTING & DATA WALKTHROUGH
+-------------------------------------------------------------------------------
+To test the complete workflow using the sample data provided:
+
+  Step 1 [Log In]:
+    Navigate to `/login`, enter `admin@inventory.com`, pass `AdminPass@2026`, click "Sign In".
+
+  Step 2 [Create Master Data]:
+    1. Go to `/units` -> Add Unit: `Mtr` (Meters).
+    2. Go to `/item-types` -> Add Category: `Electrical & Wiring`.
+    3. Go to `/vendors` -> Add Vendor: `Asian Electricals Pvt Ltd`.
+    4. Go to `/projects` -> Add Project: `Metro Line Extension - Station 5`.
+
+  Step 3 [Add Inventory & Procurement]:
+    1. Go to `/inventory` -> Add Item: `Copper Armored Cable` (Opening Stock: `500 Mtr`).
+    2. Go to `/purchase-orders` -> Create PO for `Asian Electricals Pvt Ltd` for 200 Mtr cable.
+    3. Change PO Status to `Received` -> Verify stock increases to `700 Mtr` on `/inventory`.
+
+  Step 4 [Issue Material]:
+    1. Go to `/material-issues` -> Issue `150 Mtr` of cable to Engineer `Rajesh Sharma` for `Metro Line Extension`.
+    2. Return to `/inventory` -> Confirm stock balance automatically reduced to `550 Mtr`.
+
+  Step 5 [Analytics & Reports]:
+    1. Go to `/reports` -> Select `Material Issue Consumption Report` -> Export to Excel.
+
+===============================================================================
+                             END OF DOCUMENT
+===============================================================================
