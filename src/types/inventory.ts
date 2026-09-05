@@ -11,11 +11,18 @@ export interface ItemType {
   id: number;
   name: string;
   code: string;
+  cat_no?: string | null;
+  make?: string | null;
+  rating?: string | null;
+  switchgear_family?: string | null;
+  full_description?: string | null;
   unit: string;
   unit_id?: number | null;
   unit_details?: Unit;
   total_quantity?: number;
   description?: string | null;
+  unit_rate?: number;
+  discount?: number;
   createdAt?: string;
 }
 
@@ -96,9 +103,13 @@ export interface PurchaseOrderItem {
   id: number;
   po_id: number;
   item_type_id: number;
+  cat_no?: string | null;
+  make?: string | null;
+  rating?: string | null;
   ordered_qty: number;
   received_qty: number;
   unit_price: number;
+  discount_percent?: number;
   total_price: number;
   item_type?: ItemType;
 }

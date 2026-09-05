@@ -28,7 +28,7 @@ const RootRedirect: React.FC = () => {
     );
   }
 
-  return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
+  return user ? <Navigate to="/users" replace /> : <Navigate to="/login" replace />;
 };
 
 const AppContent: React.FC = () => {
@@ -53,18 +53,9 @@ const AppContent: React.FC = () => {
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<LoginPage />} />
             <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/inventory" element={<InventoryTrackerPage />} />
-              <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
-              <Route path="/material-issues" element={<MaterialIssuesPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/item-types" element={<ItemTypesPage />} />
-              <Route path="/vendors" element={<VendorsPage />} />
-              <Route path="/units" element={<UnitsPage />} />
-              <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/users" element={<UserManagementPage />} />
             </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/users" replace />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

@@ -52,96 +52,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
   };
 
-  // Clean, concise navigation menu items without truncation or bloated numbering
+  // Menu hierarchy containing ONLY User Management as requested
   const navMenuItems: MenuProps['items'] = [
-    {
-      key: '/dashboard',
-      icon: <DashboardOutlined style={{ fontSize: '18px' }} />,
-      label: 'Dashboard',
-      onClick: () => {
-        navigate('/dashboard');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
-      key: 'sub-master',
-      icon: <AppstoreOutlined style={{ fontSize: '18px' }} />,
-      label: 'Master Data',
-      children: [
-        {
-          key: '/units',
-          icon: <TagsOutlined />,
-          label: 'Units Master',
-          onClick: () => {
-            navigate('/units');
-            setMobileDrawerOpen(false);
-          },
-        },
-        {
-          key: '/item-types',
-          icon: <CodeSandboxOutlined />,
-          label: 'Catalog Items',
-          onClick: () => {
-            navigate('/item-types');
-            setMobileDrawerOpen(false);
-          },
-        },
-        {
-          key: '/projects',
-          icon: <AppstoreOutlined />,
-          label: 'Projects',
-          onClick: () => {
-            navigate('/projects');
-            setMobileDrawerOpen(false);
-          },
-        },
-        {
-          key: '/vendors',
-          icon: <ShopOutlined />,
-          label: 'Vendors',
-          onClick: () => {
-            navigate('/vendors');
-            setMobileDrawerOpen(false);
-          },
-        },
-      ],
-    },
-    {
-      key: '/purchase-orders',
-      icon: <ShoppingOutlined style={{ fontSize: '18px' }} />,
-      label: 'Purchase Orders',
-      onClick: () => {
-        navigate('/purchase-orders');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
-      key: '/inventory',
-      icon: <DatabaseOutlined style={{ fontSize: '18px' }} />,
-      label: 'Inventory Stock',
-      onClick: () => {
-        navigate('/inventory');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
-      key: '/material-issues',
-      icon: <FileDoneOutlined style={{ fontSize: '18px' }} />,
-      label: 'Material Issues',
-      onClick: () => {
-        navigate('/material-issues');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
-      key: '/reports',
-      icon: <FileSearchOutlined style={{ fontSize: '18px' }} />,
-      label: 'Reports & Analytics',
-      onClick: () => {
-        navigate('/reports');
-        setMobileDrawerOpen(false);
-      },
-    },
     {
       key: '/users',
       icon: <TeamOutlined style={{ fontSize: '18px' }} />,
@@ -177,16 +89,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   // Helper to determine active root menu section title
   const getPageTitle = (path: string) => {
     switch (path) {
-      case '/dashboard': return 'Dashboard Overview';
-      case '/inventory': return 'Project Stock Quantity Tracker';
-      case '/purchase-orders': return 'Purchase Orders & Stock Inward';
-      case '/material-issues': return 'Material Issue Vouchers';
-      case '/vendors': return 'Suppliers & Vendors Directory';
-      case '/item-types': return 'Catalog Items';
-      case '/units': return 'Measurement Units';
-      case '/projects': return 'Project Sites';
       case '/users': return 'User Accounts Management';
-      default: return 'Inventory Management Portal';
+      default: return 'User Management Portal';
     }
   };
 
