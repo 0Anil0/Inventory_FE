@@ -272,7 +272,7 @@ export const InventoryTrackerPage: React.FC = () => {
     {
       title: 'S.No.',
       key: 'sno',
-      width: 70,
+      width: 90,
       align: 'center',
       render: (_, __, index: number) => (
         <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
@@ -487,7 +487,7 @@ export const InventoryTrackerPage: React.FC = () => {
                 disabled={!selectedProjectId}
                 className="shadow-lg shadow-indigo-500/30"
               >
-                + Add Items to Project
+                Add Items to Project
               </Button>
             </Space>
           </div>

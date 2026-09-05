@@ -52,26 +52,26 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
   };
 
-  // Nav menu items aligned in step-by-step workflow order
+  // Clean, concise navigation menu items without truncation or bloated numbering
   const navMenuItems: MenuProps['items'] = [
     {
       key: '/dashboard',
       icon: <DashboardOutlined style={{ fontSize: '18px' }} />,
-      label: 'Dashboard Overview',
+      label: 'Dashboard',
       onClick: () => {
         navigate('/dashboard');
         setMobileDrawerOpen(false);
       },
     },
     {
-      key: 'sub-setup',
+      key: 'sub-master',
       icon: <AppstoreOutlined style={{ fontSize: '18px' }} />,
-      label: '1. Setup Master Data',
+      label: 'Master Data',
       children: [
         {
           key: '/units',
           icon: <TagsOutlined />,
-          label: 'Units of Measure',
+          label: 'Units Master',
           onClick: () => {
             navigate('/units');
             setMobileDrawerOpen(false);
@@ -87,81 +87,67 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           },
         },
         {
-          key: '/vendors',
-          icon: <ShopOutlined />,
-          label: 'Suppliers Directory',
-          onClick: () => {
-            navigate('/vendors');
-            setMobileDrawerOpen(false);
-          },
-        },
-        {
           key: '/projects',
           icon: <AppstoreOutlined />,
-          label: 'Project Sites',
+          label: 'Projects',
           onClick: () => {
             navigate('/projects');
             setMobileDrawerOpen(false);
           },
         },
         {
-          key: '/users',
-          icon: <TeamOutlined />,
-          label: 'User Accounts',
+          key: '/vendors',
+          icon: <ShopOutlined />,
+          label: 'Vendors',
           onClick: () => {
-            navigate('/users');
+            navigate('/vendors');
             setMobileDrawerOpen(false);
           },
         },
       ],
     },
     {
-      key: 'sub-procure',
+      key: '/purchase-orders',
       icon: <ShoppingOutlined style={{ fontSize: '18px' }} />,
-      label: '2. Purchase Orders (Stock IN)',
-      children: [
-        {
-          key: '/purchase-orders',
-          icon: <ShoppingOutlined />,
-          label: 'Purchase Orders & Receiving',
-          onClick: () => {
-            navigate('/purchase-orders');
-            setMobileDrawerOpen(false);
-          },
-        },
-      ],
+      label: 'Purchase Orders',
+      onClick: () => {
+        navigate('/purchase-orders');
+        setMobileDrawerOpen(false);
+      },
     },
     {
       key: '/inventory',
       icon: <DatabaseOutlined style={{ fontSize: '18px' }} />,
-      label: '3. Stock Tracker & Transfers',
+      label: 'Inventory Stock',
       onClick: () => {
         navigate('/inventory');
         setMobileDrawerOpen(false);
       },
     },
     {
-      key: 'sub-issue',
+      key: '/material-issues',
       icon: <FileDoneOutlined style={{ fontSize: '18px' }} />,
-      label: '4. Material Issues (Stock OUT)',
-      children: [
-        {
-          key: '/material-issues',
-          icon: <FileDoneOutlined />,
-          label: 'Material Issue Vouchers',
-          onClick: () => {
-            navigate('/material-issues');
-            setMobileDrawerOpen(false);
-          },
-        },
-      ],
+      label: 'Material Issues',
+      onClick: () => {
+        navigate('/material-issues');
+        setMobileDrawerOpen(false);
+      },
     },
     {
       key: '/reports',
       icon: <FileSearchOutlined style={{ fontSize: '18px' }} />,
-      label: '5. Reports & Analytics Hub',
+      label: 'Reports & Analytics',
       onClick: () => {
         navigate('/reports');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
+      key: '/users',
+      icon: <TeamOutlined style={{ fontSize: '18px' }} />,
+      label: 'User Management',
+      onClick: () => {
+        navigate('/users');
         setMobileDrawerOpen(false);
       },
     },
@@ -200,7 +186,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/units': return 'Measurement Units';
       case '/projects': return 'Project Sites';
       case '/users': return 'User Accounts Management';
-      default: return 'Ravi Inventory Portal';
+      default: return 'Inventory Management Portal';
     }
   };
 
@@ -246,11 +232,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               </div>
               {!collapsed && (
                 <div className="flex flex-col leading-tight overflow-hidden">
-                  <span className="font-bold text-base tracking-wider app-logo-text font-['Outfit'] whitespace-nowrap">
-                    RAVI INVENTORY
+                  <span className="font-bold text-sm tracking-wider app-logo-text font-['Outfit'] whitespace-nowrap">
+                    INVENTORY MANAGEMENT
                   </span>
                   <span className="text-[10px] text-indigo-400 font-semibold tracking-widest uppercase">
-                    Control System
+                    SYSTEM PORTAL
                   </span>
                 </div>
               )}
@@ -263,7 +249,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               mode="inline"
               theme={isDark ? 'dark' : 'light'}
               selectedKeys={[location.pathname]}
-              defaultOpenKeys={['sub-setup', 'sub-procure', 'sub-issue']}
+              defaultOpenKeys={['sub-master']}
               items={navMenuItems}
               style={{
                 background: 'transparent',
@@ -384,7 +370,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             mode="inline"
             theme={isDark ? 'dark' : 'light'}
             selectedKeys={[location.pathname]}
-            defaultOpenKeys={['sub-supply', 'sub-catalog']}
+            defaultOpenKeys={['sub-master']}
             items={navMenuItems}
             style={{ background: 'transparent', borderRight: 0 }}
           />

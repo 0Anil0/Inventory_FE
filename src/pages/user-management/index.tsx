@@ -215,7 +215,7 @@ export const UserManagementPage: React.FC = () => {
     {
       title: 'S.No.',
       key: 'sno',
-      width: 70,
+      width: 90,
       align: 'center',
       render: (_, __, index: number) => (
         <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
@@ -484,7 +484,7 @@ export const UserManagementPage: React.FC = () => {
                         Configure system access roles (e.g., admin, manager, engineer, auditor) to assign permissions.
                       </p>
                       <Button type="primary" ghost icon={<PlusOutlined />} onClick={handleOpenAddRole}>
-                        + Add Role
+                        Add Role
                       </Button>
                     </div>
 

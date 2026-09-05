@@ -569,7 +569,7 @@ export const ReportsPage: React.FC = () => {
 
           {/* Print Header */}
           <div className="hidden print:block mb-4 border-b pb-2">
-            <div className="text-xl font-bold font-['Outfit']">RAVI INVENTORY CONTROL PORTAL</div>
+            <div className="text-xl font-bold font-['Outfit']">INVENTORY MANAGEMENT PORTAL</div>
             <div className="text-xs font-bold uppercase text-indigo-600 mt-0.5">Official {reportType.replace('-', ' ')} Report</div>
             <div className="text-[10px] text-gray-500 mt-0.5">Generated on: {new Date().toLocaleString()}</div>
           </div>

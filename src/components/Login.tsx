@@ -60,7 +60,7 @@ export const Login: React.FC = () => {
         <div className="card-header">
           <div className="brand-badge">
             <ShieldCheck className="badge-icon" size={24} />
-            <span>RAVI INVENTORY</span>
+            <span>INVENTORY MANAGEMENT SYSTEM</span>
           </div>
           <h1>{isSignUpMode ? 'Create Account' : 'Welcome Back'}</h1>
           <p className="subtitle">

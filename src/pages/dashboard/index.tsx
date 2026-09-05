@@ -216,7 +216,7 @@ export const DashboardPage: React.FC = () => {
                   Welcome back, {user?.username}!
                 </h1>
                 <p className="text-xs app-text-muted mb-0">
-                  Ravi Inventory Control Portal • Active role:{' '}
+                  Inventory Management Portal • Active role:{' '}
                   <Tag color="purple" className="font-bold border-none ml-1">
                     {roleName}
                   </Tag>

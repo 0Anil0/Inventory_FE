@@ -78,7 +78,7 @@ export const LoginPage: React.FC = () => {
           <div className="text-center mb-6">
             <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 py-1 px-4 rounded-full text-xs font-bold tracking-widest mb-3">
               <SafetyCertificateFilled />
-              RAVI INVENTORY
+              INVENTORY MANAGEMENT SYSTEM
             </div>
             <h1 className="text-2xl font-bold app-text-main font-['Outfit'] mb-1">
               {isSignUpMode ? 'Create Account' : 'Welcome Back'}

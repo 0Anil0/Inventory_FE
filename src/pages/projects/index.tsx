@@ -117,7 +117,7 @@ export const ProjectsPage: React.FC = () => {
     {
       title: 'S.No.',
       key: 'sno',
-      width: 70,
+      width: 90,
       align: 'center',
       render: (_, __, index: number) => (
         <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
@@ -209,14 +209,14 @@ export const ProjectsPage: React.FC = () => {
             <Button icon={<ReloadOutlined />} onClick={fetchProjects} loading={loading}>
               Refresh
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} size="middle" onClick={handleOpenAdd}>
+            <Button type="primary" icon={<PlusOutlined />} size="middle" onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30">
               Add Project
             </Button>
           </Space>
         </div>
 
         <Card className="shadow-2xl">
-          {/* Total Records Counter Header & Action Bar */}
+          {/* Total Records Counter Header */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-white/10">
             <div className="flex items-center gap-3">
               <Badge count={filteredProjects.length} overflowCount={999} color="#6366f1">
@@ -230,10 +230,6 @@ export const ProjectsPage: React.FC = () => {
                 </span>
               )}
             </div>
-
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30">
-              + Add Project Site
-            </Button>
           </div>
 
           {/* Full Enterprise Toolbar: Keyword Search + Date Range */}

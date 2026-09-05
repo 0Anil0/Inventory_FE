@@ -11,7 +11,7 @@ export const Dashboard: React.FC = () => {
       <header className="dashboard-header">
         <div className="brand-logo">
           <ShieldCheck size={28} className="brand-icon" />
-          <h2>RAVI INVENTORY</h2>
+          <h2>INVENTORY MANAGEMENT</h2>
         </div>
         <div className="user-profile">
           <div className="avatar">
@@ -35,7 +35,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="welcome-text">
             <h1>Welcome, {user?.username}!</h1>
-            <p>You have successfully logged in to the Ravi Inventory System.</p>
+            <p>You have successfully logged in to the Inventory Management System.</p>
           </div>
         </div>
 
