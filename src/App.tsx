@@ -5,16 +5,11 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { LoginPage } from './pages/login';
-import { DashboardPage } from './pages/dashboard';
 import { UserManagementPage } from './pages/user-management';
-import { InventoryTrackerPage } from './pages/inventory';
-import { ItemTypesPage } from './pages/item-types';
 import { UnitsPage } from './pages/units';
+import { ItemTypesPage } from './pages/item-types';
+import { MakesPage } from './pages/makes';
 import { ProjectsPage } from './pages/projects';
-import { VendorsPage } from './pages/vendors';
-import { PurchaseOrdersPage } from './pages/purchase-orders';
-import { MaterialIssuesPage } from './pages/material-issues';
-import { ReportsPage } from './pages/reports';
 
 const RootRedirect: React.FC = () => {
   const { user, loading } = useAuth();
@@ -28,7 +23,7 @@ const RootRedirect: React.FC = () => {
     );
   }
 
-  return user ? <Navigate to="/users" replace /> : <Navigate to="/login" replace />;
+  return user ? <Navigate to="/item-types" replace /> : <Navigate to="/login" replace />;
 };
 
 const AppContent: React.FC = () => {
@@ -53,9 +48,13 @@ const AppContent: React.FC = () => {
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<LoginPage />} />
             <Route element={<ProtectedRoute />}>
+              <Route path="/units" element={<UnitsPage />} />
+              <Route path="/item-types" element={<ItemTypesPage />} />
+              <Route path="/makes" element={<MakesPage />} />
+              <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/users" element={<UserManagementPage />} />
             </Route>
-            <Route path="*" element={<Navigate to="/users" replace />} />
+            <Route path="*" element={<Navigate to="/item-types" replace />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

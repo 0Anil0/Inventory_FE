@@ -135,6 +135,42 @@ export const userApi = {
   },
 };
 
+// Make Master API Client
+export const makeApi = {
+  getAll: async (): Promise<{ success: boolean; makes: Array<{ id: number; name: string; code?: string; description?: string }> }> => {
+    const res = await fetch(`${API_BASE_URL}/makes`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  create: async (data: { name: string; code?: string; description?: string }): Promise<{ success: boolean; make: { id: number; name: string; code?: string; description?: string } }> => {
+    const res = await fetch(`${API_BASE_URL}/makes`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  update: async (id: number, data: { name?: string; code?: string; description?: string }): Promise<{ success: boolean; make: any }> => {
+    const res = await fetch(`${API_BASE_URL}/makes/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  delete: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const res = await fetch(`${API_BASE_URL}/makes/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+};
+
 // Item Type API Client
 export const itemTypeApi = {
   getAll: async (): Promise<{ success: boolean; items: ItemType[] }> => {
@@ -147,9 +183,14 @@ export const itemTypeApi = {
   create: async (data: {
     name: string;
     code: string;
+    rating?: string;
+    full_description?: string;
+    cat_no?: string;
+    make?: string;
     unit?: string;
     unit_id?: number;
-    total_quantity?: number;
+    unit_rate?: number;
+    discount?: number;
     description?: string;
   }): Promise<{ success: boolean; item: ItemType }> => {
     const res = await fetch(`${API_BASE_URL}/item-types`, {
@@ -162,7 +203,7 @@ export const itemTypeApi = {
 
   update: async (
     id: number,
-    data: { name?: string; code?: string; unit?: string; unit_id?: number; total_quantity?: number; description?: string }
+    data: any
   ): Promise<{ success: boolean; item: ItemType }> => {
     const res = await fetch(`${API_BASE_URL}/item-types/${id}`, {
       method: 'PUT',

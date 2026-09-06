@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, Modal, Form, Select, Popconfirm, Space, Tag, DatePicker, Badge, InputNumber, message } from 'antd';
-const { RangePicker } = DatePicker;
+import { Table, Card, Button, Input, Modal, Form, Select, Popconfirm, Space, Tag, Badge, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -10,84 +9,50 @@ import {
   CodeSandboxOutlined,
   ReloadOutlined,
   TagOutlined,
-  DatabaseOutlined,
-  TagsOutlined,
-  InfoCircleOutlined,
   ShopOutlined,
   SafetyOutlined,
 } from '@ant-design/icons';
-import type { ItemType, Unit } from '../../types/inventory';
-import { itemTypeApi, unitApi } from '../../services/api';
+import type { ItemType, Make } from '../../types/inventory';
+import { itemTypeApi, makeApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
-
-const POPULAR_MAKES = [
-  'SCHNEIDER',
-  'ABB',
-  'SOCOMEC',
-  'SIEMENS',
-  'ESBEE',
-  'PECOX',
-  'LAPP',
-  'ELMEASURE',
-  'MULTISPAN',
-  'E91E GRADE',
-  'CONECTWELL',
-];
-
-const POPULAR_FAMILIES = [
-  'MCB',
-  'MCCB',
-  'Power Contactor',
-  'Changeover',
-  'Indication Lamp',
-  'Terminal Blocks',
-  'Busbar (Cu.)',
-  'Metering CT',
-  'Accessory',
-];
 
 export const ItemTypesPage: React.FC = () => {
   const [items, setItems] = useState<ItemType[]>([]);
-  const [units, setUnits] = useState<Unit[]>([]);
+  const [makes, setMakes] = useState<Make[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedMake, setSelectedMake] = useState<string>('ALL');
-  const [dateRange, setDateRange] = useState<[string, string] | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [itemToEdit, setItemToEdit] = useState<ItemType | null>(null);
   const [form] = Form.useForm();
 
-  const fetchItemTypes = async () => {
+  const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const [itemRes, unitRes] = await Promise.all([
+      const [itemRes, makeRes] = await Promise.all([
         itemTypeApi.getAll(),
-        unitApi.getAll().catch(() => ({ success: false, units: [] })),
+        makeApi.getAll().catch(() => ({ success: false, makes: [] })),
       ]);
 
-      if (itemRes.success && itemRes.items) {
-        setItems(itemRes.items);
-      }
-      if (unitRes.success && unitRes.units) {
-        setUnits(unitRes.units);
-      }
+      if (itemRes.success && itemRes.items) setItems(itemRes.items);
+      if (makeRes.success && makeRes.makes) setMakes(makeRes.makes);
     } catch (err: any) {
-      message.error(err.message || 'Failed to load item types catalog');
+      message.error(err.message || 'Failed to load item master catalog');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchItemTypes();
+    fetchInitialData();
   }, []);
 
   const handleOpenAdd = () => {
     setItemToEdit(null);
     form.resetFields();
-    if (units.length > 0) {
-      form.setFieldsValue({ unit_id: units[0].id, unit: units[0].code });
+    if (makes.length > 0) {
+      form.setFieldValue('make', makes[0].name);
     }
     setIsModalOpen(true);
   };
@@ -101,12 +66,6 @@ export const ItemTypesPage: React.FC = () => {
       full_description: item.full_description || '',
       cat_no: item.cat_no || '',
       make: item.make || '',
-      switchgear_family: item.switchgear_family || '',
-      unit_id: item.unit_id,
-      unit: item.unit,
-      unit_rate: item.unit_rate || 0,
-      discount: item.discount || 0,
-      description: item.description || '',
     });
     setIsModalOpen(true);
   };
@@ -116,30 +75,23 @@ export const ItemTypesPage: React.FC = () => {
       const res = await itemTypeApi.delete(id);
       if (res.success) {
         setItems(items.filter((i) => i.id !== id));
-        message.success('Item type deleted successfully');
+        message.success('Item master deleted successfully');
       }
     } catch (err: any) {
-      message.error(err.message || 'Failed to delete item type');
+      message.error(err.message || 'Failed to delete item master');
     }
   };
 
   const handleFinish = async (values: any) => {
     try {
-      const selectedUnitObj = units.find((u) => u.id === values.unit_id);
-      const payload = {
-        ...values,
-        total_quantity: values.total_quantity !== undefined ? values.total_quantity : 0,
-        unit: selectedUnitObj ? selectedUnitObj.code : values.unit || 'PCS',
-      };
-
       if (itemToEdit) {
-        const res = await itemTypeApi.update(itemToEdit.id, payload);
+        const res = await itemTypeApi.update(itemToEdit.id, values);
         if (res.success && res.item) {
           setItems(items.map((i) => (i.id === itemToEdit.id ? res.item : i)));
           message.success('Item master updated successfully');
         }
       } else {
-        const res = await itemTypeApi.create(payload);
+        const res = await itemTypeApi.create(values);
         if (res.success && res.item) {
           setItems([res.item, ...items]);
           message.success('Item master created successfully');
@@ -147,14 +99,14 @@ export const ItemTypesPage: React.FC = () => {
       }
       setIsModalOpen(false);
     } catch (err: any) {
-      message.error(err.message || 'Failed to save item type');
+      message.error(err.message || 'Failed to save item master');
     }
   };
 
-  // Auto-generate full description if fields change
+  // Auto-generate full description if user inputs name, rating, or make
   const handleValuesChange = (changedValues: any, allValues: any) => {
     if (changedValues.name || changedValues.rating || changedValues.make) {
-      const parts = [allValues.name, allValues.rating, allValues.make].filter(Boolean);
+      const parts = [allValues.name, allValues.rating].filter(Boolean);
       if (parts.length > 0 && !form.isFieldTouched('full_description')) {
         form.setFieldValue('full_description', parts.join(' '));
       }
@@ -178,43 +130,50 @@ export const ItemTypesPage: React.FC = () => {
       return false;
     }
 
-    if (dateRange && (item as any).createdAt) {
-      const createdStr = new Date((item as any).createdAt).toISOString().slice(0, 10);
-      if (createdStr < dateRange[0] || createdStr > dateRange[1]) {
-        return false;
-      }
-    }
-
     return true;
   });
 
+  // Table columns matching the exact 6 fields from the handwritten note
   const columns: ColumnsType<ItemType> = [
     {
-      title: 'Item No / Code',
+      title: 'Item Number (input)',
       dataIndex: 'code',
       key: 'code',
-      width: 130,
+      width: 170,
       render: (code: string) => <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{code}</span>,
     },
     {
-      title: 'Make (Brand)',
-      dataIndex: 'make',
-      key: 'make',
-      width: 140,
-      render: (make: string | null) =>
-        make ? (
-          <Tag color="blue" icon={<ShopOutlined />} className="font-bold text-xs">
-            {make}
-          </Tag>
+      title: 'Item (input)',
+      dataIndex: 'name',
+      key: 'name',
+      width: 150,
+      render: (name: string) => <span className="font-bold app-text-main">{name}</span>,
+    },
+    {
+      title: 'Item description',
+      dataIndex: 'rating',
+      key: 'rating',
+      width: 150,
+      render: (rating: string | null) =>
+        rating ? (
+          <span className="text-sm text-indigo-500 font-semibold">{rating}</span>
         ) : (
           <span className="app-text-muted italic">-</span>
         ),
     },
     {
-      title: 'Cat No.',
+      title: 'Full description (input)',
+      dataIndex: 'full_description',
+      key: 'full_description',
+      render: (fullDesc: string | null, record) => (
+        <span className="text-sm app-text-secondary">{fullDesc || `${record.name} ${record.rating || ''}`.trim()}</span>
+      ),
+    },
+    {
+      title: 'Cat No (input unique)',
       dataIndex: 'cat_no',
       key: 'cat_no',
-      width: 140,
+      width: 170,
       render: (catNo: string | null) =>
         catNo ? (
           <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{catNo}</span>
@@ -223,69 +182,18 @@ export const ItemTypesPage: React.FC = () => {
         ),
     },
     {
-      title: 'Item & Rating',
-      key: 'item_rating',
-      render: (_, record) => (
-        <div className="flex flex-col leading-tight">
-          <span className="font-bold app-text-main">{record.name}</span>
-          {record.rating && <span className="text-xs text-indigo-500 font-semibold">{record.rating}</span>}
-        </div>
-      ),
-    },
-    {
-      title: 'Full Description',
-      dataIndex: 'full_description',
-      key: 'full_description',
-      render: (desc: string | null, record) => (
-        <span className="text-xs app-text-secondary">{desc || record.description || record.name}</span>
-      ),
-    },
-    {
-      title: 'Unit Rate (₹)',
-      dataIndex: 'unit_rate',
-      key: 'unit_rate',
-      width: 120,
-      align: 'right',
-      render: (rate: number | undefined) => (
-        <span className="font-mono font-semibold">₹{(rate || 0).toLocaleString()}</span>
-      ),
-    },
-    {
-      title: 'Discount %',
-      dataIndex: 'discount',
-      key: 'discount',
-      width: 100,
-      align: 'right',
-      render: (disc: number | undefined) => (
-        <Tag color="orange" className="font-mono font-bold">
-          {(disc || 0)}%
-        </Tag>
-      ),
-    },
-    {
-      title: 'Unit',
-      dataIndex: 'unit',
-      key: 'unit',
-      width: 90,
-      render: (unitStr: string, record) => {
-        const displayUnit = record.unit_details ? record.unit_details.code : unitStr;
-        return (
-          <Tag color="purple" className="font-mono font-bold text-xs py-0.5 px-2">
-            {(displayUnit || 'pcs').toUpperCase()}
+      title: 'Make (master)',
+      dataIndex: 'make',
+      key: 'make',
+      width: 150,
+      render: (makeStr: string | null) =>
+        makeStr ? (
+          <Tag color="blue" icon={<ShopOutlined />} className="font-bold text-sm py-0.5 px-2.5">
+            {makeStr}
           </Tag>
-        );
-      },
-    },
-    {
-      title: 'Stock Qty',
-      dataIndex: 'total_quantity',
-      key: 'total_quantity',
-      width: 110,
-      render: (qty: number | undefined, record) => (
-        <Tag color="cyan" icon={<DatabaseOutlined />} className="font-mono font-bold text-xs py-0.5 px-2">
-          {(qty || 0).toLocaleString()} {record.unit}
-        </Tag>
-      ),
+        ) : (
+          <span className="app-text-muted italic">-</span>
+        ),
     },
     {
       title: 'Actions',
@@ -300,7 +208,7 @@ export const ItemTypesPage: React.FC = () => {
             onClick={() => handleOpenEdit(record)}
           />
           <Popconfirm
-            title="Delete Item Type"
+            title="Delete Item"
             description={`Delete "${record.name}"?`}
             onConfirm={() => handleDelete(record.id)}
             okText="Delete"
@@ -321,45 +229,39 @@ export const ItemTypesPage: React.FC = () => {
             <CodeSandboxOutlined className="text-3xl text-indigo-500" />
             <div>
               <h1 className="text-2xl font-bold app-text-main font-['Outfit'] mb-0.5">
-                Item Master Directory
+                Item Master
               </h1>
               <p className="text-xs sm:text-sm app-text-muted mb-0">
-                Manage Item Number, Short Name, Rating, Catalogue Numbers (Cat No), Brand Makes & Base Pricing
+                Form containing ONLY the 6 specified fields: Item Number, Item, Item Description, Full Description, Cat No & Make
               </p>
             </div>
           </div>
 
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={fetchItemTypes} loading={loading}>
+            <Button icon={<ReloadOutlined />} onClick={fetchInitialData} loading={loading}>
               Refresh
             </Button>
             <Button type="primary" icon={<PlusOutlined />} size="middle" onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30">
-              Add New Item
+              Add New Item Master
             </Button>
           </Space>
         </div>
 
         <Card className="shadow-2xl">
-          {/* Header & Filter Stats */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-white/10">
             <div className="flex items-center gap-3">
               <Badge count={filteredItems.length} overflowCount={999} color="#6366f1">
                 <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
-                  Total Items: {filteredItems.length} Products
+                  Total Items: {filteredItems.length} Records
                 </Tag>
               </Badge>
-              {filteredItems.length !== items.length && (
-                <span className="text-xs text-slate-500 font-medium">
-                  (Filtered from {items.length} total products)
-                </span>
-              )}
             </div>
           </div>
 
-          {/* Search Toolbar */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          {/* Toolbar: Keyword Search + Filter by Make */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
             <Input
-              placeholder="Search Cat No, Code, Name, Make..."
+              placeholder="Search by Cat No, Item Number, Item, Make..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -370,20 +272,9 @@ export const ItemTypesPage: React.FC = () => {
               value={selectedMake}
               onChange={(val) => setSelectedMake(val)}
               options={[
-                { value: 'ALL', label: 'All Makes (Brands)' },
-                ...POPULAR_MAKES.map((m) => ({ value: m, label: m })),
+                { value: 'ALL', label: 'All Makes (Make Master)' },
+                ...makes.map((m) => ({ value: m.name, label: m.name })),
               ]}
-            />
-
-            <RangePicker
-              onChange={(dates) => {
-                if (dates && dates[0] && dates[1]) {
-                  setDateRange([dates[0].format('YYYY-MM-DD'), dates[1].format('YYYY-MM-DD')]);
-                } else {
-                  setDateRange(null);
-                }
-              }}
-              className="w-full"
             />
 
             <Button
@@ -391,7 +282,6 @@ export const ItemTypesPage: React.FC = () => {
               onClick={() => {
                 setSearchQuery('');
                 setSelectedMake('ALL');
-                setDateRange(null);
               }}
             >
               Reset Filters
@@ -403,90 +293,88 @@ export const ItemTypesPage: React.FC = () => {
             dataSource={filteredItems}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 900, y: 400 }}
+            scroll={{ x: 950, y: 400 }}
             pagination={{ pageSize: 15, showSizeChanger: true }}
           />
         </Card>
       </main>
 
+      {/* Modal Form containing ONLY the 6 fields from handwritten note */}
       <Modal
-        title={itemToEdit ? 'Edit Master Item' : 'Add Master Item'}
+        title={itemToEdit ? 'Edit Item Master' : 'Add Item Master'}
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         onOk={() => form.submit()}
         destroyOnClose
         centered
-        width={650}
+        width={600}
       >
         <Form
           form={form}
           layout="vertical"
           onFinish={handleFinish}
           onValuesChange={handleValuesChange}
-          className="mt-4"
+          className="mt-4 space-y-2"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Form.Item name="code" label="Item Number (Code)" rules={[{ required: true, message: 'Item Number is required' }]}>
-              <Input prefix={<TagOutlined className="text-gray-400" />} placeholder="e.g. 1001 or ITM-1001" />
-            </Form.Item>
-
-            <Form.Item name="make" label="Make (Brand Master)">
-              <Select
-                placeholder="Select or enter Make (e.g. SCHNEIDER)"
-                showSearch
-                allowClear
-                options={POPULAR_MAKES.map((m) => ({ value: m, label: m }))}
-              />
-            </Form.Item>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Form.Item name="name" label="Item Name / Family" rules={[{ required: true, message: 'Item Name is required' }]}>
-              <Input placeholder="e.g. MCB, MCCB, Plug" />
-            </Form.Item>
-
-            <Form.Item name="rating" label="Item Rating / Spec">
-              <Input placeholder="e.g. 2A / 4P, 100A 36kA" />
-            </Form.Item>
-          </div>
-
-          <Form.Item name="full_description" label="Full Description">
-            <Input placeholder="e.g. Miniature Circuit Breaker (MCB) SP 10kA 2A" />
+          {/* Field 1: Item Number (input) */}
+          <Form.Item
+            name="code"
+            label="Item Number (input)"
+            rules={[{ required: true, message: 'Item Number is required' }]}
+            extra="Example: 1001"
+          >
+            <Input prefix={<TagOutlined className="text-gray-400" />} placeholder="1001" />
           </Form.Item>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Form.Item name="cat_no" label="Cat No. (Catalogue Number)">
-              <Input prefix={<SafetyOutlined className="text-emerald-500" />} placeholder="e.g. DS1A7A1, A9N1P02CGN" />
-            </Form.Item>
+          {/* Field 2: Item (input) */}
+          <Form.Item
+            name="name"
+            label="Item (input)"
+            rules={[{ required: true, message: 'Item is required' }]}
+            extra="Example: MCB"
+          >
+            <Input placeholder="MCB" />
+          </Form.Item>
 
-            <Form.Item
-              name="unit_id"
-              label="Measurement Unit"
-              rules={[{ required: true, message: 'Please select a unit' }]}
-            >
-              <Select
-                placeholder="Select unit..."
-                showSearch
-                options={units.map((u) => ({
-                  value: u.id,
-                  label: `${u.code} - ${u.name}`,
-                }))}
-              />
-            </Form.Item>
-          </div>
+          {/* Field 3: Item description */}
+          <Form.Item
+            name="rating"
+            label="Item description"
+            extra="Example: 2A / 4P"
+          >
+            <Input placeholder="2A / 4P" />
+          </Form.Item>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Form.Item name="unit_rate" label="Base Unit Rate (₹)">
-              <InputNumber style={{ width: '100%' }} min={0} placeholder="e.g. 2025" />
-            </Form.Item>
+          {/* Field 4: Full description (input) */}
+          <Form.Item
+            name="full_description"
+            label="Full description (input)"
+            extra="Example: MCB 2A 4P"
+          >
+            <Input placeholder="MCB 2A 4P" />
+          </Form.Item>
 
-            <Form.Item name="discount" label="Discount (%)">
-              <InputNumber style={{ width: '100%' }} min={0} max={100} placeholder="e.g. 43.50" />
-            </Form.Item>
-          </div>
+          {/* Field 5: Cat No (input unique) */}
+          <Form.Item
+            name="cat_no"
+            label="Cat No (input unique)"
+            extra="Example: DS1A7A1, A9N1P02CGN"
+          >
+            <Input prefix={<SafetyOutlined className="text-emerald-500" />} placeholder="DS1A7A1" />
+          </Form.Item>
 
-          <Form.Item name="description" label="Additional Notes">
-            <Input.TextArea placeholder="Internal specs or notes..." rows={2} />
+          {/* Field 6: Make (master) */}
+          <Form.Item
+            name="make"
+            label="Make (master)"
+            rules={[{ required: true, message: 'Make is required' }]}
+            extra="Example: ABB [master]"
+          >
+            <Select
+              placeholder="Select Make from Master"
+              showSearch
+              options={makes.map((m) => ({ value: m.name, label: m.name }))}
+            />
           </Form.Item>
         </Form>
       </Modal>

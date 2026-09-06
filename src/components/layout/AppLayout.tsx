@@ -52,8 +52,35 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
   };
 
-  // Menu hierarchy containing ONLY User Management as requested
+  // Menu hierarchy in exact order: Unit Master -> Make Master -> Item Master -> User Management
   const navMenuItems: MenuProps['items'] = [
+    {
+      key: '/units',
+      icon: <TagsOutlined style={{ fontSize: '18px' }} />,
+      label: 'Unit Master',
+      onClick: () => {
+        navigate('/units');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
+      key: '/makes',
+      icon: <ShopOutlined style={{ fontSize: '18px' }} />,
+      label: 'Make Master',
+      onClick: () => {
+        navigate('/makes');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
+      key: '/item-types',
+      icon: <CodeSandboxOutlined style={{ fontSize: '18px' }} />,
+      label: 'Item Master',
+      onClick: () => {
+        navigate('/item-types');
+        setMobileDrawerOpen(false);
+      },
+    },
     {
       key: '/users',
       icon: <TeamOutlined style={{ fontSize: '18px' }} />,
@@ -89,8 +116,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   // Helper to determine active root menu section title
   const getPageTitle = (path: string) => {
     switch (path) {
-      case '/users': return 'User Accounts Management';
-      default: return 'User Management Portal';
+      case '/units': return 'Unit Master';
+      case '/makes': return 'Make Master';
+      case '/item-types': return 'Item Master';
+      case '/users': return 'User Management';
+      default: return 'Inventory Management System';
     }
   };
 
