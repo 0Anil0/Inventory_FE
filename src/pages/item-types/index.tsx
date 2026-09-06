@@ -11,6 +11,8 @@ import {
   TagOutlined,
   ShopOutlined,
   SafetyOutlined,
+  SaveOutlined,
+  CheckOutlined,
 } from '@ant-design/icons';
 import type { ItemType, Make } from '../../types/inventory';
 import { itemTypeApi, makeApi } from '../../services/api';
@@ -103,9 +105,9 @@ export const ItemTypesPage: React.FC = () => {
     }
   };
 
-  // Auto-generate full description if user inputs name, rating, or make
+  // Auto-generate full description if user inputs name or rating
   const handleValuesChange = (changedValues: any, allValues: any) => {
-    if (changedValues.name || changedValues.rating || changedValues.make) {
+    if (changedValues.name || changedValues.rating) {
       const parts = [allValues.name, allValues.rating].filter(Boolean);
       if (parts.length > 0 && !form.isFieldTouched('full_description')) {
         form.setFieldValue('full_description', parts.join(' '));
@@ -299,83 +301,104 @@ export const ItemTypesPage: React.FC = () => {
         </Card>
       </main>
 
-      {/* Modal Form containing ONLY the 6 fields from handwritten note */}
+      {/* Styled Premium Modal Form with 2-Column Grid and Custom Header/Footer */}
       <Modal
-        title={itemToEdit ? 'Edit Item Master' : 'Add Item Master'}
+        title={
+          <div className="flex items-center gap-2.5 py-1 text-slate-800 dark:text-slate-100">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+              <CodeSandboxOutlined className="text-lg" />
+            </div>
+            <span className="font-bold text-lg font-['Outfit']">
+              {itemToEdit ? 'Edit Item Master' : 'Add Item Master'}
+            </span>
+          </div>
+        }
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
-        onOk={() => form.submit()}
         destroyOnClose
         centered
-        width={600}
+        width={700}
+        footer={[
+          <Button key="cancel" size="large" onClick={() => setIsModalOpen(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            size="large"
+            icon={itemToEdit ? <CheckOutlined /> : <SaveOutlined />}
+            onClick={() => form.submit()}
+            className="bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-500/20"
+          >
+            {itemToEdit ? 'Update Item Master' : 'Save Item Master'}
+          </Button>,
+        ]}
       >
         <Form
           form={form}
           layout="vertical"
           onFinish={handleFinish}
           onValuesChange={handleValuesChange}
-          className="mt-4 space-y-2"
+          className="mt-4 pt-2 border-t border-slate-100 dark:border-white/10"
         >
-          {/* Field 1: Item Number (input) */}
-          <Form.Item
-            name="code"
-            label="Item Number (input)"
-            rules={[{ required: true, message: 'Item Number is required' }]}
-            extra="Example: 1001"
-          >
-            <Input prefix={<TagOutlined className="text-gray-400" />} placeholder="1001" />
-          </Form.Item>
+          {/* Row 1: Item Number & Make (Master) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+            <Form.Item
+              name="code"
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Item Number (input)</span>}
+              rules={[{ required: true, message: 'Item Number is required' }]}
+            >
+              <Input prefix={<TagOutlined className="text-slate-400" />} placeholder="e.g. 1001" size="large" />
+            </Form.Item>
 
-          {/* Field 2: Item (input) */}
-          <Form.Item
-            name="name"
-            label="Item (input)"
-            rules={[{ required: true, message: 'Item is required' }]}
-            extra="Example: MCB"
-          >
-            <Input placeholder="MCB" />
-          </Form.Item>
+            <Form.Item
+              name="make"
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Make (master)</span>}
+              rules={[{ required: true, message: 'Make is required' }]}
+            >
+              <Select
+                placeholder="Select Make (ABB, SCHNEIDER...)"
+                showSearch
+                size="large"
+                options={makes.map((m) => ({ value: m.name, label: m.name }))}
+              />
+            </Form.Item>
+          </div>
 
-          {/* Field 3: Item description */}
-          <Form.Item
-            name="rating"
-            label="Item description"
-            extra="Example: 2A / 4P"
-          >
-            <Input placeholder="2A / 4P" />
-          </Form.Item>
+          {/* Row 2: Item Name & Item Description (Rating) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+            <Form.Item
+              name="name"
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Item (input)</span>}
+              rules={[{ required: true, message: 'Item name is required' }]}
+            >
+              <Input placeholder="e.g. MCB" size="large" />
+            </Form.Item>
 
-          {/* Field 4: Full description (input) */}
-          <Form.Item
-            name="full_description"
-            label="Full description (input)"
-            extra="Example: MCB 2A 4P"
-          >
-            <Input placeholder="MCB 2A 4P" />
-          </Form.Item>
+            <Form.Item
+              name="rating"
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Item description</span>}
+            >
+              <Input placeholder="e.g. 2A / 4P" size="large" />
+            </Form.Item>
+          </div>
 
-          {/* Field 5: Cat No (input unique) */}
-          <Form.Item
-            name="cat_no"
-            label="Cat No (input unique)"
-            extra="Example: DS1A7A1, A9N1P02CGN"
-          >
-            <Input prefix={<SafetyOutlined className="text-emerald-500" />} placeholder="DS1A7A1" />
-          </Form.Item>
+          {/* Row 3: Cat No & Full Description */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+            <Form.Item
+              name="cat_no"
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Cat No (input unique)</span>}
+            >
+              <Input prefix={<SafetyOutlined className="text-emerald-500" />} placeholder="e.g. DS1A7A1, A9N1P02CGN" size="large" />
+            </Form.Item>
 
-          {/* Field 6: Make (master) */}
-          <Form.Item
-            name="make"
-            label="Make (master)"
-            rules={[{ required: true, message: 'Make is required' }]}
-            extra="Example: ABB [master]"
-          >
-            <Select
-              placeholder="Select Make from Master"
-              showSearch
-              options={makes.map((m) => ({ value: m.name, label: m.name }))}
-            />
-          </Form.Item>
+            <Form.Item
+              name="full_description"
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Full description (input)</span>}
+            >
+              <Input placeholder="e.g. MCB 2A 4P" size="large" />
+            </Form.Item>
+          </div>
         </Form>
       </Modal>
     </AppLayout>
