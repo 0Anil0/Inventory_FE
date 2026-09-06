@@ -62,12 +62,28 @@ export const authApi = {
 
 // User API Client
 export const userApi = {
-  getUsers: async (): Promise<{ success: boolean; users: User[] }> => {
-    const res = await fetch(`${API_BASE_URL}${USER_ENDPOINTS.USERS}`, {
+  getUsers: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    role_id?: number;
+    username?: string;
+    email?: string;
+  }): Promise<{ success: boolean; users: User[]; total?: number; page?: number; limit?: number; totalPages?: number }> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    if (params?.search) query.append('search', params.search);
+    if (params?.role_id) query.append('role_id', String(params.role_id));
+    if (params?.username) query.append('username', params.username);
+    if (params?.email) query.append('email', params.email);
+
+    const res = await fetch(`${API_BASE_URL}${USER_ENDPOINTS.USERS}?${query.toString()}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(res);
   },
+
 
   getRoles: async (): Promise<{ success: boolean; roles: Role[] }> => {
     const res = await fetch(`${API_BASE_URL}${USER_ENDPOINTS.ROLES}`, {
@@ -139,8 +155,21 @@ export const userApi = {
 
 // Make Master API Client
 export const makeApi = {
-  getAll: async (): Promise<{ success: boolean; makes: Array<{ id: number; name: string; code?: string; description?: string }> }> => {
-    const res = await fetch(`${API_BASE_URL}/makes`, {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    name?: string;
+    code?: string;
+  }): Promise<{ success: boolean; makes: Array<{ id: number; name: string; code?: string; description?: string }>; total?: number; page?: number; limit?: number; totalPages?: number }> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    if (params?.search) query.append('search', params.search);
+    if (params?.name) query.append('name', params.name);
+    if (params?.code) query.append('code', params.code);
+
+    const res = await fetch(`${API_BASE_URL}/makes?${query.toString()}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(res);
@@ -212,12 +241,32 @@ export const itemDescriptionApi = {
 
 // Item Type API Client
 export const itemTypeApi = {
-  getAll: async (): Promise<{ success: boolean; items: ItemType[] }> => {
-    const res = await fetch(`${API_BASE_URL}/item-types`, {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    make?: string;
+    rating?: string;
+    code?: string;
+    cat_no?: string;
+    name?: string;
+  }): Promise<{ success: boolean; items: ItemType[]; total?: number; page?: number; limit?: number; totalPages?: number }> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    if (params?.search) query.append('search', params.search);
+    if (params?.make) query.append('make', params.make);
+    if (params?.rating) query.append('rating', params.rating);
+    if (params?.code) query.append('code', params.code);
+    if (params?.cat_no) query.append('cat_no', params.cat_no);
+    if (params?.name) query.append('name', params.name);
+
+    const res = await fetch(`${API_BASE_URL}/item-types?${query.toString()}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(res);
   },
+
 
   create: async (data: {
     name: string;
@@ -397,12 +446,30 @@ export const stockMovementApi = {
 
 // Vendor API Client
 export const vendorApi = {
-  getAll: async (): Promise<{ success: boolean; vendors: Vendor[] }> => {
-    const res = await fetch(`${API_BASE_URL}/vendors`, {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    name?: string;
+    contact_person?: string;
+    phone?: string;
+    email?: string;
+  }): Promise<{ success: boolean; vendors: Vendor[]; total?: number; page?: number; limit?: number; totalPages?: number }> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    if (params?.search) query.append('search', params.search);
+    if (params?.name) query.append('name', params.name);
+    if (params?.contact_person) query.append('contact_person', params.contact_person);
+    if (params?.phone) query.append('phone', params.phone);
+    if (params?.email) query.append('email', params.email);
+
+    const res = await fetch(`${API_BASE_URL}/vendors?${query.toString()}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(res);
   },
+
 
   create: async (data: {
     name: string;
@@ -526,12 +593,26 @@ export const materialIssueApi = {
 
 // Unit API Client
 export const unitApi = {
-  getAll: async (): Promise<{ success: boolean; units: Unit[] }> => {
-    const res = await fetch(`${API_BASE_URL}/units`, {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    name?: string;
+    code?: string;
+  }): Promise<{ success: boolean; units: Unit[]; total?: number; page?: number; limit?: number; totalPages?: number }> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    if (params?.search) query.append('search', params.search);
+    if (params?.name) query.append('name', params.name);
+    if (params?.code) query.append('code', params.code);
+
+    const res = await fetch(`${API_BASE_URL}/units?${query.toString()}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(res);
   },
+
 
   getById: async (id: number): Promise<{ success: boolean; unit: Unit }> => {
     const res = await fetch(`${API_BASE_URL}/units/${id}`, {

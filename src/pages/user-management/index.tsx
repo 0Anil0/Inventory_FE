@@ -28,7 +28,11 @@ export const UserManagementPage: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Search & Filter state for Users
+  // Pagination & Server Filtering state for Users
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(15);
+  const [totalUsers, setTotalUsers] = useState<number>(0);
+
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activeFilters, setActiveFilters] = useState<FilterValues>({});
   const [isFilterModalOpen, setIsFilterModalOpen] = useState<boolean>(false);
@@ -41,30 +45,54 @@ export const UserManagementPage: React.FC = () => {
   const [isRoleModalOpen, setIsRoleModalOpen] = useState<boolean>(false);
   const [roleToEdit, setRoleToEdit] = useState<Role | null>(null);
 
-  const fetchUsersAndRoles = async () => {
+  const fetchUsers = async (page = currentPage, limit = pageSize, filters = activeFilters, search = searchQuery) => {
     setLoading(true);
     try {
-      const [usersRes, rolesRes] = await Promise.all([
-        userApi.getUsers(),
-        userApi.getRoles(),
-      ]);
+      const res = await userApi.getUsers({
+        page,
+        limit,
+        search: search || undefined,
+        role_id: filters.role_id || undefined,
+      });
 
-      if (usersRes.success && usersRes.users) {
-        setUsers(usersRes.users);
-      }
-      if (rolesRes.success && rolesRes.roles) {
-        setRoles(rolesRes.roles);
+      if (res.success && res.users) {
+        setUsers(res.users);
+        setTotalUsers(res.total ?? res.users.length);
       }
     } catch (err: any) {
-      message.error(err.message || 'Failed to load user and role data');
+      message.error(err.message || 'Failed to load user data');
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchRoles = async () => {
+    try {
+      const res = await userApi.getRoles();
+      if (res.success && res.roles) {
+        setRoles(res.roles);
+      }
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
-    fetchUsersAndRoles();
+    fetchRoles();
+    fetchUsers(1, pageSize, activeFilters, searchQuery);
   }, []);
+
+  const handlePageChange = (page: number, newPageSize: number) => {
+    setCurrentPage(page);
+    setPageSize(newPageSize);
+    fetchUsers(page, newPageSize, activeFilters, searchQuery);
+  };
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setCurrentPage(1);
+    fetchUsers(1, pageSize, activeFilters, val);
+  };
 
   // --- USER HANDLERS ---
   const handleOpenAddUser = () => {
@@ -82,7 +110,7 @@ export const UserManagementPage: React.FC = () => {
       const res = await userApi.deleteUser(id);
       if (res.success) {
         message.success('User deleted successfully');
-        setUsers(users.filter((u) => u.id !== id));
+        fetchUsers(currentPage, pageSize, activeFilters, searchQuery);
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to delete user');
@@ -97,8 +125,7 @@ export const UserManagementPage: React.FC = () => {
   }) => {
     if (userToEdit) {
       const res = await userApi.updateUser(userToEdit.id, data);
-      if (res.success && res.user) {
-        setUsers(users.map((u) => (u.id === userToEdit.id ? res.user! : u)));
+      if (res.success) {
         message.success('User updated successfully');
       }
     } else {
@@ -109,11 +136,12 @@ export const UserManagementPage: React.FC = () => {
         password: data.password,
         role_id: data.role_id,
       });
-      if (res.success && res.user) {
-        setUsers([...users, res.user]);
+      if (res.success) {
         message.success('User created successfully');
       }
     }
+    setIsUserModalOpen(false);
+    fetchUsers(currentPage, pageSize, activeFilters, searchQuery);
   };
 
   // --- ROLE HANDLERS ---
@@ -153,52 +181,31 @@ export const UserManagementPage: React.FC = () => {
         message.success(`Role '${res.role.name}' created successfully`);
       }
     }
+    setIsRoleModalOpen(false);
   };
 
   // Filter application logic
   const handleApplyFilter = (filters: FilterValues) => {
     setActiveFilters(filters);
+    const newSearch = filters.keyword !== undefined ? filters.keyword : searchQuery;
     if (filters.keyword !== undefined) {
       setSearchQuery(filters.keyword);
     }
+    setCurrentPage(1);
+    fetchUsers(1, pageSize, filters, newSearch);
   };
 
   const handleResetFilter = () => {
     setActiveFilters({});
     setSearchQuery('');
+    setCurrentPage(1);
+    fetchUsers(1, pageSize, {}, '');
   };
 
   const activeFilterCount =
     (activeFilters.role_id ? 1 : 0) +
     (activeFilters.dateRange ? 1 : 0) +
     (activeFilters.keyword ? 1 : 0);
-
-  const filteredUsers = users.filter((u) => {
-    const q = searchQuery.toLowerCase();
-    const roleName = typeof u.role === 'object' ? u.role.name : u.role || '';
-    const matchesQuery =
-      !q ||
-      u.username.toLowerCase().includes(q) ||
-      (u.email && u.email.toLowerCase().includes(q)) ||
-      roleName.toLowerCase().includes(q);
-
-    if (!matchesQuery) return false;
-
-    if (activeFilters.role_id && u.role_id !== activeFilters.role_id) {
-      return false;
-    }
-
-    if (activeFilters.dateRange && activeFilters.dateRange[0] && activeFilters.dateRange[1] && u.createdAt) {
-      const userDate = new Date(u.createdAt).getTime();
-      const startDate = activeFilters.dateRange[0].startOf('day').valueOf();
-      const endDate = activeFilters.dateRange[1].endOf('day').valueOf();
-      if (userDate < startDate || userDate > endDate) {
-        return false;
-      }
-    }
-
-    return true;
-  });
 
   const getRoleTagColor = (roleName: string) => {
     switch (roleName.toUpperCase()) {
@@ -219,7 +226,7 @@ export const UserManagementPage: React.FC = () => {
       align: 'center',
       render: (_, __, index: number) => (
         <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
-          {index + 1}
+          {(currentPage - 1) * pageSize + index + 1}
         </span>
       ),
     },
@@ -378,13 +385,13 @@ export const UserManagementPage: React.FC = () => {
                 User & Access Control Center
               </h1>
               <p className="text-xs sm:text-sm app-text-muted mb-0">
-                Manage system user accounts, credentials, and custom system roles
+                Manage system user accounts, credentials, and system roles with Server Search, Pagination & Filter Modal
               </p>
             </div>
           </div>
 
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={fetchUsersAndRoles} loading={loading}>
+            <Button icon={<ReloadOutlined />} onClick={() => fetchUsers(currentPage, pageSize, activeFilters, searchQuery)} loading={loading}>
               Refresh
             </Button>
 
@@ -418,31 +425,26 @@ export const UserManagementPage: React.FC = () => {
                 key: 'users',
                 label: (
                   <span className="font-bold flex items-center gap-2">
-                    <UserOutlined /> User Accounts ({users.length})
+                    <UserOutlined /> User Accounts ({totalUsers})
                   </span>
                 ),
                 children: (
                   <div className="pt-2">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-200 dark:border-white/10">
                       <div className="flex items-center gap-3">
-                        <Badge count={filteredUsers.length} overflowCount={999} color="#6366f1">
+                        <Badge count={totalUsers} overflowCount={9999} color="#6366f1">
                           <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
-                            Total Records: {filteredUsers.length} Users
+                            Total Records: {totalUsers} Users
                           </Tag>
                         </Badge>
-                        {filteredUsers.length !== users.length && (
-                          <span className="text-xs text-slate-500 font-medium">
-                            (Filtered from {users.length} total users)
-                          </span>
-                        )}
                       </div>
 
                       <div className="flex items-center gap-2 max-w-lg">
                         <Input
-                          placeholder="Search users by name, email, or role..."
+                          placeholder="Search users by name or email on server..."
                           prefix={<SearchOutlined className="text-gray-400" />}
                           value={searchQuery}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSearchChange(e.target.value)}
                           className="w-full"
                           allowClear
                         />
@@ -451,9 +453,9 @@ export const UserManagementPage: React.FC = () => {
                           <Button
                             icon={<FilterOutlined />}
                             onClick={() => setIsFilterModalOpen(true)}
-                            className={activeFilterCount > 0 ? 'border-indigo-500 text-indigo-400' : ''}
+                            className={activeFilterCount > 0 ? 'border-indigo-500 text-indigo-400 font-bold' : ''}
                           >
-                            Filter
+                            Filter Modal
                           </Button>
                         </Badge>
                       </div>
@@ -461,11 +463,18 @@ export const UserManagementPage: React.FC = () => {
 
                     <Table
                       columns={userColumns}
-                      dataSource={filteredUsers}
+                      dataSource={users}
                       rowKey="id"
                       loading={loading}
                       scroll={{ x: 750, y: 360 }}
-                      pagination={{ pageSize: 15, showSizeChanger: true }}
+                      pagination={{
+                        current: currentPage,
+                        pageSize: pageSize,
+                        total: totalUsers,
+                        showSizeChanger: true,
+                        pageSizeOptions: ['10', '15', '25', '50'],
+                        onChange: handlePageChange,
+                      }}
                     />
                   </div>
                 ),
@@ -481,7 +490,7 @@ export const UserManagementPage: React.FC = () => {
                   <div className="pt-2">
                     <div className="flex justify-between items-center mb-4">
                       <p className="text-xs text-slate-400 mb-0">
-                        Configure system access roles (e.g., admin, manager, engineer, auditor) to assign permissions.
+                        Configure system access roles (e.g., admin, manager, user) to assign permissions.
                       </p>
                       <Button type="primary" ghost icon={<PlusOutlined />} onClick={handleOpenAddRole}>
                         Add Role

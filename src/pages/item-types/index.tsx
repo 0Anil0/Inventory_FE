@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, Modal, Form, Select, Popconfirm, Space, Tag, Badge, message, Divider } from 'antd';
+import { Table, Card, Button, Input, Modal, Form, Select, Popconfirm, Space, Tag, Badge, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -14,6 +14,8 @@ import {
   SaveOutlined,
   CheckOutlined,
   ThunderboltOutlined,
+  FilterOutlined,
+  ClearOutlined,
 } from '@ant-design/icons';
 import type { ItemType, Make, ItemDescription } from '../../types/inventory';
 import { itemTypeApi, makeApi, itemDescriptionApi } from '../../services/api';
@@ -25,7 +27,16 @@ export const ItemTypesPage: React.FC = () => {
   const [itemDescriptions, setItemDescriptions] = useState<ItemDescription[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedMake, setSelectedMake] = useState<string>('ALL');
+
+  // Pagination & Server Filtering state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(15);
+  const [totalItems, setTotalItems] = useState<number>(0);
+  const [appliedFilters, setAppliedFilters] = useState<any>({});
+
+  // Filter Modal state
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState<boolean>(false);
+  const [filterForm] = Form.useForm();
 
   // Inline creation states for dropdown search
   const [searchMakeText, setSearchMakeText] = useState<string>('');
@@ -37,18 +48,24 @@ export const ItemTypesPage: React.FC = () => {
   const [itemToEdit, setItemToEdit] = useState<ItemType | null>(null);
   const [form] = Form.useForm();
 
-  const fetchInitialData = async () => {
+  const fetchItems = async (page = currentPage, limit = pageSize, filters = appliedFilters, search = searchQuery) => {
     setLoading(true);
     try {
-      const [itemRes, makeRes, descRes] = await Promise.all([
-        itemTypeApi.getAll(),
-        makeApi.getAll().catch(() => ({ success: false, makes: [] })),
-        itemDescriptionApi.getAll().catch(() => ({ success: false, itemDescriptions: [] })),
-      ]);
+      const res = await itemTypeApi.getAll({
+        page,
+        limit,
+        search: search || undefined,
+        make: filters.make && filters.make !== 'ALL' ? filters.make : undefined,
+        rating: filters.rating || undefined,
+        code: filters.code || undefined,
+        cat_no: filters.cat_no || undefined,
+        name: filters.name || undefined,
+      });
 
-      if (itemRes.success && itemRes.items) setItems(itemRes.items);
-      if (makeRes.success && makeRes.makes) setMakes(makeRes.makes);
-      if (descRes.success && descRes.itemDescriptions) setItemDescriptions(descRes.itemDescriptions);
+      if (res.success && res.items) {
+        setItems(res.items);
+        setTotalItems(res.total ?? res.items.length);
+      }
     } catch (err: any) {
       message.error(err.message || 'Failed to load item master catalog');
     } finally {
@@ -56,9 +73,53 @@ export const ItemTypesPage: React.FC = () => {
     }
   };
 
+  const fetchInitialMasterData = async () => {
+    try {
+      const [makeRes, descRes] = await Promise.all([
+        makeApi.getAll().catch(() => ({ success: false, makes: [] })),
+        itemDescriptionApi.getAll().catch(() => ({ success: false, itemDescriptions: [] })),
+      ]);
+      if (makeRes.success && makeRes.makes) setMakes(makeRes.makes);
+      if (descRes.success && descRes.itemDescriptions) setItemDescriptions(descRes.itemDescriptions);
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
-    fetchInitialData();
+    fetchInitialMasterData();
+    fetchItems(1, pageSize, appliedFilters, searchQuery);
   }, []);
+
+  const handlePageChange = (page: number, newPageSize: number) => {
+    setCurrentPage(page);
+    setPageSize(newPageSize);
+    fetchItems(page, newPageSize, appliedFilters, searchQuery);
+  };
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setCurrentPage(1);
+    fetchItems(1, pageSize, appliedFilters, val);
+  };
+
+  const handleApplyFilters = (values: any) => {
+    setAppliedFilters(values);
+    setCurrentPage(1);
+    setIsFilterModalOpen(false);
+    fetchItems(1, pageSize, values, searchQuery);
+  };
+
+  const handleResetFilters = () => {
+    filterForm.resetFields();
+    setAppliedFilters({});
+    setSearchQuery('');
+    setCurrentPage(1);
+    setIsFilterModalOpen(false);
+    fetchItems(1, pageSize, {}, '');
+  };
+
+  const activeFilterCount = Object.values(appliedFilters).filter((v) => v && v !== 'ALL').length;
 
   const handleOpenAdd = () => {
     setItemToEdit(null);
@@ -90,8 +151,8 @@ export const ItemTypesPage: React.FC = () => {
     try {
       const res = await itemTypeApi.delete(id);
       if (res.success) {
-        setItems(items.filter((i) => i.id !== id));
         message.success('Item master deleted successfully');
+        fetchItems(currentPage, pageSize, appliedFilters, searchQuery);
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to delete item master');
@@ -133,7 +194,6 @@ export const ItemTypesPage: React.FC = () => {
         }
         form.setFieldValue('rating', res.itemDescription.name);
 
-        // Auto-update full description if name is entered
         const nameVal = form.getFieldValue('name');
         if (nameVal && !form.isFieldTouched('full_description')) {
           form.setFieldValue('full_description', `${nameVal} ${res.itemDescription.name}`);
@@ -152,24 +212,22 @@ export const ItemTypesPage: React.FC = () => {
     try {
       if (itemToEdit) {
         const res = await itemTypeApi.update(itemToEdit.id, values);
-        if (res.success && res.item) {
-          setItems(items.map((i) => (i.id === itemToEdit.id ? res.item : i)));
+        if (res.success) {
           message.success('Item master updated successfully');
         }
       } else {
         const res = await itemTypeApi.create(values);
-        if (res.success && res.item) {
-          setItems([res.item, ...items]);
+        if (res.success) {
           message.success('Item master created successfully');
         }
       }
       setIsModalOpen(false);
+      fetchItems(currentPage, pageSize, appliedFilters, searchQuery);
     } catch (err: any) {
       message.error(err.message || 'Failed to save item master');
     }
   };
 
-  // Auto-generate full description if user inputs name or rating
   const handleValuesChange = (changedValues: any, allValues: any) => {
     if (changedValues.name || changedValues.rating) {
       const parts = [allValues.name, allValues.rating].filter(Boolean);
@@ -179,27 +237,6 @@ export const ItemTypesPage: React.FC = () => {
     }
   };
 
-  const filteredItems = items.filter((item) => {
-    const q = searchQuery.toLowerCase();
-    const matchesSearch =
-      !q ||
-      item.name.toLowerCase().includes(q) ||
-      item.code.toLowerCase().includes(q) ||
-      (item.cat_no && item.cat_no.toLowerCase().includes(q)) ||
-      (item.make && item.make.toLowerCase().includes(q)) ||
-      (item.rating && item.rating.toLowerCase().includes(q)) ||
-      (item.full_description && item.full_description.toLowerCase().includes(q));
-
-    if (!matchesSearch) return false;
-
-    if (selectedMake !== 'ALL' && item.make !== selectedMake) {
-      return false;
-    }
-
-    return true;
-  });
-
-  // Table columns matching the exact 6 fields from the handwritten note
   const columns: ColumnsType<ItemType> = [
     {
       title: 'Item Number (input)',
@@ -300,13 +337,13 @@ export const ItemTypesPage: React.FC = () => {
                 Item Master
               </h1>
               <p className="text-xs sm:text-sm app-text-muted mb-0">
-                Item Number, Item, Item Description (Master), Full Description, Cat No & Make (Master) with On-The-Fly Master Creation
+                Item Number, Item, Item Description (Master), Full Description, Cat No & Make (Master) with Server Search, Pagination & Filter Modal
               </p>
             </div>
           </div>
 
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={fetchInitialData} loading={loading}>
+            <Button icon={<ReloadOutlined />} onClick={() => fetchItems(currentPage, pageSize, appliedFilters, searchQuery)} loading={loading}>
               Refresh
             </Button>
             <Button type="primary" icon={<PlusOutlined />} size="middle" onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30">
@@ -318,56 +355,127 @@ export const ItemTypesPage: React.FC = () => {
         <Card className="shadow-2xl">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-white/10">
             <div className="flex items-center gap-3">
-              <Badge count={filteredItems.length} overflowCount={999} color="#6366f1">
+              <Badge count={totalItems} overflowCount={9999} color="#6366f1">
                 <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
-                  Total Items: {filteredItems.length} Records
+                  Total Items: {totalItems} Records
                 </Tag>
               </Badge>
             </div>
           </div>
 
-          {/* Toolbar: Keyword Search + Filter by Make */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+          {/* Search Bar & Filter Modal Trigger */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 mb-4">
             <Input
-              placeholder="Search by Cat No, Item Number, Item, Make..."
+              placeholder="Search on Server by Cat No, Item Number, Item, Make..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               allowClear
-            />
-
-            <Select
-              value={selectedMake}
-              onChange={(val) => setSelectedMake(val)}
-              options={[
-                { value: 'ALL', label: 'All Makes (Make Master)' },
-                ...makes.map((m) => ({ value: m.name, label: m.name })),
-              ]}
+              className="flex-1"
             />
 
             <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedMake('ALL');
-              }}
+              icon={<FilterOutlined />}
+              onClick={() => setIsFilterModalOpen(true)}
+              className={activeFilterCount > 0 ? 'border-indigo-500 text-indigo-600 font-bold' : ''}
             >
-              Reset Filters
+              Filter Modal {activeFilterCount > 0 && <Badge count={activeFilterCount} className="ml-1" />}
             </Button>
+
+            {activeFilterCount > 0 && (
+              <Button icon={<ClearOutlined />} danger onClick={handleResetFilters}>
+                Reset
+              </Button>
+            )}
           </div>
 
           <Table
             columns={columns}
-            dataSource={filteredItems}
+            dataSource={items}
             rowKey="id"
             loading={loading}
             scroll={{ x: 950, y: 400 }}
-            pagination={{ pageSize: 15, showSizeChanger: true }}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              total: totalItems,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '15', '25', '50', '100'],
+              onChange: handlePageChange,
+            }}
           />
         </Card>
       </main>
 
-      {/* Styled Premium Modal Form with 2-Column Grid and On-The-Fly Dropdown Master Creation */}
+      {/* Filter Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
+            <FilterOutlined className="text-indigo-500 text-lg" />
+            <span className="font-bold text-lg font-['Outfit']">Filter Item Master</span>
+          </div>
+        }
+        open={isFilterModalOpen}
+        onCancel={() => setIsFilterModalOpen(false)}
+        centered
+        width={500}
+        footer={[
+          <Button key="reset" icon={<ClearOutlined />} onClick={handleResetFilters}>
+            Reset Filters
+          </Button>,
+          <Button
+            key="apply"
+            type="primary"
+            icon={<FilterOutlined />}
+            onClick={() => filterForm.submit()}
+            className="bg-indigo-600"
+          >
+            Apply Filters
+          </Button>,
+        ]}
+      >
+        <Form
+          form={filterForm}
+          layout="vertical"
+          initialValues={appliedFilters}
+          onFinish={handleApplyFilters}
+          className="mt-3 pt-2 border-t border-slate-100 dark:border-white/10"
+        >
+          <Form.Item name="make" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Make</span>}>
+            <Select
+              placeholder="All Makes"
+              allowClear
+              options={[
+                { value: 'ALL', label: 'All Makes' },
+                ...makes.map((m) => ({ value: m.name, label: m.name })),
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item name="rating" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Item Description (Rating)</span>}>
+            <Select
+              placeholder="All Item Descriptions"
+              allowClear
+              showSearch
+              options={itemDescriptions.map((d) => ({ value: d.name, label: d.name }))}
+            />
+          </Form.Item>
+
+          <Form.Item name="code" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Item Number</span>}>
+            <Input placeholder="e.g. 1001" allowClear />
+          </Form.Item>
+
+          <Form.Item name="cat_no" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Cat No</span>}>
+            <Input placeholder="e.g. DS1A7A1" allowClear />
+          </Form.Item>
+
+          <Form.Item name="name" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Item Name</span>}>
+            <Input placeholder="e.g. MCB" allowClear />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Styled Premium Modal Form for Item Master Add/Edit */}
       <Modal
         title={
           <div className="flex items-center gap-2.5 py-1 text-slate-800 dark:text-slate-100">
@@ -407,7 +515,7 @@ export const ItemTypesPage: React.FC = () => {
           onValuesChange={handleValuesChange}
           className="mt-4 pt-2 border-t border-slate-100 dark:border-white/10"
         >
-          {/* Row 1: Item Number & Make (Master Dropdown with On-The-Fly Creation) */}
+          {/* Row 1: Item Number & Make */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <Form.Item
               name="code"
@@ -477,7 +585,7 @@ export const ItemTypesPage: React.FC = () => {
             </Form.Item>
           </div>
 
-          {/* Row 2: Item Name & Item Description (Master Dropdown with On-The-Fly Creation) */}
+          {/* Row 2: Item Name & Item Description */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <Form.Item
               name="name"

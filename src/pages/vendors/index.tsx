@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, Modal, Form, Popconfirm, Space, Tag, DatePicker, Badge, message } from 'antd';
-const { RangePicker } = DatePicker;
+import { Table, Card, Button, Input, Modal, Form, Popconfirm, Space, Tag, Badge, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -14,6 +13,8 @@ import {
   UserOutlined,
   SaveOutlined,
   CheckOutlined,
+  FilterOutlined,
+  ClearOutlined,
 } from '@ant-design/icons';
 import type { Vendor } from '../../types/inventory';
 import { vendorApi } from '../../services/api';
@@ -23,18 +24,37 @@ export const VendorsPage: React.FC = () => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [dateRange, setDateRange] = useState<[string, string] | null>(null);
+
+  // Pagination & Server Filtering state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(15);
+  const [totalVendors, setTotalVendors] = useState<number>(0);
+  const [appliedFilters, setAppliedFilters] = useState<any>({});
+
+  // Filter Modal state
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState<boolean>(false);
+  const [filterForm] = Form.useForm();
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [vendorToEdit, setVendorToEdit] = useState<Vendor | null>(null);
   const [form] = Form.useForm();
 
-  const fetchVendors = async () => {
+  const fetchVendors = async (page = currentPage, limit = pageSize, filters = appliedFilters, search = searchQuery) => {
     setLoading(true);
     try {
-      const res = await vendorApi.getAll();
+      const res = await vendorApi.getAll({
+        page,
+        limit,
+        search: search || undefined,
+        name: filters.name || undefined,
+        contact_person: filters.contact_person || undefined,
+        phone: filters.phone || undefined,
+        email: filters.email || undefined,
+      });
+
       if (res.success && res.vendors) {
         setVendors(res.vendors);
+        setTotalVendors(res.total ?? res.vendors.length);
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to load suppliers directory');
@@ -44,8 +64,38 @@ export const VendorsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchVendors();
+    fetchVendors(1, pageSize, appliedFilters, searchQuery);
   }, []);
+
+  const handlePageChange = (page: number, newPageSize: number) => {
+    setCurrentPage(page);
+    setPageSize(newPageSize);
+    fetchVendors(page, newPageSize, appliedFilters, searchQuery);
+  };
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setCurrentPage(1);
+    fetchVendors(1, pageSize, appliedFilters, val);
+  };
+
+  const handleApplyFilters = (values: any) => {
+    setAppliedFilters(values);
+    setCurrentPage(1);
+    setIsFilterModalOpen(false);
+    fetchVendors(1, pageSize, values, searchQuery);
+  };
+
+  const handleResetFilters = () => {
+    filterForm.resetFields();
+    setAppliedFilters({});
+    setSearchQuery('');
+    setCurrentPage(1);
+    setIsFilterModalOpen(false);
+    fetchVendors(1, pageSize, {}, '');
+  };
+
+  const activeFilterCount = Object.values(appliedFilters).filter((v) => v).length;
 
   const handleOpenAdd = () => {
     setVendorToEdit(null);
@@ -70,8 +120,8 @@ export const VendorsPage: React.FC = () => {
     try {
       const res = await vendorApi.delete(id);
       if (res.success) {
-        setVendors(vendors.filter((v) => v.id !== id));
         message.success('Supplier removed successfully');
+        fetchVendors(currentPage, pageSize, appliedFilters, searchQuery);
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to delete vendor');
@@ -82,46 +132,21 @@ export const VendorsPage: React.FC = () => {
     try {
       if (vendorToEdit) {
         const res = await vendorApi.update(vendorToEdit.id, values);
-        if (res.success && res.vendor) {
-          setVendors(vendors.map((v) => (v.id === vendorToEdit.id ? res.vendor : v)));
+        if (res.success) {
           message.success('Supplier details updated successfully');
         }
       } else {
         const res = await vendorApi.create(values);
-        if (res.success && res.vendor) {
-          setVendors([res.vendor, ...vendors]);
+        if (res.success) {
           message.success('New supplier added successfully');
         }
       }
       setIsModalOpen(false);
+      fetchVendors(currentPage, pageSize, appliedFilters, searchQuery);
     } catch (err: any) {
       message.error(err.message || 'Failed to save supplier details');
     }
   };
-
-  const filteredVendors = vendors.filter((v) => {
-    const q = searchQuery.toLowerCase();
-    const cp = v.contact_person || '';
-    const phone = v.phone || '';
-    const tax = v.tax_id || '';
-    const matchesSearch =
-      !q ||
-      v.name.toLowerCase().includes(q) ||
-      cp.toLowerCase().includes(q) ||
-      phone.toLowerCase().includes(q) ||
-      tax.toLowerCase().includes(q);
-
-    if (!matchesSearch) return false;
-
-    if (dateRange && (v as any).createdAt) {
-      const createdStr = new Date((v as any).createdAt).toISOString().slice(0, 10);
-      if (createdStr < dateRange[0] || createdStr > dateRange[1]) {
-        return false;
-      }
-    }
-
-    return true;
-  });
 
   const columns: ColumnsType<Vendor> = [
     {
@@ -130,7 +155,7 @@ export const VendorsPage: React.FC = () => {
       width: 80,
       align: 'center',
       render: (_, __, index: number) => (
-        <span className="font-mono font-bold text-slate-500">{index + 1}</span>
+        <span className="font-mono font-bold text-slate-500">{(currentPage - 1) * pageSize + index + 1}</span>
       ),
     },
     {
@@ -219,13 +244,13 @@ export const VendorsPage: React.FC = () => {
                 Vendor Master Directory
               </h1>
               <p className="text-xs sm:text-sm app-text-muted mb-0">
-                Manage material suppliers, contact persons, tax IDs, and vendor profiles
+                Manage material suppliers, contact persons, tax IDs, with Server Search, Pagination & Filter Modal
               </p>
             </div>
           </div>
 
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={fetchVendors} loading={loading}>
+            <Button icon={<ReloadOutlined />} onClick={() => fetchVendors(currentPage, pageSize, appliedFilters, searchQuery)} loading={loading}>
               Refresh
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30">
@@ -237,57 +262,111 @@ export const VendorsPage: React.FC = () => {
         <Card className="shadow-2xl">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-white/10">
             <div className="flex items-center gap-3">
-              <Badge count={filteredVendors.length} overflowCount={999} color="#6366f1">
+              <Badge count={totalVendors} overflowCount={9999} color="#6366f1">
                 <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
-                  Total Suppliers: {filteredVendors.length} Records
+                  Total Suppliers: {totalVendors} Records
                 </Tag>
               </Badge>
             </div>
           </div>
 
-          {/* Search Toolbar */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+          {/* Search Bar & Filter Modal Trigger */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 mb-4">
             <Input
-              placeholder="Search by name, contact, phone, or Tax ID..."
+              placeholder="Search Vendor Name, Contact, Phone, Email on Server..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               allowClear
-            />
-
-            <RangePicker
-              onChange={(dates) => {
-                if (dates && dates[0] && dates[1]) {
-                  setDateRange([dates[0].format('YYYY-MM-DD'), dates[1].format('YYYY-MM-DD')]);
-                } else {
-                  setDateRange(null);
-                }
-              }}
-              className="w-full"
+              className="flex-1"
             />
 
             <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                setSearchQuery('');
-                setDateRange(null);
-              }}
+              icon={<FilterOutlined />}
+              onClick={() => setIsFilterModalOpen(true)}
+              className={activeFilterCount > 0 ? 'border-indigo-500 text-indigo-600 font-bold' : ''}
             >
-              Reset Filters
+              Filter Modal {activeFilterCount > 0 && <Badge count={activeFilterCount} className="ml-1" />}
             </Button>
+
+            {activeFilterCount > 0 && (
+              <Button icon={<ClearOutlined />} danger onClick={handleResetFilters}>
+                Reset
+              </Button>
+            )}
           </div>
 
           <Table
             columns={columns}
-            dataSource={filteredVendors}
+            dataSource={vendors}
             rowKey="id"
             loading={loading}
             scroll={{ x: 850, y: 400 }}
-            pagination={{ pageSize: 15, showSizeChanger: true }}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              total: totalVendors,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '15', '25', '50'],
+              onChange: handlePageChange,
+            }}
           />
         </Card>
       </main>
 
+      {/* Filter Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
+            <FilterOutlined className="text-indigo-500 text-lg" />
+            <span className="font-bold text-lg font-['Outfit']">Filter Vendor Master</span>
+          </div>
+        }
+        open={isFilterModalOpen}
+        onCancel={() => setIsFilterModalOpen(false)}
+        centered
+        width={480}
+        footer={[
+          <Button key="reset" icon={<ClearOutlined />} onClick={handleResetFilters}>
+            Reset Filters
+          </Button>,
+          <Button
+            key="apply"
+            type="primary"
+            icon={<FilterOutlined />}
+            onClick={() => filterForm.submit()}
+            className="bg-indigo-600"
+          >
+            Apply Filters
+          </Button>,
+        ]}
+      >
+        <Form
+          form={filterForm}
+          layout="vertical"
+          initialValues={appliedFilters}
+          onFinish={handleApplyFilters}
+          className="mt-3 pt-2 border-t border-slate-100 dark:border-white/10"
+        >
+          <Form.Item name="name" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Vendor Name</span>}>
+            <Input placeholder="e.g. AMTECH" allowClear />
+          </Form.Item>
+
+          <Form.Item name="contact_person" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Contact Person</span>}>
+            <Input placeholder="e.g. Rajesh" allowClear />
+          </Form.Item>
+
+          <Form.Item name="phone" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Phone Number</span>}>
+            <Input placeholder="e.g. 98765" allowClear />
+          </Form.Item>
+
+          <Form.Item name="email" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Email</span>}>
+            <Input placeholder="e.g. sales@vendor.com" allowClear />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Add / Edit Modal */}
       <Modal
         title={
           <div className="flex items-center gap-2.5 py-1 text-slate-800 dark:text-slate-100">

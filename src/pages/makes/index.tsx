@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, Modal, Form, Popconfirm, Space, Tag, message } from 'antd';
+import { Table, Card, Button, Input, Modal, Form, Popconfirm, Space, Tag, Badge, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -8,6 +8,8 @@ import {
   DeleteOutlined,
   ShopOutlined,
   ReloadOutlined,
+  FilterOutlined,
+  ClearOutlined,
 } from '@ant-design/icons';
 import type { Make } from '../../types/inventory';
 import { makeApi } from '../../services/api';
@@ -17,16 +19,35 @@ export const MakesPage: React.FC = () => {
   const [makes, setMakes] = useState<Make[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Pagination & Server Filtering state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(12);
+  const [totalMakes, setTotalMakes] = useState<number>(0);
+  const [appliedFilters, setAppliedFilters] = useState<any>({});
+
+  // Filter Modal state
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState<boolean>(false);
+  const [filterForm] = Form.useForm();
+
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [makeToEdit, setMakeToEdit] = useState<Make | null>(null);
   const [form] = Form.useForm();
 
-  const fetchMakes = async () => {
+  const fetchMakes = async (page = currentPage, limit = pageSize, filters = appliedFilters, search = searchQuery) => {
     setLoading(true);
     try {
-      const res = await makeApi.getAll();
+      const res = await makeApi.getAll({
+        page,
+        limit,
+        search: search || undefined,
+        name: filters.name || undefined,
+        code: filters.code || undefined,
+      });
+
       if (res.success && res.makes) {
         setMakes(res.makes);
+        setTotalMakes(res.total ?? res.makes.length);
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to load brand makes');
@@ -36,8 +57,38 @@ export const MakesPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchMakes();
+    fetchMakes(1, pageSize, appliedFilters, searchQuery);
   }, []);
+
+  const handlePageChange = (page: number, newPageSize: number) => {
+    setCurrentPage(page);
+    setPageSize(newPageSize);
+    fetchMakes(page, newPageSize, appliedFilters, searchQuery);
+  };
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setCurrentPage(1);
+    fetchMakes(1, pageSize, appliedFilters, val);
+  };
+
+  const handleApplyFilters = (values: any) => {
+    setAppliedFilters(values);
+    setCurrentPage(1);
+    setIsFilterModalOpen(false);
+    fetchMakes(1, pageSize, values, searchQuery);
+  };
+
+  const handleResetFilters = () => {
+    filterForm.resetFields();
+    setAppliedFilters({});
+    setSearchQuery('');
+    setCurrentPage(1);
+    setIsFilterModalOpen(false);
+    fetchMakes(1, pageSize, {}, '');
+  };
+
+  const activeFilterCount = Object.values(appliedFilters).filter((v) => v).length;
 
   const handleOpenAdd = () => {
     setMakeToEdit(null);
@@ -59,8 +110,8 @@ export const MakesPage: React.FC = () => {
     try {
       const res = await makeApi.delete(id);
       if (res.success) {
-        setMakes(makes.filter((m) => m.id !== id));
         message.success('Make deleted successfully');
+        fetchMakes(currentPage, pageSize, appliedFilters, searchQuery);
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to delete make');
@@ -71,27 +122,21 @@ export const MakesPage: React.FC = () => {
     try {
       if (makeToEdit) {
         const res = await makeApi.update(makeToEdit.id, values);
-        if (res.success && res.make) {
-          setMakes(makes.map((m) => (m.id === makeToEdit.id ? res.make : m)));
+        if (res.success) {
           message.success('Make updated successfully');
         }
       } else {
         const res = await makeApi.create(values);
-        if (res.success && res.make) {
-          setMakes([...makes, res.make]);
+        if (res.success) {
           message.success('Make created successfully');
         }
       }
       setIsModalOpen(false);
+      fetchMakes(currentPage, pageSize, appliedFilters, searchQuery);
     } catch (err: any) {
       message.error(err.message || 'Failed to save make');
     }
   };
-
-  const filteredMakes = makes.filter((m) => {
-    const q = searchQuery.toLowerCase();
-    return !q || m.name.toLowerCase().includes(q) || (m.code && m.code.toLowerCase().includes(q));
-  });
 
   const columns: ColumnsType<Make> = [
     {
@@ -100,7 +145,7 @@ export const MakesPage: React.FC = () => {
       width: 80,
       align: 'center',
       render: (_, __, index: number) => (
-        <span className="font-mono font-bold text-slate-500">{index + 1}</span>
+        <span className="font-mono font-bold text-slate-500">{(currentPage - 1) * pageSize + index + 1}</span>
       ),
     },
     {
@@ -170,7 +215,7 @@ export const MakesPage: React.FC = () => {
           </div>
 
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={fetchMakes} loading={loading}>
+            <Button icon={<ReloadOutlined />} onClick={() => fetchMakes(currentPage, pageSize, appliedFilters, searchQuery)} loading={loading}>
               Refresh
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30">
@@ -180,28 +225,95 @@ export const MakesPage: React.FC = () => {
         </div>
 
         <Card className="shadow-2xl">
-          <div className="flex items-center justify-between gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row items-center gap-3 mb-4">
             <Input
-              placeholder="Search Brand Make..."
+              placeholder="Search Brand Make on Server..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               allowClear
-              className="max-w-md"
+              className="flex-1"
             />
-            <span className="text-xs font-bold text-indigo-400">Total Brands: {filteredMakes.length}</span>
+
+            <Button
+              icon={<FilterOutlined />}
+              onClick={() => setIsFilterModalOpen(true)}
+              className={activeFilterCount > 0 ? 'border-indigo-500 text-indigo-600 font-bold' : ''}
+            >
+              Filter Modal {activeFilterCount > 0 && <Badge count={activeFilterCount} className="ml-1" />}
+            </Button>
+
+            {activeFilterCount > 0 && (
+              <Button icon={<ClearOutlined />} danger onClick={handleResetFilters}>
+                Reset
+              </Button>
+            )}
+
+            <span className="text-xs font-bold text-indigo-500 shrink-0">Total Brands: {totalMakes}</span>
           </div>
 
           <Table
             columns={columns}
-            dataSource={filteredMakes}
+            dataSource={makes}
             rowKey="id"
             loading={loading}
-            pagination={{ pageSize: 12 }}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              total: totalMakes,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '12', '25', '50'],
+              onChange: handlePageChange,
+            }}
           />
         </Card>
       </main>
 
+      {/* Filter Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-slate-800 dark:text-slate-100">
+            <FilterOutlined className="text-indigo-500 text-lg" />
+            <span className="font-bold text-lg font-['Outfit']">Filter Make Master</span>
+          </div>
+        }
+        open={isFilterModalOpen}
+        onCancel={() => setIsFilterModalOpen(false)}
+        centered
+        width={450}
+        footer={[
+          <Button key="reset" icon={<ClearOutlined />} onClick={handleResetFilters}>
+            Reset Filters
+          </Button>,
+          <Button
+            key="apply"
+            type="primary"
+            icon={<FilterOutlined />}
+            onClick={() => filterForm.submit()}
+            className="bg-indigo-600"
+          >
+            Apply Filters
+          </Button>,
+        ]}
+      >
+        <Form
+          form={filterForm}
+          layout="vertical"
+          initialValues={appliedFilters}
+          onFinish={handleApplyFilters}
+          className="mt-3 pt-2 border-t border-slate-100 dark:border-white/10"
+        >
+          <Form.Item name="name" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Brand / Make Name</span>}>
+            <Input placeholder="e.g. SIEMENS" allowClear />
+          </Form.Item>
+
+          <Form.Item name="code" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Brand Code</span>}>
+            <Input placeholder="e.g. ABB" allowClear />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Add / Edit Modal */}
       <Modal
         title={makeToEdit ? 'Edit Brand Make' : 'Add Brand Make'}
         open={isModalOpen}
