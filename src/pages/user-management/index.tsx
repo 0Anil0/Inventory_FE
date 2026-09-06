@@ -28,6 +28,15 @@ export const UserManagementPage: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
+  // Responsive desktop check (>= 1024px)
+  const [isDesktop, setIsDesktop] = useState<boolean>(window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Pagination & Server Filtering state for Users
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(15);
@@ -94,7 +103,6 @@ export const UserManagementPage: React.FC = () => {
     fetchUsers(1, pageSize, activeFilters, val);
   };
 
-  // --- USER HANDLERS ---
   const handleOpenAddUser = () => {
     setUserToEdit(null);
     setIsUserModalOpen(true);
@@ -144,7 +152,6 @@ export const UserManagementPage: React.FC = () => {
     fetchUsers(currentPage, pageSize, activeFilters, searchQuery);
   };
 
-  // --- ROLE HANDLERS ---
   const handleOpenAddRole = () => {
     setRoleToEdit(null);
     setIsRoleModalOpen(true);
@@ -184,7 +191,6 @@ export const UserManagementPage: React.FC = () => {
     setIsRoleModalOpen(false);
   };
 
-  // Filter application logic
   const handleApplyFilter = (filters: FilterValues) => {
     setActiveFilters(filters);
     const newSearch = filters.keyword !== undefined ? filters.keyword : searchQuery;
@@ -375,9 +381,9 @@ export const UserManagementPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
+      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <TeamOutlined className="text-2xl sm:text-3xl text-indigo-500" />
             <div>
@@ -385,7 +391,7 @@ export const UserManagementPage: React.FC = () => {
                 User & Access Control Center
               </h1>
               <p className="text-xs sm:text-sm app-text-muted mb-0">
-                Manage system user accounts, credentials, and system roles with Server Search, Pagination & Filter Modal
+                Manage system user accounts, credentials, and system roles
               </p>
             </div>
           </div>
@@ -416,10 +422,11 @@ export const UserManagementPage: React.FC = () => {
         </div>
 
         {/* Tabbed Card Layout */}
-        <Card className="shadow-2xl">
+        <Card className="shadow-2xl flex-1 flex flex-col h-auto lg:h-full overflow-visible lg:overflow-hidden">
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
+            className="flex-1 flex flex-col h-auto lg:h-full overflow-visible lg:overflow-hidden"
             items={[
               {
                 key: 'users',
@@ -429,8 +436,8 @@ export const UserManagementPage: React.FC = () => {
                   </span>
                 ),
                 children: (
-                  <div className="pt-2">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-200 dark:border-white/10">
+                  <div className="pt-2 flex flex-col h-auto lg:h-full overflow-visible lg:overflow-hidden">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-200 dark:border-white/10 shrink-0">
                       <div className="flex items-center gap-3">
                         <Badge count={totalUsers} overflowCount={9999} color="#6366f1">
                           <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
@@ -461,21 +468,26 @@ export const UserManagementPage: React.FC = () => {
                       </div>
                     </div>
 
-                    <Table
-                      columns={userColumns}
-                      dataSource={users}
-                      rowKey="id"
-                      loading={loading}
-                      scroll={{ x: 750, y: 360 }}
-                      pagination={{
-                        current: currentPage,
-                        pageSize: pageSize,
-                        total: totalUsers,
-                        showSizeChanger: true,
-                        pageSizeOptions: ['10', '15', '25', '50'],
-                        onChange: handlePageChange,
-                      }}
-                    />
+                    <div className="flex-1 overflow-visible lg:overflow-hidden">
+                      <Table
+                        columns={userColumns}
+                        dataSource={users}
+                        rowKey="id"
+                        loading={loading}
+                        scroll={{
+                          x: 750,
+                          y: isDesktop ? 'calc(100vh - 430px)' : undefined,
+                        }}
+                        pagination={{
+                          current: currentPage,
+                          pageSize: pageSize,
+                          total: totalUsers,
+                          showSizeChanger: true,
+                          pageSizeOptions: ['10', '15', '25', '50'],
+                          onChange: handlePageChange,
+                        }}
+                      />
+                    </div>
                   </div>
                 ),
               },
@@ -487,8 +499,8 @@ export const UserManagementPage: React.FC = () => {
                   </span>
                 ),
                 children: (
-                  <div className="pt-2">
-                    <div className="flex justify-between items-center mb-4">
+                  <div className="pt-2 flex flex-col h-auto lg:h-full overflow-visible lg:overflow-hidden">
+                    <div className="flex justify-between items-center mb-3 shrink-0">
                       <p className="text-xs text-slate-400 mb-0">
                         Configure system access roles (e.g., admin, manager, user) to assign permissions.
                       </p>
@@ -497,14 +509,19 @@ export const UserManagementPage: React.FC = () => {
                       </Button>
                     </div>
 
-                    <Table
-                      columns={roleColumns}
-                      dataSource={roles}
-                      rowKey="id"
-                      loading={loading}
-                      scroll={{ x: 700, y: 360 }}
-                      pagination={false}
-                    />
+                    <div className="flex-1 overflow-visible lg:overflow-hidden">
+                      <Table
+                        columns={roleColumns}
+                        dataSource={roles}
+                        rowKey="id"
+                        loading={loading}
+                        scroll={{
+                          x: 700,
+                          y: isDesktop ? 'calc(100vh - 430px)' : undefined,
+                        }}
+                        pagination={false}
+                      />
+                    </div>
                   </div>
                 ),
               },

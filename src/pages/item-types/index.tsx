@@ -28,6 +28,15 @@ export const ItemTypesPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Responsive desktop check (>= 1024px)
+  const [isDesktop, setIsDesktop] = useState<boolean>(window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Pagination & Server Filtering state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(15);
@@ -159,7 +168,6 @@ export const ItemTypesPage: React.FC = () => {
     }
   };
 
-  // On-the-fly Master creation handler for Make
   const handleCreateMakeInline = async (nameToCreate: string) => {
     const trimmed = nameToCreate.trim();
     if (!trimmed) return;
@@ -181,7 +189,6 @@ export const ItemTypesPage: React.FC = () => {
     }
   };
 
-  // On-the-fly Master creation handler for Item Description
   const handleCreateDescInline = async (nameToCreate: string) => {
     const trimmed = nameToCreate.trim();
     if (!trimmed) return;
@@ -328,8 +335,8 @@ export const ItemTypesPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <CodeSandboxOutlined className="text-3xl text-indigo-500" />
             <div>
@@ -337,7 +344,7 @@ export const ItemTypesPage: React.FC = () => {
                 Item Master
               </h1>
               <p className="text-xs sm:text-sm app-text-muted mb-0">
-                Item Number, Item, Item Description (Master), Full Description, Cat No & Make (Master) with Server Search, Pagination & Filter Modal
+                Item Number, Item, Item Description (Master), Full Description, Cat No & Make (Master)
               </p>
             </div>
           </div>
@@ -352,8 +359,8 @@ export const ItemTypesPage: React.FC = () => {
           </Space>
         </div>
 
-        <Card className="shadow-2xl">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-white/10">
+        <Card className="shadow-2xl flex-1 flex flex-col h-auto lg:h-full overflow-visible lg:overflow-hidden">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-200 dark:border-white/10 shrink-0">
             <div className="flex items-center gap-3">
               <Badge count={totalItems} overflowCount={9999} color="#6366f1">
                 <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
@@ -364,7 +371,7 @@ export const ItemTypesPage: React.FC = () => {
           </div>
 
           {/* Search Bar & Filter Modal Trigger */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row items-center gap-3 mb-3 shrink-0">
             <Input
               placeholder="Search on Server by Cat No, Item Number, Item, Make..."
               prefix={<SearchOutlined className="text-gray-400" />}
@@ -389,21 +396,26 @@ export const ItemTypesPage: React.FC = () => {
             )}
           </div>
 
-          <Table
-            columns={columns}
-            dataSource={items}
-            rowKey="id"
-            loading={loading}
-            scroll={{ x: 950, y: 400 }}
-            pagination={{
-              current: currentPage,
-              pageSize: pageSize,
-              total: totalItems,
-              showSizeChanger: true,
-              pageSizeOptions: ['10', '15', '25', '50', '100'],
-              onChange: handlePageChange,
-            }}
-          />
+          <div className="flex-1 overflow-visible lg:overflow-hidden">
+            <Table
+              columns={columns}
+              dataSource={items}
+              rowKey="id"
+              loading={loading}
+              scroll={{
+                x: 950,
+                y: isDesktop ? 'calc(100vh - 385px)' : undefined,
+              }}
+              pagination={{
+                current: currentPage,
+                pageSize: pageSize,
+                total: totalItems,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '15', '25', '50', '100'],
+                onChange: handlePageChange,
+              }}
+            />
+          </div>
         </Card>
       </main>
 

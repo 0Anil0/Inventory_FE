@@ -21,6 +21,15 @@ export const UnitsPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Responsive desktop check (>= 1024px)
+  const [isDesktop, setIsDesktop] = useState<boolean>(window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Pagination & Server Filtering state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(15);
@@ -207,8 +216,8 @@ export const UnitsPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <TagsOutlined className="text-3xl text-indigo-500" />
             <div>
@@ -216,7 +225,7 @@ export const UnitsPage: React.FC = () => {
                 Units Management
               </h1>
               <p className="text-xs sm:text-sm app-text-muted mb-0">
-                Manage measurement units (e.g., PCS, KG, MTR, LTR, BOX) with Server Search, Pagination & Filter Modal
+                Manage measurement units (e.g., PCS, KG, MTR, LTR, BOX)
               </p>
             </div>
           </div>
@@ -231,9 +240,9 @@ export const UnitsPage: React.FC = () => {
           </Space>
         </div>
 
-        <Card className="shadow-2xl">
+        <Card className="shadow-2xl flex-1 flex flex-col h-auto lg:h-full overflow-visible lg:overflow-hidden">
           {/* Total Records Counter */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-white/10">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-200 dark:border-white/10 shrink-0">
             <div className="flex items-center gap-3">
               <Badge count={totalUnits} overflowCount={9999} color="#6366f1">
                 <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
@@ -244,7 +253,7 @@ export const UnitsPage: React.FC = () => {
           </div>
 
           {/* Search Bar & Filter Trigger */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 mb-4">
+          <div className="flex flex-col sm:flex-row items-center gap-3 mb-3 shrink-0">
             <Input
               placeholder="Search Unit Code, Name, Description on Server..."
               prefix={<SearchOutlined className="text-gray-400" />}
@@ -269,21 +278,26 @@ export const UnitsPage: React.FC = () => {
             )}
           </div>
 
-          <Table
-            columns={columns}
-            dataSource={units}
-            rowKey="id"
-            loading={loading}
-            scroll={{ x: 600, y: 360 }}
-            pagination={{
-              current: currentPage,
-              pageSize: pageSize,
-              total: totalUnits,
-              showSizeChanger: true,
-              pageSizeOptions: ['10', '15', '25', '50'],
-              onChange: handlePageChange,
-            }}
-          />
+          <div className="flex-1 overflow-visible lg:overflow-hidden">
+            <Table
+              columns={columns}
+              dataSource={units}
+              rowKey="id"
+              loading={loading}
+              scroll={{
+                x: 600,
+                y: isDesktop ? 'calc(100vh - 385px)' : undefined,
+              }}
+              pagination={{
+                current: currentPage,
+                pageSize: pageSize,
+                total: totalUnits,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '15', '25', '50'],
+                onChange: handlePageChange,
+              }}
+            />
+          </div>
         </Card>
       </main>
 

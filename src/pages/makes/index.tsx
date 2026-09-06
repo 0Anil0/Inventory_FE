@@ -20,6 +20,15 @@ export const MakesPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Responsive desktop check (>= 1024px)
+  const [isDesktop, setIsDesktop] = useState<boolean>(window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Pagination & Server Filtering state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(12);
@@ -200,8 +209,8 @@ export const MakesPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <main className="relative z-10 flex-1 max-w-5xl w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <ShopOutlined className="text-3xl text-indigo-500" />
             <div>
@@ -224,8 +233,8 @@ export const MakesPage: React.FC = () => {
           </Space>
         </div>
 
-        <Card className="shadow-2xl">
-          <div className="flex flex-col sm:flex-row items-center gap-3 mb-4">
+        <Card className="shadow-2xl flex-1 flex flex-col h-auto lg:h-full overflow-visible lg:overflow-hidden">
+          <div className="flex flex-col sm:flex-row items-center gap-3 mb-3 shrink-0">
             <Input
               placeholder="Search Brand Make on Server..."
               prefix={<SearchOutlined className="text-gray-400" />}
@@ -252,20 +261,26 @@ export const MakesPage: React.FC = () => {
             <span className="text-xs font-bold text-indigo-500 shrink-0">Total Brands: {totalMakes}</span>
           </div>
 
-          <Table
-            columns={columns}
-            dataSource={makes}
-            rowKey="id"
-            loading={loading}
-            pagination={{
-              current: currentPage,
-              pageSize: pageSize,
-              total: totalMakes,
-              showSizeChanger: true,
-              pageSizeOptions: ['10', '12', '25', '50'],
-              onChange: handlePageChange,
-            }}
-          />
+          <div className="flex-1 overflow-visible lg:overflow-hidden">
+            <Table
+              columns={columns}
+              dataSource={makes}
+              rowKey="id"
+              loading={loading}
+              scroll={{
+                x: 650,
+                y: isDesktop ? 'calc(100vh - 385px)' : undefined,
+              }}
+              pagination={{
+                current: currentPage,
+                pageSize: pageSize,
+                total: totalMakes,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '12', '25', '50'],
+                onChange: handlePageChange,
+              }}
+            />
+          </div>
         </Card>
       </main>
 
