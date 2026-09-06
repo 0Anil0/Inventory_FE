@@ -9,6 +9,7 @@ import { UserManagementPage } from './pages/user-management';
 import { UnitsPage } from './pages/units';
 import { ItemTypesPage } from './pages/item-types';
 import { MakesPage } from './pages/makes';
+import { VendorsPage } from './pages/vendors';
 import { ProjectsPage } from './pages/projects';
 
 const RootRedirect: React.FC = () => {
@@ -49,9 +50,9 @@ const AppContent: React.FC = () => {
             <Route path="/login" element={<LoginPage />} />
             <Route element={<ProtectedRoute />}>
               <Route path="/units" element={<UnitsPage />} />
-              <Route path="/item-types" element={<ItemTypesPage />} />
               <Route path="/makes" element={<MakesPage />} />
-              <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/item-types" element={<ItemTypesPage />} />
+              <Route path="/vendors" element={<VendorsPage />} />
               <Route path="/users" element={<UserManagementPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/item-types" replace />} />

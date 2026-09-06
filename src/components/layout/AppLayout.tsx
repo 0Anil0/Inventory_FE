@@ -52,7 +52,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
   };
 
-  // Menu hierarchy in exact order: Unit Master -> Make Master -> Item Master -> User Management
+  // Menu hierarchy in exact order: Unit Master -> Make Master -> Item Master -> Vendor Master -> User Management
   const navMenuItems: MenuProps['items'] = [
     {
       key: '/units',
@@ -78,6 +78,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       label: 'Item Master',
       onClick: () => {
         navigate('/item-types');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
+      key: '/vendors',
+      icon: <ShopOutlined style={{ fontSize: '18px' }} />,
+      label: 'Vendor Master',
+      onClick: () => {
+        navigate('/vendors');
         setMobileDrawerOpen(false);
       },
     },
@@ -119,6 +128,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/units': return 'Unit Master';
       case '/makes': return 'Make Master';
       case '/item-types': return 'Item Master';
+      case '/vendors': return 'Vendor Master';
       case '/users': return 'User Management';
       default: return 'Inventory Management System';
     }

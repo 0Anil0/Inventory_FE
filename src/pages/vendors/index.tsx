@@ -12,6 +12,8 @@ import {
   PhoneOutlined,
   MailOutlined,
   UserOutlined,
+  SaveOutlined,
+  CheckOutlined,
 } from '@ant-design/icons';
 import type { Vendor } from '../../types/inventory';
 import { vendorApi } from '../../services/api';
@@ -55,11 +57,11 @@ export const VendorsPage: React.FC = () => {
     setVendorToEdit(vendor);
     form.setFieldsValue({
       name: vendor.name,
-      contact_person: vendor.contact_person,
-      phone: vendor.phone,
-      email: vendor.email,
-      tax_id: vendor.tax_id,
-      address: vendor.address,
+      contact_person: vendor.contact_person || '',
+      phone: vendor.phone || '',
+      email: vendor.email || '',
+      tax_id: vendor.tax_id || '',
+      address: vendor.address || '',
     });
     setIsModalOpen(true);
   };
@@ -125,12 +127,10 @@ export const VendorsPage: React.FC = () => {
     {
       title: 'S.No.',
       key: 'sno',
-      width: 90,
+      width: 80,
       align: 'center',
       render: (_, __, index: number) => (
-        <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
-          {index + 1}
-        </span>
+        <span className="font-mono font-bold text-slate-500">{index + 1}</span>
       ),
     },
     {
@@ -139,8 +139,8 @@ export const VendorsPage: React.FC = () => {
       key: 'name',
       render: (name: string, record) => (
         <div>
-          <div className="font-bold app-text-main font-['Outfit']">{name}</div>
-          {record.tax_id && <div className="text-xs font-mono text-slate-400">GST/Tax: {record.tax_id}</div>}
+          <div className="font-bold app-text-main font-['Outfit'] text-base">{name}</div>
+          {record.tax_id && <div className="text-xs font-mono text-emerald-500 font-semibold">GSTIN: {record.tax_id}</div>}
         </div>
       ),
     },
@@ -185,16 +185,17 @@ export const VendorsPage: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
+      width: 100,
       align: 'right',
       render: (_, record) => (
         <Space size="small">
           <Button
             type="text"
-            icon={<EditOutlined className="text-indigo-400" />}
+            icon={<EditOutlined className="text-indigo-600 dark:text-indigo-400" />}
             onClick={() => handleOpenEdit(record)}
           />
           <Popconfirm
-            title="Delete Vendor"
+            title="Delete Supplier"
             description={`Delete "${record.name}"?`}
             onConfirm={() => handleDelete(record.id)}
             okText="Delete"
@@ -209,14 +210,13 @@ export const VendorsPage: React.FC = () => {
 
   return (
     <AppLayout>
-
-      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <ShopOutlined className="text-3xl text-indigo-500" />
             <div>
               <h1 className="text-2xl font-bold app-text-main font-['Outfit'] mb-0.5">
-                Suppliers & Vendors Directory
+                Vendor Master Directory
               </h1>
               <p className="text-xs sm:text-sm app-text-muted mb-0">
                 Manage material suppliers, contact persons, tax IDs, and vendor profiles
@@ -229,29 +229,23 @@ export const VendorsPage: React.FC = () => {
               Refresh
             </Button>
             <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30">
-              Add Supplier
+              Add New Vendor
             </Button>
           </Space>
         </div>
 
         <Card className="shadow-2xl">
-          {/* Total Records Counter Header */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-white/10">
             <div className="flex items-center gap-3">
               <Badge count={filteredVendors.length} overflowCount={999} color="#6366f1">
                 <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
-                  Total Records: {filteredVendors.length} Suppliers
+                  Total Suppliers: {filteredVendors.length} Records
                 </Tag>
               </Badge>
-              {filteredVendors.length !== vendors.length && (
-                <span className="text-xs text-slate-500 font-medium">
-                  (Filtered from {vendors.length} total suppliers)
-                </span>
-              )}
             </div>
           </div>
 
-          {/* Full Enterprise Toolbar: Keyword Search + Date Range */}
+          {/* Search Toolbar */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
             <Input
               placeholder="Search by name, contact, phone, or Tax ID..."
@@ -259,7 +253,6 @@ export const VendorsPage: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               allowClear
-              className="w-full"
             />
 
             <RangePicker
@@ -279,7 +272,6 @@ export const VendorsPage: React.FC = () => {
                 setSearchQuery('');
                 setDateRange(null);
               }}
-              className="w-full"
             >
               Reset Filters
             </Button>
@@ -290,46 +282,70 @@ export const VendorsPage: React.FC = () => {
             dataSource={filteredVendors}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 750, y: 360 }}
+            scroll={{ x: 850, y: 400 }}
             pagination={{ pageSize: 15, showSizeChanger: true }}
           />
         </Card>
       </main>
 
       <Modal
-        title={vendorToEdit ? 'Edit Supplier' : 'Add New Supplier'}
+        title={
+          <div className="flex items-center gap-2.5 py-1 text-slate-800 dark:text-slate-100">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+              <ShopOutlined className="text-lg" />
+            </div>
+            <span className="font-bold text-lg font-['Outfit']">
+              {vendorToEdit ? 'Edit Vendor Supplier' : 'Add New Vendor Supplier'}
+            </span>
+          </div>
+        }
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
-        onOk={() => form.submit()}
         destroyOnClose
         centered
+        width={700}
+        footer={[
+          <Button key="cancel" size="large" onClick={() => setIsModalOpen(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            size="large"
+            icon={vendorToEdit ? <CheckOutlined /> : <SaveOutlined />}
+            onClick={() => form.submit()}
+            className="bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-500/20"
+          >
+            {vendorToEdit ? 'Update Supplier' : 'Save Supplier'}
+          </Button>,
+        ]}
       >
-        <Form form={form} layout="vertical" onFinish={handleFinish} className="mt-4">
-          <Form.Item name="name" label="Supplier / Business Name" rules={[{ required: true, message: 'Vendor Name is required' }]}>
-            <Input placeholder="e.g. Apex Building Supplies Ltd" />
+        <Form form={form} layout="vertical" onFinish={handleFinish} className="mt-4 pt-2 border-t border-slate-100 dark:border-white/10">
+          <Form.Item name="name" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Supplier / Business Name</span>} rules={[{ required: true, message: 'Vendor Name is required' }]}>
+            <Input placeholder="e.g. AMTECH INDIA" size="large" />
           </Form.Item>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Form.Item name="contact_person" label="Contact Person Name">
-              <Input placeholder="e.g. Rajesh Kumar" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+            <Form.Item name="contact_person" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Contact Person Name</span>}>
+              <Input placeholder="e.g. Rajesh Kumar" size="large" />
             </Form.Item>
 
-            <Form.Item name="phone" label="Phone Number">
-              <Input placeholder="e.g. +91 98765 43210" />
-            </Form.Item>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Form.Item name="email" label="Email Address">
-              <Input placeholder="e.g. sales@apexsupplies.com" />
-            </Form.Item>
-
-            <Form.Item name="tax_id" label="GST / Tax Identification Number">
-              <Input placeholder="e.g. GSTIN27AAACA0000A1Z5" />
+            <Form.Item name="phone" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Phone Number</span>}>
+              <Input placeholder="e.g. +91 98765 43210" size="large" />
             </Form.Item>
           </div>
 
-          <Form.Item name="address" label="Supplier Address">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+            <Form.Item name="email" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Email Address</span>}>
+              <Input placeholder="e.g. sales@amtech.com" size="large" />
+            </Form.Item>
+
+            <Form.Item name="tax_id" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">GST / Tax Identification Number</span>}>
+              <Input placeholder="e.g. GSTIN27AAACA0000A1Z5" size="large" />
+            </Form.Item>
+          </div>
+
+          <Form.Item name="address" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Supplier Address</span>}>
             <Input.TextArea placeholder="Full business address..." rows={2} />
           </Form.Item>
         </Form>
