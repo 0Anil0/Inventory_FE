@@ -7,6 +7,16 @@ export interface Make {
   updatedAt?: string;
 }
 
+export interface ItemDescription {
+  id: number;
+  name: string;
+  code?: string | null;
+  description?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+
 export interface Unit {
   id: number;
   name: string;

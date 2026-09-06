@@ -10,7 +10,9 @@ import type {
   Vendor,
   PurchaseOrder,
   MaterialIssue,
+  ItemDescription,
 } from '../types/inventory';
+
 
 // Token Helper
 const getAuthHeaders = (): HeadersInit => {
@@ -170,6 +172,43 @@ export const makeApi = {
     return handleResponse(res);
   },
 };
+
+// Item Description Master API Client
+export const itemDescriptionApi = {
+  getAll: async (): Promise<{ success: boolean; itemDescriptions: ItemDescription[] }> => {
+    const res = await fetch(`${API_BASE_URL}/item-descriptions`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  create: async (data: { name: string; code?: string; description?: string }): Promise<{ success: boolean; itemDescription: ItemDescription }> => {
+    const res = await fetch(`${API_BASE_URL}/item-descriptions`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  update: async (id: number, data: { name?: string; code?: string; description?: string }): Promise<{ success: boolean; itemDescription: ItemDescription }> => {
+    const res = await fetch(`${API_BASE_URL}/item-descriptions/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  delete: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const res = await fetch(`${API_BASE_URL}/item-descriptions/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+};
+
 
 // Item Type API Client
 export const itemTypeApi = {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, Modal, Form, Select, Popconfirm, Space, Tag, Badge, message } from 'antd';
+import { Table, Card, Button, Input, Modal, Form, Select, Popconfirm, Space, Tag, Badge, message, Divider } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -13,17 +13,25 @@ import {
   SafetyOutlined,
   SaveOutlined,
   CheckOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
-import type { ItemType, Make } from '../../types/inventory';
-import { itemTypeApi, makeApi } from '../../services/api';
+import type { ItemType, Make, ItemDescription } from '../../types/inventory';
+import { itemTypeApi, makeApi, itemDescriptionApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
 
 export const ItemTypesPage: React.FC = () => {
   const [items, setItems] = useState<ItemType[]>([]);
   const [makes, setMakes] = useState<Make[]>([]);
+  const [itemDescriptions, setItemDescriptions] = useState<ItemDescription[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedMake, setSelectedMake] = useState<string>('ALL');
+
+  // Inline creation states for dropdown search
+  const [searchMakeText, setSearchMakeText] = useState<string>('');
+  const [searchDescText, setSearchDescText] = useState<string>('');
+  const [creatingMake, setCreatingMake] = useState<boolean>(false);
+  const [creatingDesc, setCreatingDesc] = useState<boolean>(false);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [itemToEdit, setItemToEdit] = useState<ItemType | null>(null);
@@ -32,13 +40,15 @@ export const ItemTypesPage: React.FC = () => {
   const fetchInitialData = async () => {
     setLoading(true);
     try {
-      const [itemRes, makeRes] = await Promise.all([
+      const [itemRes, makeRes, descRes] = await Promise.all([
         itemTypeApi.getAll(),
         makeApi.getAll().catch(() => ({ success: false, makes: [] })),
+        itemDescriptionApi.getAll().catch(() => ({ success: false, itemDescriptions: [] })),
       ]);
 
       if (itemRes.success && itemRes.items) setItems(itemRes.items);
       if (makeRes.success && makeRes.makes) setMakes(makeRes.makes);
+      if (descRes.success && descRes.itemDescriptions) setItemDescriptions(descRes.itemDescriptions);
     } catch (err: any) {
       message.error(err.message || 'Failed to load item master catalog');
     } finally {
@@ -53,6 +63,8 @@ export const ItemTypesPage: React.FC = () => {
   const handleOpenAdd = () => {
     setItemToEdit(null);
     form.resetFields();
+    setSearchMakeText('');
+    setSearchDescText('');
     if (makes.length > 0) {
       form.setFieldValue('make', makes[0].name);
     }
@@ -61,6 +73,8 @@ export const ItemTypesPage: React.FC = () => {
 
   const handleOpenEdit = (item: ItemType) => {
     setItemToEdit(item);
+    setSearchMakeText('');
+    setSearchDescText('');
     form.setFieldsValue({
       code: item.code,
       name: item.name,
@@ -81,6 +95,56 @@ export const ItemTypesPage: React.FC = () => {
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to delete item master');
+    }
+  };
+
+  // On-the-fly Master creation handler for Make
+  const handleCreateMakeInline = async (nameToCreate: string) => {
+    const trimmed = nameToCreate.trim();
+    if (!trimmed) return;
+    setCreatingMake(true);
+    try {
+      const res = await makeApi.create({ name: trimmed });
+      if (res.success && res.make) {
+        if (!makes.some((m) => m.name.toLowerCase() === res.make.name.toLowerCase())) {
+          setMakes((prev) => [...prev, res.make]);
+        }
+        form.setFieldValue('make', res.make.name);
+        setSearchMakeText('');
+        message.success(`Make "${res.make.name}" created and selected!`);
+      }
+    } catch (err: any) {
+      message.error(err.message || 'Failed to create Make master');
+    } finally {
+      setCreatingMake(false);
+    }
+  };
+
+  // On-the-fly Master creation handler for Item Description
+  const handleCreateDescInline = async (nameToCreate: string) => {
+    const trimmed = nameToCreate.trim();
+    if (!trimmed) return;
+    setCreatingDesc(true);
+    try {
+      const res = await itemDescriptionApi.create({ name: trimmed });
+      if (res.success && res.itemDescription) {
+        if (!itemDescriptions.some((d) => d.name.toLowerCase() === res.itemDescription.name.toLowerCase())) {
+          setItemDescriptions((prev) => [...prev, res.itemDescription]);
+        }
+        form.setFieldValue('rating', res.itemDescription.name);
+
+        // Auto-update full description if name is entered
+        const nameVal = form.getFieldValue('name');
+        if (nameVal && !form.isFieldTouched('full_description')) {
+          form.setFieldValue('full_description', `${nameVal} ${res.itemDescription.name}`);
+        }
+        setSearchDescText('');
+        message.success(`Item description "${res.itemDescription.name}" created and selected!`);
+      }
+    } catch (err: any) {
+      message.error(err.message || 'Failed to create Item Description master');
+    } finally {
+      setCreatingDesc(false);
     }
   };
 
@@ -152,13 +216,15 @@ export const ItemTypesPage: React.FC = () => {
       render: (name: string) => <span className="font-bold app-text-main">{name}</span>,
     },
     {
-      title: 'Item description',
+      title: 'Item description (master)',
       dataIndex: 'rating',
       key: 'rating',
-      width: 150,
+      width: 170,
       render: (rating: string | null) =>
         rating ? (
-          <span className="text-sm text-indigo-500 font-semibold">{rating}</span>
+          <Tag color="purple" icon={<ThunderboltOutlined />} className="font-semibold text-sm py-0.5 px-2">
+            {rating}
+          </Tag>
         ) : (
           <span className="app-text-muted italic">-</span>
         ),
@@ -234,7 +300,7 @@ export const ItemTypesPage: React.FC = () => {
                 Item Master
               </h1>
               <p className="text-xs sm:text-sm app-text-muted mb-0">
-                Form containing ONLY the 6 specified fields: Item Number, Item, Item Description, Full Description, Cat No & Make
+                Item Number, Item, Item Description (Master), Full Description, Cat No & Make (Master) with On-The-Fly Master Creation
               </p>
             </div>
           </div>
@@ -301,7 +367,7 @@ export const ItemTypesPage: React.FC = () => {
         </Card>
       </main>
 
-      {/* Styled Premium Modal Form with 2-Column Grid and Custom Header/Footer */}
+      {/* Styled Premium Modal Form with 2-Column Grid and On-The-Fly Dropdown Master Creation */}
       <Modal
         title={
           <div className="flex items-center gap-2.5 py-1 text-slate-800 dark:text-slate-100">
@@ -317,7 +383,7 @@ export const ItemTypesPage: React.FC = () => {
         onCancel={() => setIsModalOpen(false)}
         destroyOnClose
         centered
-        width={700}
+        width={720}
         footer={[
           <Button key="cancel" size="large" onClick={() => setIsModalOpen(false)}>
             Cancel
@@ -341,7 +407,7 @@ export const ItemTypesPage: React.FC = () => {
           onValuesChange={handleValuesChange}
           className="mt-4 pt-2 border-t border-slate-100 dark:border-white/10"
         >
-          {/* Row 1: Item Number & Make (Master) */}
+          {/* Row 1: Item Number & Make (Master Dropdown with On-The-Fly Creation) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <Form.Item
               name="code"
@@ -357,15 +423,61 @@ export const ItemTypesPage: React.FC = () => {
               rules={[{ required: true, message: 'Make is required' }]}
             >
               <Select
-                placeholder="Select Make (ABB, SCHNEIDER...)"
+                placeholder="Select or Search Make..."
                 showSearch
                 size="large"
+                onSearch={(val) => setSearchMakeText(val)}
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
+                }
                 options={makes.map((m) => ({ value: m.name, label: m.name }))}
+                dropdownRender={(menu) => {
+                  const trimmed = searchMakeText.trim();
+                  const exists = makes.some((m) => m.name.toLowerCase() === trimmed.toLowerCase());
+                  const showAddBtn = trimmed.length > 0 && !exists;
+
+                  return (
+                    <>
+                      {menu}
+                      {showAddBtn && (
+                        <div className="p-2 border-t border-slate-100 dark:border-white/10">
+                          <Button
+                            type="dashed"
+                            block
+                            icon={<PlusOutlined />}
+                            loading={creatingMake}
+                            onClick={() => handleCreateMakeInline(searchMakeText)}
+                            className="text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-700 font-semibold"
+                          >
+                            + Create "{trimmed}" in Make Master
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  );
+                }}
+                notFoundContent={
+                  searchMakeText.trim().length > 0 ? (
+                    <div className="p-3 text-center">
+                      <p className="text-slate-400 text-xs mb-2">No matching make found</p>
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<PlusOutlined />}
+                        loading={creatingMake}
+                        onClick={() => handleCreateMakeInline(searchMakeText)}
+                        className="bg-indigo-600"
+                      >
+                        Create "{searchMakeText.trim()}" Master
+                      </Button>
+                    </div>
+                  ) : undefined
+                }
               />
             </Form.Item>
           </div>
 
-          {/* Row 2: Item Name & Item Description (Rating) */}
+          {/* Row 2: Item Name & Item Description (Master Dropdown with On-The-Fly Creation) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <Form.Item
               name="name"
@@ -377,9 +489,61 @@ export const ItemTypesPage: React.FC = () => {
 
             <Form.Item
               name="rating"
-              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Item description</span>}
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Item description (master)</span>}
             >
-              <Input placeholder="e.g. 2A / 4P" size="large" />
+              <Select
+                placeholder="Select or Search Item Description..."
+                showSearch
+                allowClear
+                size="large"
+                onSearch={(val) => setSearchDescText(val)}
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
+                }
+                options={itemDescriptions.map((d) => ({ value: d.name, label: d.name }))}
+                dropdownRender={(menu) => {
+                  const trimmed = searchDescText.trim();
+                  const exists = itemDescriptions.some((d) => d.name.toLowerCase() === trimmed.toLowerCase());
+                  const showAddBtn = trimmed.length > 0 && !exists;
+
+                  return (
+                    <>
+                      {menu}
+                      {showAddBtn && (
+                        <div className="p-2 border-t border-slate-100 dark:border-white/10">
+                          <Button
+                            type="dashed"
+                            block
+                            icon={<PlusOutlined />}
+                            loading={creatingDesc}
+                            onClick={() => handleCreateDescInline(searchDescText)}
+                            className="text-purple-600 dark:text-purple-400 border-purple-300 dark:border-purple-700 font-semibold"
+                          >
+                            + Create "{trimmed}" in Description Master
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  );
+                }}
+                notFoundContent={
+                  searchDescText.trim().length > 0 ? (
+                    <div className="p-3 text-center">
+                      <p className="text-slate-400 text-xs mb-2">No matching item description found</p>
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<PlusOutlined />}
+                        loading={creatingDesc}
+                        onClick={() => handleCreateDescInline(searchDescText)}
+                        className="bg-purple-600"
+                      >
+                        Create "{searchDescText.trim()}" Master
+                      </Button>
+                    </div>
+                  ) : undefined
+                }
+              />
             </Form.Item>
           </div>
 
