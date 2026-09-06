@@ -17,14 +17,15 @@ import {
   FilterOutlined,
   ClearOutlined,
 } from '@ant-design/icons';
-import type { ItemType, Make, ItemDescription } from '../../types/inventory';
-import { itemTypeApi, makeApi, itemDescriptionApi } from '../../services/api';
+import type { ItemType, Make, ItemDescription, Unit } from '../../types/inventory';
+import { itemTypeApi, makeApi, itemDescriptionApi, unitApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
 
 export const ItemTypesPage: React.FC = () => {
   const [items, setItems] = useState<ItemType[]>([]);
   const [makes, setMakes] = useState<Make[]>([]);
   const [itemDescriptions, setItemDescriptions] = useState<ItemDescription[]>([]);
+  const [unitsList, setUnitsList] = useState<Unit[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -50,8 +51,10 @@ export const ItemTypesPage: React.FC = () => {
   // Inline creation states for dropdown search
   const [searchMakeText, setSearchMakeText] = useState<string>('');
   const [searchDescText, setSearchDescText] = useState<string>('');
+  const [searchUnitText, setSearchUnitText] = useState<string>('');
   const [creatingMake, setCreatingMake] = useState<boolean>(false);
   const [creatingDesc, setCreatingDesc] = useState<boolean>(false);
+  const [creatingUnit, setCreatingUnit] = useState<boolean>(false);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [itemToEdit, setItemToEdit] = useState<ItemType | null>(null);
@@ -65,6 +68,7 @@ export const ItemTypesPage: React.FC = () => {
         limit,
         search: search || undefined,
         make: filters.make && filters.make !== 'ALL' ? filters.make : undefined,
+        unit: filters.unit && filters.unit !== 'ALL' ? filters.unit : undefined,
         rating: filters.rating || undefined,
         code: filters.code || undefined,
         cat_no: filters.cat_no || undefined,
@@ -84,12 +88,14 @@ export const ItemTypesPage: React.FC = () => {
 
   const fetchInitialMasterData = async () => {
     try {
-      const [makeRes, descRes] = await Promise.all([
+      const [makeRes, descRes, unitRes] = await Promise.all([
         makeApi.getAll().catch(() => ({ success: false, makes: [] })),
         itemDescriptionApi.getAll().catch(() => ({ success: false, itemDescriptions: [] })),
+        unitApi.getAll().catch(() => ({ success: false, units: [] })),
       ]);
       if (makeRes.success && makeRes.makes) setMakes(makeRes.makes);
       if (descRes.success && descRes.itemDescriptions) setItemDescriptions(descRes.itemDescriptions);
+      if (unitRes.success && unitRes.units) setUnitsList(unitRes.units);
     } catch (err: any) {
       console.error(err);
     }
@@ -135,8 +141,14 @@ export const ItemTypesPage: React.FC = () => {
     form.resetFields();
     setSearchMakeText('');
     setSearchDescText('');
+    setSearchUnitText('');
     if (makes.length > 0) {
       form.setFieldValue('make', makes[0].name);
+    }
+    if (unitsList.length > 0) {
+      form.setFieldValue('unit', unitsList[0].code);
+    } else {
+      form.setFieldValue('unit', 'PCS');
     }
     setIsModalOpen(true);
   };
@@ -145,6 +157,7 @@ export const ItemTypesPage: React.FC = () => {
     setItemToEdit(item);
     setSearchMakeText('');
     setSearchDescText('');
+    setSearchUnitText('');
     form.setFieldsValue({
       code: item.code,
       name: item.name,
@@ -152,6 +165,7 @@ export const ItemTypesPage: React.FC = () => {
       full_description: item.full_description || '',
       cat_no: item.cat_no || '',
       make: item.make || '',
+      unit: item.unit || 'PCS',
     });
     setIsModalOpen(true);
   };
@@ -186,6 +200,27 @@ export const ItemTypesPage: React.FC = () => {
       message.error(err.message || 'Failed to create Make master');
     } finally {
       setCreatingMake(false);
+    }
+  };
+
+  const handleCreateUnitInline = async (codeToCreate: string) => {
+    const trimmed = codeToCreate.trim().toUpperCase();
+    if (!trimmed) return;
+    setCreatingUnit(true);
+    try {
+      const res = await unitApi.create({ code: trimmed, name: trimmed });
+      if (res.success && res.unit) {
+        if (!unitsList.some((u) => u.code.toUpperCase() === res.unit.code.toUpperCase())) {
+          setUnitsList((prev) => [...prev, res.unit]);
+        }
+        form.setFieldValue('unit', res.unit.code);
+        setSearchUnitText('');
+        message.success(`Unit "${res.unit.code}" created and selected!`);
+      }
+    } catch (err: any) {
+      message.error(err.message || 'Failed to create Unit master');
+    } finally {
+      setCreatingUnit(false);
     }
   };
 
@@ -256,14 +291,14 @@ export const ItemTypesPage: React.FC = () => {
       title: 'Item (input)',
       dataIndex: 'name',
       key: 'name',
-      width: 150,
+      width: 140,
       render: (name: string) => <span className="font-bold app-text-main">{name}</span>,
     },
     {
       title: 'Item description (master)',
       dataIndex: 'rating',
       key: 'rating',
-      width: 170,
+      width: 210,
       render: (rating: string | null) =>
         rating ? (
           <Tag color="purple" icon={<ThunderboltOutlined />} className="font-semibold text-sm py-0.5 px-2">
@@ -277,6 +312,7 @@ export const ItemTypesPage: React.FC = () => {
       title: 'Full description (input)',
       dataIndex: 'full_description',
       key: 'full_description',
+      width: 220,
       render: (fullDesc: string | null, record) => (
         <span className="text-sm app-text-secondary">{fullDesc || `${record.name} ${record.rating || ''}`.trim()}</span>
       ),
@@ -285,13 +321,24 @@ export const ItemTypesPage: React.FC = () => {
       title: 'Cat No (input unique)',
       dataIndex: 'cat_no',
       key: 'cat_no',
-      width: 170,
+      width: 180,
       render: (catNo: string | null) =>
         catNo ? (
           <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{catNo}</span>
         ) : (
           <span className="app-text-muted italic">N/A</span>
         ),
+    },
+    {
+      title: 'Unit (master)',
+      dataIndex: 'unit',
+      key: 'unit',
+      width: 130,
+      render: (unitStr: string | null) => (
+        <Tag color="orange" className="font-mono font-bold text-xs py-0.5 px-2">
+          {unitStr || 'PCS'}
+        </Tag>
+      ),
     },
     {
       title: 'Make (master)',
@@ -344,7 +391,7 @@ export const ItemTypesPage: React.FC = () => {
                 Item Master
               </h1>
               <p className="text-xs sm:text-sm app-text-muted mb-0">
-                Item Number, Item, Item Description (Master), Full Description, Cat No & Make (Master)
+                Item Number, Item, Item Description (Master), Full Description, Cat No, Unit (Master) & Make (Master)
               </p>
             </div>
           </div>
@@ -373,7 +420,7 @@ export const ItemTypesPage: React.FC = () => {
           {/* Search Bar & Filter Modal Trigger */}
           <div className="flex flex-col sm:flex-row items-center gap-3 mb-3 shrink-0">
             <Input
-              placeholder="Search on Server by Cat No, Item Number, Item, Make..."
+              placeholder="Search on Server by Cat No, Item Number, Item, Make, Unit..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -403,7 +450,7 @@ export const ItemTypesPage: React.FC = () => {
               rowKey="id"
               loading={loading}
               scroll={{
-                x: 950,
+                x: 1300,
                 y: isDesktop ? 'calc(100vh - 385px)' : undefined,
               }}
               pagination={{
@@ -464,6 +511,17 @@ export const ItemTypesPage: React.FC = () => {
             />
           </Form.Item>
 
+          <Form.Item name="unit" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Unit</span>}>
+            <Select
+              placeholder="All Units"
+              allowClear
+              options={[
+                { value: 'ALL', label: 'All Units' },
+                ...unitsList.map((u) => ({ value: u.code, label: `${u.name} (${u.code})` })),
+              ]}
+            />
+          </Form.Item>
+
           <Form.Item name="rating" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Item Description (Rating)</span>}>
             <Select
               placeholder="All Item Descriptions"
@@ -503,7 +561,7 @@ export const ItemTypesPage: React.FC = () => {
         onCancel={() => setIsModalOpen(false)}
         destroyOnClose
         centered
-        width={720}
+        width={750}
         footer={[
           <Button key="cancel" size="large" onClick={() => setIsModalOpen(false)}>
             Cancel
@@ -667,22 +725,82 @@ export const ItemTypesPage: React.FC = () => {
             </Form.Item>
           </div>
 
-          {/* Row 3: Cat No & Full Description */}
+          {/* Row 3: Unit (master) & Cat No (input unique) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+            <Form.Item
+              name="unit"
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Unit (master)</span>}
+              rules={[{ required: true, message: 'Unit is required' }]}
+            >
+              <Select
+                placeholder="Select or Search Unit (e.g. PCS, KG, MTR)..."
+                showSearch
+                size="large"
+                onSearch={(val) => setSearchUnitText(val)}
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
+                }
+                options={unitsList.map((u) => ({ value: u.code, label: `${u.name} (${u.code})` }))}
+                dropdownRender={(menu) => {
+                  const trimmed = searchUnitText.trim().toUpperCase();
+                  const exists = unitsList.some((u) => u.code.toUpperCase() === trimmed);
+                  const showAddBtn = trimmed.length > 0 && !exists;
+
+                  return (
+                    <>
+                      {menu}
+                      {showAddBtn && (
+                        <div className="p-2 border-t border-slate-100 dark:border-white/10">
+                          <Button
+                            type="dashed"
+                            block
+                            icon={<PlusOutlined />}
+                            loading={creatingUnit}
+                            onClick={() => handleCreateUnitInline(searchUnitText)}
+                            className="text-orange-600 dark:text-orange-400 border-orange-300 dark:border-orange-700 font-semibold"
+                          >
+                            + Create "{trimmed}" in Unit Master
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  );
+                }}
+                notFoundContent={
+                  searchUnitText.trim().length > 0 ? (
+                    <div className="p-3 text-center">
+                      <p className="text-slate-400 text-xs mb-2">No matching unit found</p>
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<PlusOutlined />}
+                        loading={creatingUnit}
+                        onClick={() => handleCreateUnitInline(searchUnitText)}
+                        className="bg-orange-600"
+                      >
+                        Create "{searchUnitText.trim().toUpperCase()}" Unit Master
+                      </Button>
+                    </div>
+                  ) : undefined
+                }
+              />
+            </Form.Item>
+
             <Form.Item
               name="cat_no"
               label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Cat No (input unique)</span>}
             >
               <Input prefix={<SafetyOutlined className="text-emerald-500" />} placeholder="e.g. DS1A7A1, A9N1P02CGN" size="large" />
             </Form.Item>
-
-            <Form.Item
-              name="full_description"
-              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Full description (input)</span>}
-            >
-              <Input placeholder="e.g. MCB 2A 4P" size="large" />
-            </Form.Item>
           </div>
+
+          {/* Row 4: Full Description */}
+          <Form.Item
+            name="full_description"
+            label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Full description (input)</span>}
+          >
+            <Input placeholder="e.g. MCB 2A 4P" size="large" />
+          </Form.Item>
         </Form>
       </Modal>
     </AppLayout>

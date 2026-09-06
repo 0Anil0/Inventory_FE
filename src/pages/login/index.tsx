@@ -76,8 +76,12 @@ export const LoginPage: React.FC = () => {
         <Card className="shadow-xl dark:shadow-2xl border border-slate-200 dark:border-white/10 backdrop-blur-2xl">
           {/* Header */}
           <div className="text-center mb-6">
+            <div className="flex justify-center mb-3">
+              <div className="w-16 h-16 rounded-2xl bg-white/10 dark:bg-white/5 p-2 shadow-xl shadow-indigo-500/20 border border-slate-200 dark:border-white/10 flex items-center justify-center">
+                <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+              </div>
+            </div>
             <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-600 dark:text-indigo-400 py-1 px-4 rounded-full text-xs font-bold tracking-widest mb-3">
-              <SafetyCertificateFilled />
               INVENTORY MANAGEMENT SYSTEM
             </div>
             <h1 className="text-2xl font-bold app-text-main font-['Outfit'] mb-1">

@@ -171,8 +171,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0' }}
               onClick={() => navigate('/dashboard')}
             >
-              <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/30">
-                <SafetyCertificateFilled className="text-xl text-white" />
+              <div className="w-10 h-10 rounded-xl bg-white/10 dark:bg-white/5 p-1 flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20 border border-slate-200 dark:border-white/10">
+                <img src="/logo.png" alt="App Logo" className="w-full h-full object-contain rounded-lg" />
               </div>
               {!collapsed && (
                 <div className="flex flex-col leading-tight overflow-hidden">
