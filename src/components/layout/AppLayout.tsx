@@ -17,6 +17,7 @@ import {
   SunOutlined,
   MoonOutlined,
   ShoppingOutlined,
+  FileTextOutlined,
   FileDoneOutlined,
   FileSearchOutlined,
   ShopOutlined,
@@ -52,7 +53,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
   };
 
-  // Menu hierarchy in exact order: Unit Master -> Make Master -> Item Master -> Vendor Master -> User Management
+  // Menu hierarchy: Unit Master -> Make Master -> Item Master -> Vendor Master -> User Management -> Terms & Conditions
   const navMenuItems: MenuProps['items'] = [
     {
       key: '/units',
@@ -99,6 +100,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         setMobileDrawerOpen(false);
       },
     },
+    {
+      key: '/terms-and-conditions',
+      icon: <FileTextOutlined style={{ fontSize: '18px' }} />,
+      label: 'Terms & Conditions',
+      onClick: () => {
+        navigate('/terms-and-conditions');
+        setMobileDrawerOpen(false);
+      },
+    },
   ];
 
   const profileMenuItems: MenuProps['items'] = [
@@ -130,6 +140,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/item-types': return 'Item Master';
       case '/vendors': return 'Vendor Master';
       case '/users': return 'User Management';
+      case '/terms-and-conditions': return 'Terms & Conditions Templates';
       default: return 'Inventory Management System';
     }
   };

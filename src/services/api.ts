@@ -11,6 +11,7 @@ import type {
   PurchaseOrder,
   MaterialIssue,
   ItemDescription,
+  TermsAndConditions,
 } from '../types/inventory';
 
 
@@ -697,3 +698,79 @@ export const reportApi = {
     return handleResponse(res);
   },
 };
+
+// Terms & Conditions API Client
+export const termsApi = {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<{ success: boolean; templates: TermsAndConditions[]; total?: number; page?: number; limit?: number; totalPages?: number }> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    if (params?.search) query.append('search', params.search);
+
+    const res = await fetch(`${API_BASE_URL}/terms-and-conditions?${query.toString()}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getDefault: async (): Promise<{ success: boolean; template: TermsAndConditions }> => {
+    const res = await fetch(`${API_BASE_URL}/terms-and-conditions/default`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  create: async (data: {
+    title: string;
+    payment_terms?: string;
+    inco_terms?: string;
+    content: string;
+    is_default?: boolean;
+  }): Promise<{ success: boolean; message: string; template: TermsAndConditions }> => {
+    const res = await fetch(`${API_BASE_URL}/terms-and-conditions`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  update: async (
+    id: number,
+    data: {
+      title?: string;
+      payment_terms?: string;
+      inco_terms?: string;
+      content?: string;
+      is_default?: boolean;
+    }
+  ): Promise<{ success: boolean; message: string; template: TermsAndConditions }> => {
+    const res = await fetch(`${API_BASE_URL}/terms-and-conditions/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  setDefault: async (id: number): Promise<{ success: boolean; message: string; template: TermsAndConditions }> => {
+    const res = await fetch(`${API_BASE_URL}/terms-and-conditions/${id}/set-default`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  delete: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const res = await fetch(`${API_BASE_URL}/terms-and-conditions/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+};
+

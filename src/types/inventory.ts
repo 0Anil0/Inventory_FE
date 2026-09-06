@@ -174,3 +174,15 @@ export interface MaterialIssue {
   items?: MaterialIssueItem[];
   createdAt?: string;
 }
+
+export interface TermsAndConditions {
+  id: number;
+  title: string;
+  payment_terms?: string | null;
+  inco_terms?: string | null;
+  content: string;
+  is_default: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
