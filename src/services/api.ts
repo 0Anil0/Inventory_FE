@@ -9,6 +9,7 @@ import type {
   DashboardStats,
   Vendor,
   PurchaseOrder,
+  POApprover,
   MaterialIssue,
   ItemDescription,
   TermsAndConditions,
@@ -571,9 +572,109 @@ export const poApi = {
     return handleResponse(res);
   },
 
+  update: async (
+    id: number,
+    data: {
+      po_number?: string;
+      vendor_id?: number;
+      project_id?: number;
+      terms_and_conditions_id?: number;
+      notes?: string;
+      expected_date?: string;
+      items?: Array<{
+        item_type_id: number;
+        ordered_qty: number;
+        unit_price: number;
+        discount_percent?: number;
+        gst_percent?: number;
+        cat_no?: string;
+        make?: string;
+        rating?: string;
+      }>;
+    }
+  ): Promise<{ success: boolean; message: string; purchaseOrder: PurchaseOrder }> => {
+    const res = await fetch(`${API_BASE_URL}/purchase-orders/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  approve: async (id: number): Promise<{ success: boolean; message: string; purchaseOrder: PurchaseOrder }> => {
+    const res = await fetch(`${API_BASE_URL}/purchase-orders/${id}/approve`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  reject: async (id: number): Promise<{ success: boolean; message: string; purchaseOrder: PurchaseOrder }> => {
+    const res = await fetch(`${API_BASE_URL}/purchase-orders/${id}/reject`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
   receiveStock: async (id: number): Promise<{ success: boolean; message: string; purchaseOrder: PurchaseOrder }> => {
     const res = await fetch(`${API_BASE_URL}/purchase-orders/${id}/receive`, {
       method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  delete: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const res = await fetch(`${API_BASE_URL}/purchase-orders/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+};
+
+// PO Approver API Client
+export const poApproverApi = {
+  getAll: async (): Promise<{ success: boolean; approvers: POApprover[] }> => {
+    const res = await fetch(`${API_BASE_URL}/po-approvers`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  create: async (data: {
+    user_id: number;
+    min_amount?: number;
+    max_amount?: number;
+  }): Promise<{ success: boolean; approver: POApprover }> => {
+    const res = await fetch(`${API_BASE_URL}/po-approvers`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  update: async (
+    id: number,
+    data: {
+      min_amount?: number;
+      max_amount?: number | null;
+      is_active?: boolean;
+    }
+  ): Promise<{ success: boolean; approver: POApprover }> => {
+    const res = await fetch(`${API_BASE_URL}/po-approvers/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  delete: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const res = await fetch(`${API_BASE_URL}/po-approvers/${id}`, {
+      method: 'DELETE',
       headers: getAuthHeaders(),
     });
     return handleResponse(res);

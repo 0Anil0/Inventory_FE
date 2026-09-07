@@ -15,6 +15,7 @@ import {
   ShoppingOutlined,
   FileTextOutlined,
   ShopOutlined,
+  SafetyCertificateOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
@@ -112,6 +113,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         setMobileDrawerOpen(false);
       },
     },
+    {
+      key: '/approver-config',
+      icon: <SafetyCertificateOutlined style={{ fontSize: '18px' }} />,
+      label: 'PO Approvers',
+      onClick: () => {
+        navigate('/approver-config');
+        setMobileDrawerOpen(false);
+      },
+    },
   ];
 
   const profileMenuItems: MenuProps['items'] = [
@@ -145,6 +155,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/users': return 'User Management';
       case '/terms-and-conditions': return 'Terms & Conditions Templates';
       case '/purchase-orders': return 'Purchase Orders & PDF Documents';
+      case '/approver-config': return 'PO Approver Configuration';
       default: return 'Inventory Management System';
     }
   };

@@ -27,14 +27,21 @@ import {
   DeleteOutlined,
   CalendarOutlined,
   CheckOutlined,
+  CloseOutlined,
   FilePdfOutlined,
   DownloadOutlined,
+  EditOutlined,
+  ClockCircleOutlined,
+  CloseCircleOutlined,
+  UserOutlined,
+  InboxOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { useAuth } from '../../context/AuthContext';
 import type { PurchaseOrder, Vendor, Project, ItemType, TermsAndConditions } from '../../types/inventory';
-import { poApi, vendorApi, projectApi, itemTypeApi, termsApi } from '../../services/api';
+import { poApi, vendorApi, projectApi, itemTypeApi, termsApi, poApproverApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
 
 // Constant Clauses array
@@ -248,6 +255,7 @@ const buildPOPages = (selectedPO: PurchaseOrder, activeTerms: TermsAndConditions
 };
 
 export const PurchaseOrdersPage: React.FC = () => {
+  const { user } = useAuth();
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [downloadingPDF, setDownloadingPDF] = useState<boolean>(false);
@@ -260,11 +268,13 @@ export const PurchaseOrdersPage: React.FC = () => {
   const [itemTypes, setItemTypes] = useState<ItemType[]>([]);
   const [termsTemplates, setTermsTemplates] = useState<TermsAndConditions[]>([]);
   const [, setSelectedTerms] = useState<TermsAndConditions | null>(null);
+  const [approverUserIds, setApproverUserIds] = useState<number[]>([]);
 
   // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState<boolean>(false);
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
+  const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null);
   const [receivingId, setReceivingId] = useState<number | null>(null);
 
   // Responsive desktop check
@@ -300,11 +310,12 @@ export const PurchaseOrdersPage: React.FC = () => {
   // Fetch all reference master data
   const fetchMasters = async () => {
     try {
-      const [vRes, pRes, iRes, tRes] = await Promise.all([
+      const [vRes, pRes, iRes, tRes, appRes] = await Promise.all([
         vendorApi.getAll({ limit: 1000 }),
         projectApi.getAll(),
         itemTypeApi.getAll({ limit: 1000 }),
         termsApi.getAll({ limit: 100 }),
+        poApproverApi.getAll(),
       ]);
 
       if (vRes.success) setVendors(vRes.vendors || []);
@@ -314,6 +325,9 @@ export const PurchaseOrdersPage: React.FC = () => {
         setTermsTemplates(tRes.templates || []);
         const defaultTerms = (tRes.templates || []).find((t: TermsAndConditions) => t.is_default);
         if (defaultTerms) setSelectedTerms(defaultTerms);
+      }
+      if (appRes.success && appRes.approvers) {
+        setApproverUserIds(appRes.approvers.map((a) => a.user_id));
       }
     } catch (err: any) {
       console.error('Error fetching master data:', err);
@@ -417,8 +431,48 @@ export const PurchaseOrdersPage: React.FC = () => {
     }
   };
 
+  const userRoleStr = (typeof user?.role === 'object' ? user.role.name : user?.role || 'user').toUpperCase();
+  const isApproverUser = userRoleStr === 'ADMIN' || (user?.id ? approverUserIds.includes(user.id) : false);
+
+  const handleApprovePO = async (poId: number) => {
+    try {
+      const res = await poApi.approve(poId);
+      if (res.success) {
+        message.success('Purchase Order approved successfully!');
+        fetchPurchaseOrders();
+      }
+    } catch (err: any) {
+      message.error(err.message || 'Failed to approve PO');
+    }
+  };
+
+  const handleRejectPO = async (poId: number) => {
+    try {
+      const res = await poApi.reject(poId);
+      if (res.success) {
+        message.success('Purchase Order rejected');
+        fetchPurchaseOrders();
+      }
+    } catch (err: any) {
+      message.error(err.message || 'Failed to reject PO');
+    }
+  };
+
+  const handleDeletePO = async (poId: number) => {
+    try {
+      const res = await poApi.delete(poId);
+      if (res.success) {
+        message.success('Purchase Order deleted successfully!');
+        fetchPurchaseOrders();
+      }
+    } catch (err: any) {
+      message.error(err.message || 'Failed to delete Purchase Order');
+    }
+  };
+
   // Open Create PO Modal
   const handleOpenCreate = () => {
+    setEditingPO(null);
     createForm.resetFields();
     const nextSeq = purchaseOrders.length + 55;
     const defaultPONumber = `EEEA/26-27/${nextSeq}`;
@@ -448,7 +502,41 @@ export const PurchaseOrdersPage: React.FC = () => {
     setIsCreateModalOpen(true);
   };
 
-  // Create PO Submission
+  // Open Edit PO Modal
+  const handleOpenEdit = (po: PurchaseOrder) => {
+    if (po.status === 'APPROVED' || po.status === 'RECEIVED') {
+      message.warning('Approved or Received Purchase Orders cannot be edited');
+      return;
+    }
+    setEditingPO(po);
+    createForm.resetFields();
+
+    const template = termsTemplates.find((t) => t.id === po.terms_and_conditions_id);
+    if (template) setSelectedTerms(template);
+
+    createForm.setFieldsValue({
+      po_number: po.po_number,
+      vendor_id: po.vendor_id,
+      project_id: po.project_id || undefined,
+      terms_and_conditions_id: po.terms_and_conditions_id || undefined,
+      notes: po.notes || '',
+      order_date: po.order_date ? dayjs(po.order_date) : dayjs(),
+      expected_date: po.expected_date ? dayjs(po.expected_date) : undefined,
+      items: (po.items || []).map((item) => ({
+        item_type_id: item.item_type_id,
+        cat_no: item.cat_no || item.item_type?.cat_no || '',
+        make: item.make || item.item_type?.make || '',
+        rating: item.rating || item.item_type?.rating || '',
+        ordered_qty: item.ordered_qty,
+        unit_price: item.unit_price,
+        discount_percent: item.discount_percent || 0,
+        gst_percent: item.gst_percent !== undefined ? item.gst_percent : 18,
+      })),
+    });
+    setIsCreateModalOpen(true);
+  };
+
+  // Create / Edit PO Submission
   const handleCreateSubmit = async (values: any) => {
     try {
       const payload = {
@@ -470,24 +558,40 @@ export const PurchaseOrdersPage: React.FC = () => {
         })),
       };
 
-      const res = await poApi.create(payload);
-      if (res.success) {
-        message.success('Purchase Order created successfully!');
-        setIsCreateModalOpen(false);
-        fetchPurchaseOrders();
+      if (editingPO) {
+        const res = await poApi.update(editingPO.id, payload);
+        if (res.success) {
+          message.success('Purchase Order updated successfully!');
+          setIsCreateModalOpen(false);
+          setEditingPO(null);
+          fetchPurchaseOrders();
+        }
+      } else {
+        const res = await poApi.create(payload);
+        if (res.success) {
+          message.success('Purchase Order created successfully!');
+          setIsCreateModalOpen(false);
+          fetchPurchaseOrders();
+        }
       }
     } catch (err: any) {
-      message.error(err.message || 'Failed to create Purchase Order');
+      message.error(err.message || 'Failed to save Purchase Order');
     }
   };
 
   // Status Badge Colors
   const getStatusTag = (status: string) => {
     switch (status) {
+      case 'APPROVED':
+        return <Tag color="green" icon={<CheckCircleOutlined />} className="px-2 py-0.5 font-bold">APPROVED</Tag>;
+      case 'PENDING_APPROVAL':
+        return <Tag color="gold" icon={<ClockCircleOutlined />} className="px-2 py-0.5 font-bold">PENDING APPROVAL</Tag>;
+      case 'REJECTED':
+        return <Tag color="red" icon={<CloseCircleOutlined />} className="px-2 py-0.5 font-bold">REJECTED</Tag>;
       case 'RECEIVED':
-        return <Tag color="green" icon={<CheckCircleOutlined />} className="px-2 py-0.5 font-bold">RECEIVED (INWARDED)</Tag>;
+        return <Tag color="emerald" icon={<CheckCircleOutlined />} className="px-2 py-0.5 font-bold">RECEIVED (INWARDED)</Tag>;
       case 'ORDERED':
-        return <Tag color="blue" icon={<ShoppingOutlined />} className="px-2 py-0.5 font-bold">ORDERED (PENDING)</Tag>;
+        return <Tag color="blue" icon={<ShoppingOutlined />} className="px-2 py-0.5 font-bold">ORDERED</Tag>;
       case 'DRAFT':
         return <Tag color="orange" className="px-2 py-0.5 font-bold">DRAFT</Tag>;
       case 'CANCELLED':
@@ -504,12 +608,14 @@ export const PurchaseOrdersPage: React.FC = () => {
       key: 'sno',
       width: 65,
       align: 'center',
+      className: 'whitespace-nowrap',
       render: (_, __, index) => <span className="font-mono font-bold text-slate-500">{index + 1}</span>,
     },
     {
       title: 'PO Number & Date',
       key: 'po_number',
-      width: 190,
+      width: 180,
+      className: 'whitespace-nowrap',
       render: (_, record) => (
         <div>
           <div className="font-bold font-mono text-indigo-600 dark:text-indigo-400 text-sm tracking-wide">
@@ -524,9 +630,10 @@ export const PurchaseOrdersPage: React.FC = () => {
     {
       title: 'Supplier / Vendor',
       key: 'vendor',
+      width: 240,
       render: (_, record) => (
-        <div>
-          <div className="font-bold text-slate-800 dark:text-slate-100 font-['Outfit'] text-sm">
+        <div className="min-w-[200px]">
+          <div className="font-bold text-slate-800 dark:text-slate-100 font-['Outfit'] text-sm leading-snug">
             {record.vendor?.name || 'N/A'}
           </div>
           {record.vendor?.tax_id && (
@@ -540,7 +647,8 @@ export const PurchaseOrdersPage: React.FC = () => {
     {
       title: 'Project Site',
       key: 'project',
-      width: 140,
+      width: 130,
+      className: 'whitespace-nowrap',
       render: (_, record) =>
         record.project ? (
           <Tag color="cyan" className="font-bold font-mono text-xs">
@@ -551,10 +659,23 @@ export const PurchaseOrdersPage: React.FC = () => {
         ),
     },
     {
+      title: 'Created By',
+      key: 'created_by',
+      width: 130,
+      className: 'whitespace-nowrap',
+      render: (_, record) => (
+        <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 font-mono">
+          <UserOutlined className="text-indigo-500" />
+          <span>{record.created_by_user?.username || 'Admin'}</span>
+        </div>
+      ),
+    },
+    {
       title: 'Items & Total Amount',
       key: 'amount',
-      width: 200,
+      width: 210,
       align: 'right',
+      className: 'whitespace-nowrap',
       render: (_, record) => {
         const subtotal = record.total_amount || 0;
         const totalTax = (record.items || []).reduce((sum, item) => {
@@ -579,51 +700,131 @@ export const PurchaseOrdersPage: React.FC = () => {
     {
       title: 'Status',
       key: 'status',
-      width: 160,
+      width: 170,
       align: 'center',
+      className: 'whitespace-nowrap',
       render: (_, record) => getStatusTag(record.status),
     },
     {
       title: 'Actions',
       key: 'actions',
-      width: 180,
+      width: 170,
       align: 'right',
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="View / Save Printable PO PDF Document">
-            <Button
-              type="primary"
-              ghost
-              icon={<FilePdfOutlined />}
-              onClick={() => handleOpenPreview(record)}
-              size="small"
-              className="border-indigo-500 text-indigo-600 dark:text-indigo-400 font-semibold"
-            >
-              Save PDF
-            </Button>
-          </Tooltip>
+      className: 'whitespace-nowrap',
+      render: (_, record) => {
+        const isApprovedOrReceived = record.status === 'APPROVED' || record.status === 'RECEIVED';
+        const isPendingOrDraft = record.status === 'PENDING_APPROVAL' || record.status === 'DRAFT';
+        const canReceiveStock = record.status === 'APPROVED' || record.status === 'ORDERED';
 
-          {record.status !== 'RECEIVED' && (
-            <Popconfirm
-              title="Receive PO Stock?"
-              description="This will instantly inward all line item quantities into inventory stock."
-              onConfirm={() => handleReceiveStock(record.id)}
-              okText="Inward Stock"
-              okButtonProps={{ type: 'primary', className: 'bg-emerald-600' }}
-            >
+        return (
+          <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+            <Tooltip title="View / Save Printable PO PDF Document">
               <Button
                 type="primary"
-                icon={<CheckCircleOutlined />}
-                size="small"
-                loading={receivingId === record.id}
-                className="bg-emerald-600 hover:bg-emerald-500 border-none text-xs font-semibold"
+                ghost
+                shape="circle"
+                icon={<FilePdfOutlined style={{ fontSize: '15px' }} />}
+                onClick={() => handleOpenPreview(record)}
+                size="middle"
+                className="border-indigo-500 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 shadow-xs"
+              />
+            </Tooltip>
+
+            <Tooltip title={isApprovedOrReceived ? 'Approved or Received PO cannot be edited' : 'Edit Purchase Order'}>
+              <Button
+                type="default"
+                shape="circle"
+                icon={<EditOutlined style={{ fontSize: '15px' }} />}
+                disabled={isApprovedOrReceived}
+                onClick={() => handleOpenEdit(record)}
+                size="middle"
+                className={isApprovedOrReceived ? '' : 'border-amber-500 text-amber-600 hover:bg-amber-50 shadow-xs'}
+              />
+            </Tooltip>
+
+            {isApproverUser && isPendingOrDraft && (
+              <>
+                <Popconfirm
+                  title="Approve Purchase Order?"
+                  description="Once approved, this Purchase Order becomes final and un-editable."
+                  onConfirm={() => handleApprovePO(record.id)}
+                  okText="Approve PO"
+                  okButtonProps={{ type: 'primary', className: 'bg-green-600' }}
+                >
+                  <Tooltip title="Approve Purchase Order">
+                    <Button
+                      type="primary"
+                      shape="circle"
+                      icon={<CheckOutlined style={{ fontSize: '15px' }} />}
+                      size="middle"
+                      className="bg-emerald-600 hover:bg-emerald-500 border-none text-white shadow-xs"
+                    />
+                  </Tooltip>
+                </Popconfirm>
+
+                <Popconfirm
+                  title="Reject Purchase Order?"
+                  description="Are you sure you want to reject this Purchase Order?"
+                  onConfirm={() => handleRejectPO(record.id)}
+                  okText="Reject"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Tooltip title="Reject Purchase Order">
+                    <Button
+                      type="primary"
+                      danger
+                      shape="circle"
+                      icon={<CloseOutlined style={{ fontSize: '15px' }} />}
+                      size="middle"
+                      className="shadow-xs"
+                    />
+                  </Tooltip>
+                </Popconfirm>
+              </>
+            )}
+
+            {canReceiveStock && (
+              <Popconfirm
+                title="Receive PO Stock?"
+                description="This will instantly inward all line item quantities into inventory stock."
+                onConfirm={() => handleReceiveStock(record.id)}
+                okText="Inward Stock"
+                okButtonProps={{ type: 'primary', className: 'bg-blue-600' }}
               >
-                Receive
-              </Button>
+                <Tooltip title="Inward / Receive PO Stock into Inventory">
+                  <Button
+                    type="primary"
+                    shape="circle"
+                    icon={<InboxOutlined style={{ fontSize: '16px' }} />}
+                    size="middle"
+                    loading={receivingId === record.id}
+                    className="bg-blue-600 hover:bg-blue-500 border-none text-white shadow-xs"
+                  />
+                </Tooltip>
+              </Popconfirm>
+            )}
+
+            <Popconfirm
+              title="Delete Purchase Order?"
+              description="Are you sure you want to delete this Purchase Order?"
+              onConfirm={() => handleDeletePO(record.id)}
+              okText="Delete"
+              okButtonProps={{ danger: true }}
+            >
+              <Tooltip title="Delete Purchase Order">
+                <Button
+                  type="text"
+                  danger
+                  shape="circle"
+                  icon={<DeleteOutlined style={{ fontSize: '15px' }} />}
+                  size="middle"
+                  className="hover:bg-rose-50"
+                />
+              </Tooltip>
             </Popconfirm>
-          )}
-        </Space>
-      ),
+          </div>
+        );
+      },
     },
   ];
 
@@ -725,7 +926,7 @@ export const PurchaseOrdersPage: React.FC = () => {
               rowKey="id"
               loading={loading}
               scroll={{
-                x: 950,
+                x: 1450,
                 y: isDesktop ? 'calc(100vh - 360px)' : undefined,
               }}
               pagination={{
@@ -737,14 +938,16 @@ export const PurchaseOrdersPage: React.FC = () => {
         </Card>
       </main>
 
-      {/* CREATE PURCHASE ORDER MODAL */}
+      {/* CREATE / EDIT PURCHASE ORDER MODAL */}
       <Modal
         title={
           <div className="flex items-center gap-2.5 py-1 text-slate-800 dark:text-slate-100">
             <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
               <ShoppingOutlined className="text-lg" />
             </div>
-            <span className="font-bold text-lg font-['Outfit']">Create New Purchase Order</span>
+            <span className="font-bold text-lg font-['Outfit']">
+              {editingPO ? `Edit Purchase Order (${editingPO.po_number})` : 'Create New Purchase Order'}
+            </span>
           </div>
         }
         open={isCreateModalOpen}
@@ -773,7 +976,7 @@ export const PurchaseOrdersPage: React.FC = () => {
             onClick={() => createForm.submit()}
             className="bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-500/20"
           >
-            Create PO & Generate Document
+            {editingPO ? 'Update Purchase Order' : 'Create PO & Generate Document'}
           </Button>,
         ]}
       >

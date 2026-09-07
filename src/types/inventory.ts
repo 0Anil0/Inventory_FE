@@ -141,7 +141,10 @@ export interface PurchaseOrder {
   vendor_id: number;
   project_id?: number | null;
   terms_and_conditions_id?: number | null;
-  status: 'DRAFT' | 'ORDERED' | 'RECEIVED' | 'CANCELLED';
+  created_by_id?: number | null;
+  approved_by_id?: number | null;
+  approved_at?: string | null;
+  status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'ORDERED' | 'RECEIVED' | 'CANCELLED' | 'REJECTED';
   total_amount: number;
   order_date: string;
   expected_date?: string | null;
@@ -149,7 +152,35 @@ export interface PurchaseOrder {
   vendor?: Vendor;
   project?: Project;
   terms_and_conditions?: TermsAndConditions | null;
+  created_by_user?: {
+    id: number;
+    username: string;
+    email?: string;
+  } | null;
+  approved_by_user?: {
+    id: number;
+    username: string;
+    email?: string;
+  } | null;
   items?: PurchaseOrderItem[];
+  createdAt?: string;
+}
+
+export interface POApprover {
+  id: number;
+  user_id: number;
+  min_amount?: number;
+  max_amount?: number | null;
+  is_active: boolean;
+  user?: {
+    id: number;
+    username: string;
+    email?: string;
+    role?: {
+      id: number;
+      name: string;
+    };
+  };
   createdAt?: string;
 }
 
@@ -189,4 +220,3 @@ export interface TermsAndConditions {
   createdAt?: string;
   updatedAt?: string;
 }
-
