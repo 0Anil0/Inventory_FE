@@ -319,7 +319,7 @@ export const ProjectsPage: React.FC = () => {
                 onClick={() => handleOpenCreateModal(record.id)}
                 className="text-xs text-purple-600 border-purple-300 hover:text-purple-700 font-semibold"
               >
-                + Sub-Site
+                Sub-Site
               </Button>
             </Tooltip>
           )}
