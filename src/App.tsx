@@ -18,7 +18,6 @@ import { InventoryTrackerPage } from './pages/inventory';
 import { ProjectsPage } from './pages/projects';
 import { MaterialIssuesPage } from './pages/material-issues';
 import { ProjectAssignmentsPage } from './pages/project-assignments';
-import { ProjectStockTrackerPage } from './pages/project-stock-tracker';
 import GRNPage from './pages/grn';
 
 const RootRedirect: React.FC = () => {
@@ -72,7 +71,6 @@ const AppContent: React.FC = () => {
               <Route path="/grn" element={<GRNPage />} />
               <Route path="/material-issues" element={<MaterialIssuesPage />} />
               <Route path="/project-assignments" element={<ProjectAssignmentsPage />} />
-              <Route path="/project-stock-tracker" element={<ProjectStockTrackerPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/item-types" replace />} />
           </Routes>

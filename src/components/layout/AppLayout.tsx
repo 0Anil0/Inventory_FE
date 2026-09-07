@@ -24,7 +24,6 @@ import {
   ClusterOutlined,
   FileDoneOutlined,
   SendOutlined,
-  BranchesOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -99,15 +98,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       label: 'Project Stock Assignments',
       onClick: () => {
         navigate('/project-assignments');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
-      key: '/project-stock-tracker',
-      icon: <BranchesOutlined style={{ fontSize: '18px' }} />,
-      label: 'Project Stock Matrix',
-      onClick: () => {
-        navigate('/project-stock-tracker');
         setMobileDrawerOpen(false);
       },
     },
@@ -223,7 +213,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/item-types': return 'Item Master';
       case '/projects': return 'Project & Sub-Project Master';
       case '/project-assignments': return 'Project Material Assignment & Dispatch Master';
-      case '/project-stock-tracker': return 'Project Stock Hierarchy & Item Matrix Tracker';
       case '/inventory': return 'Inventory Stock Items & Tracker';
       case '/vendors': return 'Vendor Master';
       case '/users': return 'User Management';
