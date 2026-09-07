@@ -1399,17 +1399,17 @@ export const PurchaseOrdersPage: React.FC = () => {
                                 <img src="/logo.png" alt="Company Logo" className="max-h-full max-w-full object-contain" />
                               </div>
                               <div className="text-center">
-                                <h1 style={{ color: '#0f172a', fontFamily: 'sans-serif', fontSize: '22px', lineHeight: '1.25' }} className="font-extrabold uppercase tracking-wide mb-1.5">
-                                  EFFICIENT ELECTRICAL ENERGY & AUTOMATION PVT. LTD.
+                                <h1 style={{ color: '#0f172a', fontFamily: 'sans-serif', fontSize: '20px', lineHeight: '1.25' }} className="font-extrabold uppercase tracking-wide mb-1.5">
+                                  EFFICIENT ELECTRICAL ENERGY AND AUTOMATION PRIVATE LIMITED
                                 </h1>
-                                <p style={{ color: '#334155', fontSize: '13px', lineHeight: '1.4' }} className="mb-0.5 font-medium">
-                                  H-185, IID CENTER, RIICO INDUSTRIAL AREA, ROAD NO.3 KALADWAS, UDAIPUR-313003 (RAJASTHAN)
+                                <p style={{ color: '#334155', fontSize: '12.5px', lineHeight: '1.4' }} className="mb-0.5 font-medium">
+                                  ROAD NO. 3 H-185 IID CENTER RIICO INDUSTRIAL AREA KALADWAS UDAIPUR 313003
                                 </p>
-                                <p style={{ color: '#334155', fontSize: '13px', lineHeight: '1.4' }} className="mb-0.5 font-medium">
-                                  Email: eeenergyautomation@gmail.com, purchase.eeea@gmail.com | Cell: 9784534720, 9414166299
+                                <p style={{ color: '#334155', fontSize: '12.5px', lineHeight: '1.4' }} className="mb-0.5 font-medium">
+                                  Email: purchase@efficientelectrical.in, efficient.eeea@gmail.com | Cell: 9694645256, 8209545801
                                 </p>
                                 <p style={{ color: '#0f172a', fontFamily: 'monospace', fontSize: '14px' }} className="font-bold mt-1">
-                                  GSTIN: 08AAECE4417C1Z4
+                                  GST NO.: 08AAHCE7406Q1Z2
                                 </p>
                               </div>
                               <div style={{ width: '100px', height: '100px' }} className="shrink-0"></div>
@@ -1588,14 +1588,24 @@ export const PurchaseOrdersPage: React.FC = () => {
                       {/* AUTHORISED SIGNATORIES */}
                       {pageData.showSignatures && (
                         <div className="flex justify-between items-end pt-6 font-sans text-xs" style={{ marginTop: '24px' }}>
-                          <div style={{ width: '180px', borderTop: '1.5px solid #64748b', paddingTop: '6px' }} className="text-center font-bold text-slate-800 text-[13px]">
-                            Prepared By
+                          <div style={{ width: '180px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', marginBottom: '4px', textTransform: 'capitalize' }}>
+                              {selectedPO.created_by_user?.username || 'Admin'}
+                            </div>
+                            <div style={{ borderTop: '1.5px solid #64748b', paddingTop: '6px' }} className="font-bold text-slate-800 text-[12px] uppercase">
+                              Prepared By
+                            </div>
                           </div>
-                          <div style={{ width: '180px', borderTop: '1.5px solid #64748b', paddingTop: '6px' }} className="text-center font-bold text-slate-800 text-[13px]">
-                            Verified / Checked By
+                          <div style={{ width: '180px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', marginBottom: '4px', textTransform: 'capitalize' }}>
+                              {selectedPO.approved_by_user?.username || '\u00A0'}
+                            </div>
+                            <div style={{ borderTop: '1.5px solid #64748b', paddingTop: '6px' }} className="font-bold text-slate-800 text-[12px] uppercase">
+                              Verified / Checked By
+                            </div>
                           </div>
                           <div style={{ width: '280px', borderTop: '1.5px solid #0f172a', paddingTop: '6px' }} className="text-center font-bold text-slate-900 text-[13px]">
-                            For EFFICIENT ELECTRICAL ENERGY & AUTOMATION PVT. LTD.
+                            For EFFICIENT ELECTRICAL ENERGY AND AUTOMATION PRIVATE LIMITED
                             <span className="block font-normal text-[11px] text-slate-600 mt-6">(Authorised Signatory)</span>
                           </div>
                         </div>
