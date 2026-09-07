@@ -42,7 +42,7 @@ import { TransferStockModal } from '../../components/inventory/TransferStockModa
 
 export const InventoryTrackerPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<number>(0);
   const [inventoryList, setInventoryList] = useState<ProjectInventory[]>([]);
   const [catalogItemTypes, setCatalogItemTypes] = useState<ItemType[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -69,9 +69,6 @@ export const InventoryTrackerPage: React.FC = () => {
 
         if (projRes.success && projRes.projects) {
           setProjects(projRes.projects);
-          if (projRes.projects.length > 0) {
-            setSelectedProjectId(projRes.projects[0].id);
-          }
         }
 
         if (itemRes.success && itemRes.items) {
@@ -103,9 +100,7 @@ export const InventoryTrackerPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (selectedProjectId) {
-      fetchProjectInventory(selectedProjectId);
-    }
+    fetchProjectInventory(selectedProjectId);
   }, [selectedProjectId]);
 
   const handleOpenQuantityModal = (item: ProjectInventory) => {
@@ -133,7 +128,12 @@ export const InventoryTrackerPage: React.FC = () => {
         const index = prev.findIndex((i) => i.item_type_id === data.item_type_id);
         if (index >= 0) {
           const updated = [...prev];
-          updated[index] = res.inventoryItem;
+          updated[index] = {
+            ...prev[index],
+            ...res.inventoryItem,
+            shelf: res.inventoryItem.shelf || prev[index].shelf,
+            rack: res.inventoryItem.rack || prev[index].rack,
+          };
           return updated;
         }
         return [...prev, res.inventoryItem];
@@ -149,7 +149,7 @@ export const InventoryTrackerPage: React.FC = () => {
       initial_quantity: number;
     }>;
   }) => {
-    if (!selectedProjectId) throw new Error('No active project selected');
+    if (selectedProjectId === undefined || selectedProjectId === null) throw new Error('No active project selected');
 
     const res = await inventoryApi.batchAdjustQuantity({
       project_id: selectedProjectId,
@@ -328,6 +328,26 @@ export const InventoryTrackerPage: React.FC = () => {
       ),
     },
     {
+      title: 'Storage Location',
+      key: 'location',
+      render: (_, record) => (
+        <div>
+          {record.shelf ? (
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              {record.shelf.name} <span className="font-mono text-xs text-slate-500">({record.shelf.code})</span>
+              {record.rack && (
+                <span className="block text-xs text-indigo-600 dark:text-indigo-400 font-mono">
+                  → {record.rack.name} ({record.rack.rack_code})
+                </span>
+              )}
+            </span>
+          ) : (
+            <span className="text-slate-400 italic text-xs">Unassigned</span>
+          )}
+        </div>
+      ),
+    },
+    {
       title: 'Status',
       key: 'status',
       render: (_, record) => getStockStatusTag(record.quantity, record.min_quantity || 10),
@@ -354,57 +374,68 @@ export const InventoryTrackerPage: React.FC = () => {
     <AppLayout>
 
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
-        {/* Top Header & Project Selector */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 shadow-md dark:shadow-2xl transition-colors duration-300">
-          <div className="flex items-center gap-3">
-            <DatabaseOutlined className="text-3xl text-indigo-500" />
+        {/* Top Header & Stock Location Selector */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 shadow-md dark:shadow-2xl transition-colors duration-300">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center">
+              <DatabaseOutlined className="text-2xl text-indigo-500" />
+            </div>
             <div>
               <h1 className="text-2xl font-bold app-text-main font-['Outfit'] mb-0.5">
-                Project Stock Quantity Tracker
+                Inventory Stock Items & Tracker
               </h1>
               <p className="text-xs app-text-muted mb-0">
-                Manage stock allocations, threshold alerts, transfers, and movement history
+                Central stock database, item locations, movement audit logs, and project transfers
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            <span className="text-xs text-slate-600 dark:text-slate-300 font-semibold uppercase tracking-wider">
-              Selected Project:
-            </span>
-            <Select
-              value={selectedProjectId}
-              onChange={(val) => setSelectedProjectId(val)}
-              className="w-64"
-              size="large"
-              loading={loading}
-            >
-              {projects.map((p) => (
-                <Select.Option key={p.id} value={p.id}>
-                  <span className="font-semibold">{p.name}</span>{' '}
-                  <span className="text-xs text-slate-400">({p.code})</span>
+            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 p-1.5 px-3 rounded-xl border border-slate-200 dark:border-white/10">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">
+                Location:
+              </span>
+              <Select
+                value={selectedProjectId}
+                onChange={(val) => setSelectedProjectId(val)}
+                className="w-64"
+                size="middle"
+                variant="borderless"
+                loading={loading}
+              >
+                <Select.Option key={0} value={0}>
+                  <span className="font-semibold text-indigo-600">📦 General Stock / Main Store</span>
                 </Select.Option>
-              ))}
-            </Select>
+                {projects.map((p) => (
+                  <Select.Option key={p.id} value={p.id}>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">🏗️ {p.name}</span>{' '}
+                    <span className="text-xs text-slate-400">({p.code})</span>
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
 
             <Button
               icon={<ReloadOutlined />}
-              onClick={() => selectedProjectId && fetchProjectInventory(selectedProjectId)}
+              onClick={() => fetchProjectInventory(selectedProjectId)}
               loading={loading}
+              title="Refresh stock list"
             />
 
             <Button
               icon={<HistoryOutlined />}
               onClick={() => setIsLedgerOpen(true)}
-              className="border-indigo-500/50 text-indigo-400 hover:text-indigo-300"
+              className="border-indigo-500/40 text-indigo-600 dark:text-indigo-400 font-medium"
             >
-              Stock Ledger History
+              Stock Ledger
             </Button>
 
             <Button
               icon={<SwapOutlined />}
               onClick={() => setIsTransferModalOpen(true)}
-              disabled={projects.length < 2}
+              disabled={projects.length === 0}
+              type="default"
+              className="border-slate-300 dark:border-slate-700 font-medium"
             >
               Transfer Stock
             </Button>
@@ -484,7 +515,7 @@ export const InventoryTrackerPage: React.FC = () => {
                 type="primary"
                 icon={<PlusOutlined />}
                 onClick={() => setIsAddItemModalOpen(true)}
-                disabled={!selectedProjectId}
+                disabled={selectedProjectId === undefined || selectedProjectId === null}
                 className="shadow-lg shadow-indigo-500/30"
               >
                 Add Items to Project
@@ -557,7 +588,7 @@ export const InventoryTrackerPage: React.FC = () => {
         onClose={() => setIsQuantityModalOpen(false)}
         onSubmit={handleQuantitySubmit}
         inventoryItem={selectedItemForQty}
-        projectId={selectedProjectId || 1}
+        projectId={selectedProjectId}
       />
 
       <AddItemModal
@@ -565,20 +596,20 @@ export const InventoryTrackerPage: React.FC = () => {
         onClose={() => setIsAddItemModalOpen(false)}
         onSubmitBatch={handleBatchAddItemsSubmit}
         availableItemTypes={availableItemTypes}
-        projectName={selectedProject?.name}
+        projectName={selectedProject?.name || 'General Stock / Main Store'}
       />
 
       <StockLedgerDrawer
         isOpen={isLedgerOpen}
         onClose={() => setIsLedgerOpen(false)}
         projectId={selectedProjectId}
-        projectName={selectedProject?.name}
+        projectName={selectedProject?.name || 'General Stock / Main Store'}
       />
 
       <TransferStockModal
         isOpen={isTransferModalOpen}
         onClose={() => setIsTransferModalOpen(false)}
-        onSuccess={() => selectedProjectId && fetchProjectInventory(selectedProjectId)}
+        onSuccess={() => fetchProjectInventory(selectedProjectId)}
         projects={projects}
         currentProjectId={selectedProjectId}
         currentInventory={inventoryList}

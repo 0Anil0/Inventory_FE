@@ -17,8 +17,10 @@ import {
   ShopOutlined,
   SafetyCertificateOutlined,
   HddOutlined,
+  AuditOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -79,6 +81,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       },
     },
     {
+      key: '/inventory',
+      icon: <DatabaseOutlined style={{ fontSize: '18px' }} />,
+      label: 'Inventory Stock Items',
+      onClick: () => {
+        navigate('/inventory');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
       key: '/vendors',
       icon: <ShopOutlined style={{ fontSize: '18px' }} />,
       label: 'Vendor Master',
@@ -132,6 +143,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         setMobileDrawerOpen(false);
       },
     },
+    {
+      key: '/grn',
+      icon: <AuditOutlined style={{ fontSize: '18px' }} />,
+      label: 'Stock Inward (GRN)',
+      onClick: () => {
+        navigate('/grn');
+        setMobileDrawerOpen(false);
+      },
+    },
   ];
 
   const profileMenuItems: MenuProps['items'] = [
@@ -161,12 +181,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/units': return 'Unit Master';
       case '/makes': return 'Make Master';
       case '/item-types': return 'Item Master';
+      case '/inventory': return 'Inventory Stock Items & Tracker';
       case '/vendors': return 'Vendor Master';
       case '/users': return 'User Management';
       case '/terms-and-conditions': return 'Terms & Conditions Templates';
       case '/purchase-orders': return 'Purchase Orders & PDF Documents';
       case '/approver-config': return 'PO Approver Configuration';
       case '/storage-locations': return 'Store Shelves & Racks Layout';
+      case '/grn': return 'Stock Inward (GRN) Master';
       default: return 'Inventory Management System';
     }
   };

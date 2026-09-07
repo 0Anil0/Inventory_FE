@@ -25,22 +25,25 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedItem, setSelectedItem] = useState<ProjectInventory | null>(null);
 
-  const fromProjectId = currentProjectId || projects[0]?.id;
+  const fromProjectId = currentProjectId !== undefined && currentProjectId !== null ? currentProjectId : 0;
 
   useEffect(() => {
     if (isOpen) {
       form.resetFields();
-      if (fromProjectId) {
-        form.setFieldsValue({ from_project_id: fromProjectId });
-      }
+      form.setFieldsValue({ from_project_id: fromProjectId });
     }
   }, [isOpen, fromProjectId, form]);
 
   const availableItems = currentInventory.filter((item) => item.quantity > 0);
 
+  const allLocations = [
+    { id: 0, name: 'General Stock / Main Store', code: 'MAIN-STORE' },
+    ...projects,
+  ];
+
   const handleFinish = async (values: any) => {
     if (values.from_project_id === values.to_project_id) {
-      message.error('Source and Destination projects cannot be the same!');
+      message.error('Source and Destination locations cannot be the same!');
       return;
     }
 
@@ -68,7 +71,7 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
       title={
         <div className="flex items-center gap-2">
           <SwapOutlined className="text-indigo-400" />
-          <span>Inter-Project Stock Transfer</span>
+          <span>Stock Location Transfer</span>
         </div>
       }
       open={isOpen}
@@ -83,13 +86,13 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Form.Item
             name="from_project_id"
-            label="Source Project (From)"
-            rules={[{ required: true, message: 'Select source project' }]}
+            label="Source Location (From)"
+            rules={[{ required: true, message: 'Select source location' }]}
           >
-            <Select disabled placeholder="Source Project">
-              {projects.map((p) => (
-                <Select.Option key={p.id} value={p.id}>
-                  {p.name} ({p.code})
+            <Select disabled placeholder="Source Location">
+              {allLocations.map((loc) => (
+                <Select.Option key={loc.id} value={loc.id}>
+                  {loc.name} ({loc.code})
                 </Select.Option>
               ))}
             </Select>
@@ -97,15 +100,15 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
 
           <Form.Item
             name="to_project_id"
-            label="Destination Project (To)"
-            rules={[{ required: true, message: 'Select destination project' }]}
+            label="Destination Location (To)"
+            rules={[{ required: true, message: 'Select target location' }]}
           >
-            <Select placeholder="Select Target Project">
-              {projects
-                .filter((p) => p.id !== fromProjectId)
-                .map((p) => (
-                  <Select.Option key={p.id} value={p.id}>
-                    {p.name} ({p.code})
+            <Select placeholder="Select Target Location">
+              {allLocations
+                .filter((loc) => loc.id !== fromProjectId)
+                .map((loc) => (
+                  <Select.Option key={loc.id} value={loc.id}>
+                    {loc.name} ({loc.code})
                   </Select.Option>
                 ))}
             </Select>

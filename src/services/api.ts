@@ -983,3 +983,45 @@ export const storageApi = {
   },
 };
 
+// GRN API Client
+export const grnApi = {
+  getGRNs: async (params?: {
+    vendor_id?: number;
+    project_id?: number;
+    po_id?: number;
+    from_date?: string;
+    to_date?: string;
+    search?: string;
+  }): Promise<any[]> => {
+    const query = new URLSearchParams();
+    if (params?.vendor_id) query.append('vendor_id', String(params.vendor_id));
+    if (params?.project_id) query.append('project_id', String(params.project_id));
+    if (params?.po_id) query.append('po_id', String(params.po_id));
+    if (params?.from_date) query.append('from_date', params.from_date);
+    if (params?.to_date) query.append('to_date', params.to_date);
+    if (params?.search) query.append('search', params.search);
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${API_BASE_URL}/grn${queryString}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getGRNById: async (id: number): Promise<any> => {
+    const res = await fetch(`${API_BASE_URL}/grn/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  createGRN: async (payload: any): Promise<any> => {
+    const res = await fetch(`${API_BASE_URL}/grn`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    return handleResponse(res);
+  },
+};
+

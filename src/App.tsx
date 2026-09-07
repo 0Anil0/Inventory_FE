@@ -14,6 +14,8 @@ import { TermsAndConditionsPage } from './pages/terms-and-conditions';
 import { PurchaseOrdersPage } from './pages/purchase-orders';
 import { ApproverConfigPage } from './pages/approver-config';
 import { StorageLocationsPage } from './pages/storage-locations';
+import { InventoryTrackerPage } from './pages/inventory';
+import GRNPage from './pages/grn';
 
 const RootRedirect: React.FC = () => {
   const { user, loading } = useAuth();
@@ -56,11 +58,13 @@ const AppContent: React.FC = () => {
               <Route path="/makes" element={<MakesPage />} />
               <Route path="/item-types" element={<ItemTypesPage />} />
               <Route path="/vendors" element={<VendorsPage />} />
+              <Route path="/inventory" element={<InventoryTrackerPage />} />
               <Route path="/users" element={<UserManagementPage />} />
               <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
               <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
               <Route path="/approver-config" element={<ApproverConfigPage />} />
               <Route path="/storage-locations" element={<StorageLocationsPage />} />
+              <Route path="/grn" element={<GRNPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/item-types" replace />} />
           </Routes>

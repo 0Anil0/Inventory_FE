@@ -1,3 +1,5 @@
+import type { StorageShelf, StorageRack } from './storage';
+
 export interface Make {
   id: number;
   name: string;
@@ -56,14 +58,18 @@ export interface Project {
 
 export interface ProjectInventory {
   id: number;
-  project_id: number;
+  project_id?: number | null;
   item_type_id: number;
+  shelf_id?: number | null;
+  rack_id?: number | null;
   quantity: number;
   min_quantity: number;
   createdAt?: string;
   updatedAt?: string;
   item_type?: ItemType;
   project?: Project;
+  shelf?: StorageShelf;
+  rack?: StorageRack;
 }
 
 export interface StockMovement {
@@ -144,7 +150,7 @@ export interface PurchaseOrder {
   created_by_id?: number | null;
   approved_by_id?: number | null;
   approved_at?: string | null;
-  status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'ORDERED' | 'RECEIVED' | 'CANCELLED' | 'REJECTED';
+  status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'ORDERED' | 'PARTIALLY_RECEIVED' | 'RECEIVED' | 'CANCELLED' | 'REJECTED';
   total_amount: number;
   order_date: string;
   expected_date?: string | null;

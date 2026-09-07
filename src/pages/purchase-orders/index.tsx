@@ -16,6 +16,8 @@ import {
   Divider,
   Popconfirm,
   Tooltip,
+  Row,
+  Col,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -41,7 +43,8 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { useAuth } from '../../context/AuthContext';
 import type { PurchaseOrder, Vendor, Project, ItemType, TermsAndConditions } from '../../types/inventory';
-import { poApi, vendorApi, projectApi, itemTypeApi, termsApi, poApproverApi } from '../../services/api';
+import type { StorageShelf } from '../../types/storage';
+import { poApi, vendorApi, projectApi, itemTypeApi, termsApi, poApproverApi, grnApi, storageApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
 
 // Constant Clauses array
@@ -275,7 +278,114 @@ export const PurchaseOrdersPage: React.FC = () => {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState<boolean>(false);
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null);
   const [editingPO, setEditingPO] = useState<PurchaseOrder | null>(null);
-  const [receivingId, setReceivingId] = useState<number | null>(null);
+  // Receive Stock (GRN) Modal State
+  const [receiveModalVisible, setReceiveModalVisible] = useState<boolean>(false);
+  const [receivePO, setReceivePO] = useState<PurchaseOrder | null>(null);
+  const [receiveShelves, setReceiveShelves] = useState<StorageShelf[]>([]);
+  const [receiveItemInputs, setReceiveItemInputs] = useState<{
+    [poItemId: number]: {
+      receivedQty: number;
+      shelfId: number | null;
+      rackId: number | null;
+      notes: string;
+    };
+  }>({});
+  const [receiveSubmitting, setReceiveSubmitting] = useState<boolean>(false);
+  const [receiveForm] = Form.useForm();
+
+  const handleOpenReceiveModal = async (po: PurchaseOrder) => {
+    try {
+      setLoading(true);
+      const [poRes, shelfRes] = await Promise.all([
+        poApi.getById(po.id),
+        storageApi.getAllShelves(),
+      ]);
+      const fullPo = poRes.purchaseOrder;
+      setReceivePO(fullPo);
+      setReceiveShelves(shelfRes.shelves || []);
+
+      const initialInputs: { [key: number]: any } = {};
+      (fullPo.items || []).forEach((item: any) => {
+        const pending = Math.max(0, item.ordered_qty - (item.received_qty || 0));
+        initialInputs[item.id] = {
+          receivedQty: pending,
+          shelfId: null,
+          rackId: null,
+          notes: '',
+        };
+      });
+      setReceiveItemInputs(initialInputs);
+      receiveForm.resetFields();
+      receiveForm.setFieldsValue({ received_date: dayjs() });
+      setReceiveModalVisible(true);
+    } catch (err: any) {
+      message.error('Failed to load PO details for receiving');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReceiveItemInputChange = (poItemId: number, field: string, value: any) => {
+    setReceiveItemInputs((prev) => {
+      const current = prev[poItemId] || { receivedQty: 0, shelfId: null, rackId: null, notes: '' };
+      let updated = { ...current, [field]: value };
+      if (field === 'shelfId') {
+        updated.rackId = null;
+      }
+      return { ...prev, [poItemId]: updated };
+    });
+  };
+
+  const handleSubmitReceiveStock = async () => {
+    try {
+      const values = await receiveForm.validateFields();
+      if (!receivePO || !receivePO.items || receivePO.items.length === 0) return;
+
+      const itemsPayload: any[] = [];
+      let totalQtyNow = 0;
+
+      receivePO.items.forEach((item: any) => {
+        const input = receiveItemInputs[item.id] || { receivedQty: 0, shelfId: null, rackId: null, notes: '' };
+        const qty = Number(input.receivedQty || 0);
+
+        if (qty > 0) {
+          totalQtyNow += qty;
+          itemsPayload.push({
+            po_item_id: item.id,
+            item_type_id: item.item_type_id,
+            received_qty: qty,
+            shelf_id: input.shelfId || null,
+            rack_id: input.rackId || null,
+            notes: input.notes || '',
+          });
+        }
+      });
+
+      if (totalQtyNow <= 0) {
+        message.error('Please enter received quantity for at least one item');
+        return;
+      }
+
+      setReceiveSubmitting(true);
+      const payload = {
+        po_id: receivePO.id,
+        received_date: values.received_date ? values.received_date.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'),
+        challan_no: values.challan_no || '',
+        vehicle_no: values.vehicle_no || '',
+        remarks: values.remarks || '',
+        items: itemsPayload,
+      };
+
+      await grnApi.createGRN(payload);
+      message.success('Stock Inward GRN recorded & inventory updated successfully!');
+      setReceiveModalVisible(false);
+      fetchPurchaseOrders();
+    } catch (err: any) {
+      message.error(err.message || 'Failed to record stock inward');
+    } finally {
+      setReceiveSubmitting(false);
+    }
+  };
 
   // Responsive desktop check
   const [isDesktop, setIsDesktop] = useState<boolean>(window.innerWidth >= 1024);
@@ -342,22 +452,6 @@ export const PurchaseOrdersPage: React.FC = () => {
   useEffect(() => {
     fetchPurchaseOrders();
   }, [searchQuery, statusFilter]);
-
-  // Handle Receive Stock against PO
-  const handleReceiveStock = async (poId: number) => {
-    setReceivingId(poId);
-    try {
-      const res = await poApi.receiveStock(poId);
-      if (res.success) {
-        message.success('Stock received and inwarded into inventory successfully!');
-        fetchPurchaseOrders();
-      }
-    } catch (err: any) {
-      message.error(err.message || 'Failed to receive stock for PO');
-    } finally {
-      setReceivingId(null);
-    }
-  };
 
   // Open Document Preview Modal
   const handleOpenPreview = (po: PurchaseOrder) => {
@@ -493,9 +587,9 @@ export const PurchaseOrdersPage: React.FC = () => {
           item_code: '',
           cat_no: '',
           ordered_qty: 1,
-          unit_price: 0,
+          unit_price: undefined,
           discount_percent: 0,
-          gst_percent: 0,
+          gst_percent: 18,
         },
       ],
     });
@@ -584,6 +678,8 @@ export const PurchaseOrdersPage: React.FC = () => {
     switch (status) {
       case 'APPROVED':
         return <Tag color="green" icon={<CheckCircleOutlined />} className="px-2 py-0.5 font-bold">APPROVED</Tag>;
+      case 'PARTIALLY_RECEIVED':
+        return <Tag color="cyan" icon={<ClockCircleOutlined />} className="px-2 py-0.5 font-bold">PARTIALLY INWARDED</Tag>;
       case 'PENDING_APPROVAL':
         return <Tag color="gold" icon={<ClockCircleOutlined />} className="px-2 py-0.5 font-bold">PENDING APPROVAL</Tag>;
       case 'REJECTED':
@@ -714,7 +810,6 @@ export const PurchaseOrdersPage: React.FC = () => {
       render: (_, record) => {
         const isApprovedOrReceived = record.status === 'APPROVED' || record.status === 'RECEIVED';
         const isPendingOrDraft = record.status === 'PENDING_APPROVAL' || record.status === 'DRAFT';
-        const canReceiveStock = record.status === 'APPROVED' || record.status === 'ORDERED';
 
         return (
           <div className="flex items-center justify-end gap-2 whitespace-nowrap">
@@ -729,6 +824,19 @@ export const PurchaseOrdersPage: React.FC = () => {
                 className="border-indigo-500 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 shadow-xs"
               />
             </Tooltip>
+
+            {(record.status === 'APPROVED' || record.status === 'PARTIALLY_RECEIVED' || record.status === 'ORDERED') && (
+              <Tooltip title="Receive Stock (Create GRN)">
+                <Button
+                  type="primary"
+                  shape="circle"
+                  icon={<InboxOutlined style={{ fontSize: '15px' }} />}
+                  size="middle"
+                  onClick={() => handleOpenReceiveModal(record)}
+                  className="bg-indigo-700 hover:bg-indigo-600 border-none text-white shadow-xs"
+                />
+              </Tooltip>
+            )}
 
             <Tooltip title={isApprovedOrReceived ? 'Approved or Received PO cannot be edited' : 'Edit Purchase Order'}>
               <Button
@@ -783,26 +891,7 @@ export const PurchaseOrdersPage: React.FC = () => {
               </>
             )}
 
-            {canReceiveStock && (
-              <Popconfirm
-                title="Receive PO Stock?"
-                description="This will instantly inward all line item quantities into inventory stock."
-                onConfirm={() => handleReceiveStock(record.id)}
-                okText="Inward Stock"
-                okButtonProps={{ type: 'primary', className: 'bg-blue-600' }}
-              >
-                <Tooltip title="Inward / Receive PO Stock into Inventory">
-                  <Button
-                    type="primary"
-                    shape="circle"
-                    icon={<InboxOutlined style={{ fontSize: '16px' }} />}
-                    size="middle"
-                    loading={receivingId === record.id}
-                    className="bg-blue-600 hover:bg-blue-500 border-none text-white shadow-xs"
-                  />
-                </Tooltip>
-              </Popconfirm>
-            )}
+
 
             <Popconfirm
               title="Delete Purchase Order?"
@@ -1108,9 +1197,11 @@ export const PurchaseOrdersPage: React.FC = () => {
                                       const item = itemTypes.find((i) => i.id === val);
                                       if (item) {
                                         createForm.setFieldValue(['items', name, 'item_code'], item.code || '');
-                                        createForm.setFieldValue(['items', name, 'unit_price'], item.unit_rate || 0);
+                                        if (item.unit_rate && item.unit_rate > 0) {
+                                          createForm.setFieldValue(['items', name, 'unit_price'], item.unit_rate);
+                                        }
                                         createForm.setFieldValue(['items', name, 'discount_percent'], item.discount || 0);
-                                        createForm.setFieldValue(['items', name, 'gst_percent'], 0);
+                                        createForm.setFieldValue(['items', name, 'gst_percent'], 18);
                                         createForm.setFieldValue(['items', name, 'cat_no'], item.cat_no || '');
                                         createForm.setFieldValue(['items', name, 'make'], item.make || '');
                                         createForm.setFieldValue(['items', name, 'rating'], item.rating || '');
@@ -1617,6 +1708,166 @@ export const PurchaseOrdersPage: React.FC = () => {
             </div>
           );
         })()}
+      </Modal>
+
+      {/* RECEIVE STOCK (GRN) INWARD MODAL */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 text-indigo-900 font-bold text-lg border-b pb-3">
+            <InboxOutlined /> Stock Inward (GRN) - Receive Items for PO: {receivePO?.po_number}
+          </div>
+        }
+        open={receiveModalVisible}
+        onCancel={() => setReceiveModalVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setReceiveModalVisible(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            loading={receiveSubmitting}
+            style={{ backgroundColor: '#1e1b4b', borderColor: '#1e1b4b' }}
+            onClick={handleSubmitReceiveStock}
+          >
+            Save & Inward Stock
+          </Button>,
+        ]}
+        width={900}
+        destroyOnClose
+      >
+        <Form form={receiveForm} layout="vertical" className="mt-4">
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="received_date"
+                label={<span className="font-semibold text-slate-700">Receipt Date</span>}
+                rules={[{ required: true, message: 'Please select date' }]}
+              >
+                <DatePicker className="w-full" format="DD/MM/YYYY" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="challan_no" label={<span className="font-semibold text-slate-700">Invoice / Delivery Challan No</span>}>
+                <Input placeholder="e.g. INV-99023 / CH-102" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item name="vehicle_no" label={<span className="font-semibold text-slate-700">Vehicle No</span>}>
+                <Input placeholder="e.g. RJ 27 GA 1234" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <div className="bg-slate-50 p-2.5 rounded border border-slate-200 text-xs space-y-1">
+                <div><strong className="text-slate-800">Vendor:</strong> {receivePO?.vendor?.name}</div>
+                <div><strong className="text-slate-800">Site / Project:</strong> {receivePO?.project?.code} - {receivePO?.project?.name}</div>
+              </div>
+            </Col>
+          </Row>
+
+          {/* Line Items Table with Partial Receiving & Shelf/Rack Selectors */}
+          {receivePO && receivePO.items && receivePO.items.length > 0 && (
+            <div className="mt-2">
+              <div className="font-bold text-slate-800 mb-2">
+                Enter Arrived Quantities & Assign Storage Locations (Shelf & Rack)
+              </div>
+              <div className="border border-slate-200 rounded-lg overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead className="bg-slate-100 text-slate-800 font-bold border-b border-slate-200">
+                    <tr>
+                      <th className="p-2.5 border-r border-slate-200">Item Description</th>
+                      <th className="p-2.5 border-r border-slate-200 text-center w-16">Ordered</th>
+                      <th className="p-2.5 border-r border-slate-200 text-center w-16">Prev Recv</th>
+                      <th className="p-2.5 border-r border-slate-200 text-center w-16">Pending</th>
+                      <th className="p-2.5 border-r border-slate-200 w-28 text-center bg-indigo-50 text-indigo-900">Recv Now</th>
+                      <th className="p-2.5 border-r border-slate-200 w-36">Store Shelf</th>
+                      <th className="p-2.5 border-r border-slate-200 w-36">Rack Position</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {receivePO.items.map((item: any) => {
+                      const prevRecv = item.received_qty || 0;
+                      const pending = Math.max(0, item.ordered_qty - prevRecv);
+                      const currentInput = receiveItemInputs[item.id] || {
+                        receivedQty: pending,
+                        shelfId: null,
+                        rackId: null,
+                        notes: '',
+                      };
+
+                      const activeShelf = receiveShelves.find((s) => s.id === currentInput.shelfId);
+                      const availableRacks = activeShelf?.racks || [];
+
+                      return (
+                        <tr key={item.id} className="border-b border-slate-200 hover:bg-slate-50">
+                          <td className="p-2.5 border-r border-slate-200">
+                            <div className="font-semibold text-slate-900">{item.item_type?.name}</div>
+                            <div className="font-mono text-[11px] text-slate-500">
+                              {item.item_type?.code} {item.cat_no ? `| Cat: ${item.cat_no}` : ''} | Make: {item.make || item.item_type?.make || '-'}
+                            </div>
+                          </td>
+                          <td className="p-2.5 border-r border-slate-200 text-center font-mono font-semibold">{item.ordered_qty}</td>
+                          <td className="p-2.5 border-r border-slate-200 text-center font-mono text-slate-600">{prevRecv}</td>
+                          <td className="p-2.5 border-r border-slate-200 text-center font-mono font-bold text-amber-700">{pending}</td>
+                          <td className="p-2.5 border-r border-slate-200 bg-indigo-50/50">
+                            <InputNumber
+                              min={0}
+                              max={pending}
+                              value={currentInput.receivedQty}
+                              onChange={(val) => handleReceiveItemInputChange(item.id, 'receivedQty', val || 0)}
+                              className="w-full font-mono font-bold text-indigo-900"
+                              size="small"
+                            />
+                          </td>
+                          <td className="p-2.5 border-r border-slate-200">
+                            <Select
+                              placeholder="Select Shelf"
+                              size="small"
+                              className="w-full"
+                              value={currentInput.shelfId}
+                              onChange={(val) => handleReceiveItemInputChange(item.id, 'shelfId', val)}
+                              allowClear
+                            >
+                              {receiveShelves.map((shelf) => (
+                                <Select.Option key={shelf.id} value={shelf.id}>
+                                  {shelf.name} ({shelf.code})
+                                </Select.Option>
+                              ))}
+                            </Select>
+                          </td>
+                          <td className="p-2.5 border-r border-slate-200">
+                            <Select
+                              placeholder="Select Rack"
+                              size="small"
+                              className="w-full"
+                              value={currentInput.rackId}
+                              disabled={!currentInput.shelfId}
+                              onChange={(val) => handleReceiveItemInputChange(item.id, 'rackId', val)}
+                              allowClear
+                            >
+                              {availableRacks.map((rack) => (
+                                <Select.Option key={rack.id} value={rack.id}>
+                                  {rack.name} ({rack.rack_code})
+                                </Select.Option>
+                              ))}
+                            </Select>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <Form.Item name="remarks" label={<span className="font-semibold text-slate-700 mt-4">Remarks / Inspection Notes</span>}>
+            <Input.TextArea rows={2} placeholder="Any notes regarding condition of goods, package box numbers..." />
+          </Form.Item>
+        </Form>
       </Modal>
     </AppLayout>
   );
