@@ -30,7 +30,6 @@ import {
   CodeSandboxOutlined,
   DownloadOutlined,
   HistoryOutlined,
-  SwapOutlined,
 } from '@ant-design/icons';
 import type { Project, ProjectInventory, ItemType } from '../../types/inventory';
 import { projectApi, inventoryApi, itemTypeApi } from '../../services/api';
@@ -390,7 +389,7 @@ export const InventoryTrackerPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-3 justify-end flex-wrap sm:flex-nowrap">
             <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 p-1.5 px-3 rounded-xl border border-slate-200 dark:border-white/10">
               <span className="text-xs font-semibold text-slate-500 dark:text-slate-300 uppercase tracking-wider">
                 Location:
@@ -428,16 +427,6 @@ export const InventoryTrackerPage: React.FC = () => {
               className="border-indigo-500/40 text-indigo-600 dark:text-indigo-400 font-medium"
             >
               Stock Ledger
-            </Button>
-
-            <Button
-              icon={<SwapOutlined />}
-              onClick={() => setIsTransferModalOpen(true)}
-              disabled={projects.length === 0}
-              type="default"
-              className="border-slate-300 dark:border-slate-700 font-medium"
-            >
-              Transfer Stock
             </Button>
           </div>
         </div>

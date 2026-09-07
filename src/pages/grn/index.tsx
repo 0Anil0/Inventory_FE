@@ -588,6 +588,7 @@ const GRNPage: React.FC = () => {
 
       {/* FILTER MODAL */}
       <Modal
+        centered
         title={
           <div className="flex items-center gap-2 text-indigo-900 font-bold border-b pb-3">
             <FilterOutlined /> Filter Stock Inward & GRNs
@@ -674,6 +675,7 @@ const GRNPage: React.FC = () => {
 
       {/* CREATE GRN MODAL */}
       <Modal
+        centered
         title={
           <div className="flex items-center justify-between text-indigo-900 font-bold text-lg border-b pb-3 pr-6">
             <div className="flex items-center gap-2">
@@ -1004,6 +1006,7 @@ const GRNPage: React.FC = () => {
 
       {/* QUICK CREATE ITEM MASTER SUB-MODAL */}
       <Modal
+        centered
         title={
           <div className="flex items-center gap-2 text-indigo-900 font-bold border-b pb-2">
             <AppstoreAddOutlined /> Create New Master Inventory Item Type
@@ -1104,13 +1107,19 @@ const GRNPage: React.FC = () => {
         title={null}
         open={viewModalVisible}
         onCancel={() => setViewModalVisible(false)}
+        centered
+        width={850}
+        styles={{
+          body: { maxHeight: '75vh', overflowY: 'auto', paddingRight: '8px' },
+        }}
         footer={[
-          <Button key="close" onClick={() => setViewModalVisible(false)}>
+          <Button key="close" size="large" onClick={() => setViewModalVisible(false)}>
             Close
           </Button>,
           <Button
             key="print"
             type="primary"
+            size="large"
             icon={<PrinterOutlined />}
             style={{ backgroundColor: '#1e1b4b', borderColor: '#1e1b4b' }}
             onClick={() => window.print()}
@@ -1118,7 +1127,6 @@ const GRNPage: React.FC = () => {
             Print GRN Slip
           </Button>,
         ]}
-        width={850}
       >
         {selectedGrn && (
           <div className="p-4 bg-white font-sans text-slate-900" id="grn-print-area">
