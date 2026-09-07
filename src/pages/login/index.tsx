@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Form, Input, Button, message } from 'antd';
 import {
-  SafetyCertificateFilled,
   UserOutlined,
   LockOutlined,
   MailOutlined,

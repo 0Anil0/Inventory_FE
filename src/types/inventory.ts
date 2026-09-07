@@ -129,6 +129,8 @@ export interface PurchaseOrderItem {
   received_qty: number;
   unit_price: number;
   discount_percent?: number;
+  gst_percent?: number;
+  tax_amount?: number;
   total_price: number;
   item_type?: ItemType;
 }
@@ -138,6 +140,7 @@ export interface PurchaseOrder {
   po_number: string;
   vendor_id: number;
   project_id?: number | null;
+  terms_and_conditions_id?: number | null;
   status: 'DRAFT' | 'ORDERED' | 'RECEIVED' | 'CANCELLED';
   total_amount: number;
   order_date: string;
@@ -145,6 +148,7 @@ export interface PurchaseOrder {
   notes?: string | null;
   vendor?: Vendor;
   project?: Project;
+  terms_and_conditions?: TermsAndConditions | null;
   items?: PurchaseOrderItem[];
   createdAt?: string;
 }

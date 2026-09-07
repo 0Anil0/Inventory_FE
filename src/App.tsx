@@ -10,8 +10,8 @@ import { UnitsPage } from './pages/units';
 import { ItemTypesPage } from './pages/item-types';
 import { MakesPage } from './pages/makes';
 import { VendorsPage } from './pages/vendors';
-import { ProjectsPage } from './pages/projects';
 import { TermsAndConditionsPage } from './pages/terms-and-conditions';
+import { PurchaseOrdersPage } from './pages/purchase-orders';
 
 const RootRedirect: React.FC = () => {
   const { user, loading } = useAuth();
@@ -56,6 +56,7 @@ const AppContent: React.FC = () => {
               <Route path="/vendors" element={<VendorsPage />} />
               <Route path="/users" element={<UserManagementPage />} />
               <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
+              <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/item-types" replace />} />
           </Routes>

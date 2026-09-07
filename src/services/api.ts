@@ -251,6 +251,7 @@ export const itemTypeApi = {
     code?: string;
     cat_no?: string;
     name?: string;
+    unit?: string;
   }): Promise<{ success: boolean; items: ItemType[]; total?: number; page?: number; limit?: number; totalPages?: number }> => {
     const query = new URLSearchParams();
     if (params?.page) query.append('page', String(params.page));
@@ -261,6 +262,7 @@ export const itemTypeApi = {
     if (params?.code) query.append('code', params.code);
     if (params?.cat_no) query.append('cat_no', params.cat_no);
     if (params?.name) query.append('name', params.name);
+    if (params?.unit) query.append('unit', params.unit);
 
     const res = await fetch(`${API_BASE_URL}/item-types?${query.toString()}`, {
       headers: getAuthHeaders(),
@@ -521,10 +523,14 @@ export const poApi = {
   getAll: async (params?: {
     project_id?: number;
     vendor_id?: number;
+    search?: string;
+    status?: string;
   }): Promise<{ success: boolean; purchaseOrders: PurchaseOrder[] }> => {
     const query = new URLSearchParams();
     if (params?.project_id) query.append('project_id', String(params.project_id));
     if (params?.vendor_id) query.append('vendor_id', String(params.vendor_id));
+    if (params?.search) query.append('search', params.search);
+    if (params?.status) query.append('status', params.status);
 
     const res = await fetch(`${API_BASE_URL}/purchase-orders?${query.toString()}`, {
       headers: getAuthHeaders(),
@@ -532,15 +538,29 @@ export const poApi = {
     return handleResponse(res);
   },
 
+  getById: async (id: number): Promise<{ success: boolean; purchaseOrder: PurchaseOrder }> => {
+    const res = await fetch(`${API_BASE_URL}/purchase-orders/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
   create: async (data: {
+    po_number?: string;
     vendor_id: number;
     project_id?: number;
+    terms_and_conditions_id?: number;
     notes?: string;
     expected_date?: string;
     items: Array<{
       item_type_id: number;
       ordered_qty: number;
       unit_price: number;
+      discount_percent?: number;
+      gst_percent?: number;
+      cat_no?: string;
+      make?: string;
+      rating?: string;
     }>;
   }): Promise<{ success: boolean; purchaseOrder: PurchaseOrder }> => {
     const res = await fetch(`${API_BASE_URL}/purchase-orders`, {

@@ -5,21 +5,15 @@ import type { MenuProps } from 'antd';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import {
-  SafetyCertificateFilled,
-  DashboardOutlined,
   TeamOutlined,
   UserOutlined,
   LogoutOutlined,
-  AppstoreOutlined,
   CodeSandboxOutlined,
-  DatabaseOutlined,
   TagsOutlined,
   SunOutlined,
   MoonOutlined,
   ShoppingOutlined,
   FileTextOutlined,
-  FileDoneOutlined,
-  FileSearchOutlined,
   ShopOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -109,6 +103,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         setMobileDrawerOpen(false);
       },
     },
+    {
+      key: '/purchase-orders',
+      icon: <ShoppingOutlined style={{ fontSize: '18px' }} />,
+      label: 'Purchase Orders',
+      onClick: () => {
+        navigate('/purchase-orders');
+        setMobileDrawerOpen(false);
+      },
+    },
   ];
 
   const profileMenuItems: MenuProps['items'] = [
@@ -141,6 +144,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/vendors': return 'Vendor Master';
       case '/users': return 'User Management';
       case '/terms-and-conditions': return 'Terms & Conditions Templates';
+      case '/purchase-orders': return 'Purchase Orders & PDF Documents';
       default: return 'Inventory Management System';
     }
   };
