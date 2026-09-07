@@ -231,3 +231,31 @@ export interface TermsAndConditions {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface ProjectAssignmentItem {
+  id: number;
+  assignment_id: number;
+  item_type_id: number;
+  quantity: number;
+  item_type?: ItemType;
+  createdAt?: string;
+}
+
+export interface ProjectAssignment {
+  id: number;
+  assignment_no: string;
+  from_project_id?: number | null;
+  to_project_id: number;
+  assigned_to_person: string;
+  created_by_user_id?: number | null;
+  assignment_date?: string;
+  notes?: string | null;
+  to_project?: Project;
+  user?: {
+    id: number;
+    username: string;
+    email?: string;
+  };
+  items?: ProjectAssignmentItem[];
+  createdAt?: string;
+}

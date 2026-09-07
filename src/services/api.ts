@@ -13,6 +13,7 @@ import type {
   MaterialIssue,
   ItemDescription,
   TermsAndConditions,
+  ProjectAssignment,
 } from '../types/inventory';
 import type { StorageShelf, StorageRack } from '../types/storage';
 
@@ -362,6 +363,13 @@ export const projectApi = {
 
 // Inventory API Client
 export const inventoryApi = {
+  getAll: async (): Promise<{ success: boolean; inventory: ProjectInventory[] }> => {
+    const res = await fetch(`${API_BASE_URL}/inventory/all`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
   getByProject: async (
     projectId: number
   ): Promise<{ success: boolean; inventory: ProjectInventory[] }> => {
@@ -1022,6 +1030,45 @@ export const grnApi = {
       headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     });
+    return handleResponse(res);
+  },
+};
+
+// Project Material Assignment API Client
+export const projectAssignmentApi = {
+  getAll: async (params?: { to_project_id?: number }): Promise<{ success: boolean; assignments: ProjectAssignment[] }> => {
+    const query = new URLSearchParams();
+    if (params?.to_project_id) query.append('to_project_id', String(params.to_project_id));
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${API_BASE_URL}/project-assignments${queryString}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getById: async (id: number): Promise<{ success: boolean; assignment: ProjectAssignment }> => {
+    const res = await fetch(`${API_BASE_URL}/project-assignments/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  create: async (data: {
+    from_project_id?: number | null;
+    to_project_id: number;
+    assigned_to_person: string;
+    notes?: string;
+    items: Array<{
+      item_type_id: number;
+      quantity: number;
+    }>;
+  }): Promise<{ success: boolean; message: string; assignment: ProjectAssignment }> => {
+    const res = await fetch(`${API_BASE_URL}/project-assignments`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+      });
     return handleResponse(res);
   },
 };

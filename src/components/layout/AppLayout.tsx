@@ -22,6 +22,9 @@ import {
   MenuUnfoldOutlined,
   DatabaseOutlined,
   ClusterOutlined,
+  FileDoneOutlined,
+  SendOutlined,
+  BranchesOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -91,11 +94,47 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       },
     },
     {
+      key: '/project-assignments',
+      icon: <SendOutlined style={{ fontSize: '18px' }} />,
+      label: 'Project Stock Assignments',
+      onClick: () => {
+        navigate('/project-assignments');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
+      key: '/project-stock-tracker',
+      icon: <BranchesOutlined style={{ fontSize: '18px' }} />,
+      label: 'Project Stock Matrix',
+      onClick: () => {
+        navigate('/project-stock-tracker');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
       key: '/inventory',
       icon: <DatabaseOutlined style={{ fontSize: '18px' }} />,
       label: 'Inventory Stock Items',
       onClick: () => {
         navigate('/inventory');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
+      key: '/grn',
+      icon: <AuditOutlined style={{ fontSize: '18px' }} />,
+      label: 'Stock Inward (GRN)',
+      onClick: () => {
+        navigate('/grn');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
+      key: '/material-issues',
+      icon: <FileDoneOutlined style={{ fontSize: '18px' }} />,
+      label: 'Material Issue Vouchers',
+      onClick: () => {
+        navigate('/material-issues');
         setMobileDrawerOpen(false);
       },
     },
@@ -153,15 +192,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         setMobileDrawerOpen(false);
       },
     },
-    {
-      key: '/grn',
-      icon: <AuditOutlined style={{ fontSize: '18px' }} />,
-      label: 'Stock Inward (GRN)',
-      onClick: () => {
-        navigate('/grn');
-        setMobileDrawerOpen(false);
-      },
-    },
   ];
 
   const profileMenuItems: MenuProps['items'] = [
@@ -192,6 +222,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/makes': return 'Make Master';
       case '/item-types': return 'Item Master';
       case '/projects': return 'Project & Sub-Project Master';
+      case '/project-assignments': return 'Project Material Assignment & Dispatch Master';
+      case '/project-stock-tracker': return 'Project Stock Hierarchy & Item Matrix Tracker';
       case '/inventory': return 'Inventory Stock Items & Tracker';
       case '/vendors': return 'Vendor Master';
       case '/users': return 'User Management';
@@ -200,6 +232,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/approver-config': return 'PO Approver Configuration';
       case '/storage-locations': return 'Store Shelves & Racks Layout';
       case '/grn': return 'Stock Inward (GRN) Master';
+      case '/material-issues': return 'Material Issue Vouchers & Site Dispatch';
       default: return 'Inventory Management System';
     }
   };
