@@ -21,6 +21,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   DatabaseOutlined,
+  ClusterOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -77,6 +78,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       label: 'Item Master',
       onClick: () => {
         navigate('/item-types');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
+      key: '/projects',
+      icon: <ClusterOutlined style={{ fontSize: '18px' }} />,
+      label: 'Project Master',
+      onClick: () => {
+        navigate('/projects');
         setMobileDrawerOpen(false);
       },
     },
@@ -181,6 +191,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/units': return 'Unit Master';
       case '/makes': return 'Make Master';
       case '/item-types': return 'Item Master';
+      case '/projects': return 'Project & Sub-Project Master';
       case '/inventory': return 'Inventory Stock Items & Tracker';
       case '/vendors': return 'Vendor Master';
       case '/users': return 'User Management';

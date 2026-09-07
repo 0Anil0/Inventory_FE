@@ -53,7 +53,12 @@ export interface Project {
   code: string;
   location?: string | null;
   description?: string | null;
+  parent_id?: number | null;
+  parent?: Project | null;
+  sub_projects?: Project[];
+  children?: Project[];
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ProjectInventory {

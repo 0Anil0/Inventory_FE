@@ -329,6 +329,7 @@ export const projectApi = {
     code: string;
     location?: string;
     description?: string;
+    parent_id?: number | null;
   }): Promise<{ success: boolean; project: Project }> => {
     const res = await fetch(`${API_BASE_URL}/projects`, {
       method: 'POST',
@@ -340,7 +341,7 @@ export const projectApi = {
 
   update: async (
     id: number,
-    data: { name?: string; code?: string; location?: string; description?: string }
+    data: { name?: string; code?: string; location?: string; description?: string; parent_id?: number | null }
   ): Promise<{ success: boolean; project: Project }> => {
     const res = await fetch(`${API_BASE_URL}/projects/${id}`, {
       method: 'PUT',

@@ -15,6 +15,7 @@ import { PurchaseOrdersPage } from './pages/purchase-orders';
 import { ApproverConfigPage } from './pages/approver-config';
 import { StorageLocationsPage } from './pages/storage-locations';
 import { InventoryTrackerPage } from './pages/inventory';
+import { ProjectsPage } from './pages/projects';
 import GRNPage from './pages/grn';
 
 const RootRedirect: React.FC = () => {
@@ -57,6 +58,7 @@ const AppContent: React.FC = () => {
               <Route path="/units" element={<UnitsPage />} />
               <Route path="/makes" element={<MakesPage />} />
               <Route path="/item-types" element={<ItemTypesPage />} />
+              <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/vendors" element={<VendorsPage />} />
               <Route path="/inventory" element={<InventoryTrackerPage />} />
               <Route path="/users" element={<UserManagementPage />} />
