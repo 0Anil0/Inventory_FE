@@ -14,6 +14,7 @@ import type {
   ItemDescription,
   TermsAndConditions,
 } from '../types/inventory';
+import type { StorageShelf, StorageRack } from '../types/storage';
 
 
 // Token Helper
@@ -888,6 +889,93 @@ export const termsApi = {
 
   delete: async (id: number): Promise<{ success: boolean; message: string }> => {
     const res = await fetch(`${API_BASE_URL}/terms-and-conditions/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+};
+
+// Storage Locations API Client
+export const storageApi = {
+  getAllShelves: async (): Promise<{ success: boolean; shelves: StorageShelf[] }> => {
+    const res = await fetch(`${API_BASE_URL}/storage-shelves`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  createShelf: async (data: {
+    code: string;
+    name: string;
+    zone?: string;
+    description?: string;
+  }): Promise<{ success: boolean; shelf: StorageShelf }> => {
+    const res = await fetch(`${API_BASE_URL}/storage-shelves`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  updateShelf: async (
+    id: number,
+    data: {
+      code?: string;
+      name?: string;
+      zone?: string;
+      description?: string;
+    }
+  ): Promise<{ success: boolean; shelf: StorageShelf }> => {
+    const res = await fetch(`${API_BASE_URL}/storage-shelves/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  deleteShelf: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const res = await fetch(`${API_BASE_URL}/storage-shelves/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  createRack: async (data: {
+    shelf_id: number;
+    rack_code: string;
+    name: string;
+    capacity_notes?: string;
+  }): Promise<{ success: boolean; rack: StorageRack }> => {
+    const res = await fetch(`${API_BASE_URL}/storage-racks`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  updateRack: async (
+    id: number,
+    data: {
+      rack_code?: string;
+      name?: string;
+      capacity_notes?: string;
+    }
+  ): Promise<{ success: boolean; rack: StorageRack }> => {
+    const res = await fetch(`${API_BASE_URL}/storage-racks/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  deleteRack: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const res = await fetch(`${API_BASE_URL}/storage-racks/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });

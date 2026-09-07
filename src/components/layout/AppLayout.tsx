@@ -16,6 +16,7 @@ import {
   FileTextOutlined,
   ShopOutlined,
   SafetyCertificateOutlined,
+  HddOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
@@ -122,6 +123,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         setMobileDrawerOpen(false);
       },
     },
+    {
+      key: '/storage-locations',
+      icon: <HddOutlined style={{ fontSize: '18px' }} />,
+      label: 'Store Shelves & Racks',
+      onClick: () => {
+        navigate('/storage-locations');
+        setMobileDrawerOpen(false);
+      },
+    },
   ];
 
   const profileMenuItems: MenuProps['items'] = [
@@ -156,6 +166,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/terms-and-conditions': return 'Terms & Conditions Templates';
       case '/purchase-orders': return 'Purchase Orders & PDF Documents';
       case '/approver-config': return 'PO Approver Configuration';
+      case '/storage-locations': return 'Store Shelves & Racks Layout';
       default: return 'Inventory Management System';
     }
   };

@@ -242,7 +242,7 @@ export const ApproverConfigPage: React.FC = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            size="large"
+            size="middle"
             className="bg-indigo-600 hover:bg-indigo-500 font-bold border-none shadow-md"
             onClick={() => {
               setEditingApprover(null);
