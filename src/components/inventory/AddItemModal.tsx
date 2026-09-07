@@ -14,6 +14,7 @@ interface AddItemModalProps {
   }) => Promise<void>;
   availableItemTypes: ItemType[];
   projectName?: string;
+  projectId?: number;
 }
 
 export const AddItemModal: React.FC<AddItemModalProps> = ({
@@ -22,11 +23,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   onSubmitBatch,
   availableItemTypes,
   projectName,
+  projectId,
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState<boolean>(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [itemQuantities, setItemQuantities] = useState<Record<number, number>>({});
+
+  const isGeneralStore = projectId === 0 || projectId === null || projectId === undefined;
 
   useEffect(() => {
     if (isOpen) {
@@ -66,17 +70,19 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       return;
     }
 
-    // Validate quantities against master central DB stock
-    for (const id of selectedIds) {
-      const item = availableItemTypes.find((t) => t.id === id);
-      const allocatedQty = itemQuantities[id] || 0;
-      const masterAvailable = item?.total_quantity || 0;
+    // Validate quantities if allocating to a project (not general store)
+    if (!isGeneralStore) {
+      for (const id of selectedIds) {
+        const item = availableItemTypes.find((t) => t.id === id);
+        const allocatedQty = itemQuantities[id] || 0;
+        const masterAvailable = item?.total_quantity || 0;
 
-      if (allocatedQty > masterAvailable) {
-        message.error(
-          `Cannot allocate ${allocatedQty} ${item?.unit} for "${item?.name}". Maximum available in DB: ${masterAvailable} ${item?.unit}`
-        );
-        return;
+        if (allocatedQty > masterAvailable) {
+          message.error(
+            `Cannot allocate ${allocatedQty} ${item?.unit} for "${item?.name}". Maximum available in Main Store: ${masterAvailable} ${item?.unit}`
+          );
+          return;
+        }
       }
     }
 
@@ -88,10 +94,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       }));
 
       await onSubmitBatch({ items: itemsToSubmit });
-      message.success(`Successfully allocated items to ${projectName || 'project'}`);
+      message.success(
+        isGeneralStore
+          ? 'Successfully updated stock items in General Store'
+          : `Successfully allocated items to ${projectName || 'project'}`
+      );
       onClose();
     } catch (err: any) {
-      message.error(err.message || 'Failed to add items to project');
+      message.error(err.message || 'Failed to update stock items');
     } finally {
       setLoading(false);
     }
@@ -104,14 +114,22 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       title={
         <div className="flex items-center gap-2">
           <PlusOutlined className="text-indigo-400" />
-          <span>Add Items to Project: <strong className="text-indigo-400">{projectName || 'Project'}</strong></span>
+          <span>
+            {isGeneralStore
+              ? 'Add / Update Stock Items: General Store'
+              : `Allocate Items to Project: ${projectName || 'Project'}`}
+          </span>
         </div>
       }
       open={isOpen}
       onCancel={onClose}
       onOk={() => form.submit()}
       confirmLoading={loading}
-      okText={`Add ${selectedIds.length} Selected Item${selectedIds.length === 1 ? '' : 's'}`}
+      okText={
+        isGeneralStore
+          ? `Add ${selectedIds.length} Stock Item${selectedIds.length === 1 ? '' : 's'}`
+          : `Allocate ${selectedIds.length} Item${selectedIds.length === 1 ? '' : 's'}`
+      }
       destroyOnClose
       width={720}
       centered
@@ -154,9 +172,15 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                     <span className="font-semibold">{item.name}</span>{' '}
                     <span className="text-xs font-mono text-indigo-400">({item.code})</span>
                   </div>
-                  <Tag color="cyan" icon={<DatabaseOutlined />} className="font-mono text-xs border-none">
-                    Available in DB: {(item.total_quantity || 0).toLocaleString()} {item.unit}
-                  </Tag>
+                  {isGeneralStore ? (
+                    <Tag color="purple" className="font-mono text-xs border-none">
+                      Unit: {item.unit}
+                    </Tag>
+                  ) : (
+                    <Tag color="cyan" icon={<DatabaseOutlined />} className="font-mono text-xs border-none">
+                      Avail in Store: {(item.total_quantity || 0).toLocaleString()} {item.unit}
+                    </Tag>
+                  )}
                 </div>
               </Select.Option>
             ))}
@@ -167,13 +191,15 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
         {selectedItemTypes.length > 0 && (
           <div className="mt-4 flex flex-col gap-3 max-h-80 overflow-y-auto pr-1">
             <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
-              Enter Quantity for Selected Items ({selectedItemTypes.length}):
+              {isGeneralStore
+                ? `Set Initial Quantity for Stock Items (${selectedItemTypes.length}):`
+                : `Enter Quantity to Allocate to Project (${selectedItemTypes.length}):`}
             </div>
 
             {selectedItemTypes.map((item) => {
               const maxStock = item.total_quantity || 0;
               const currentVal = itemQuantities[item.id] || 0;
-              const isExceeded = currentVal > maxStock;
+              const isExceeded = !isGeneralStore && currentVal > maxStock;
 
               return (
                 <Card
@@ -190,20 +216,28 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                         <span className="text-xs font-mono text-indigo-400">({item.code})</span>
                       </div>
                       <div className="text-xs text-slate-400">
-                        Available in DB:{' '}
-                        <strong className="text-cyan-400 font-mono">
-                          {maxStock.toLocaleString()} {item.unit}
-                        </strong>
+                        {isGeneralStore ? (
+                          <span>
+                            Item Unit: <strong className="text-indigo-400 font-mono">{item.unit}</strong>
+                          </span>
+                        ) : (
+                          <span>
+                            Available in Main Store:{' '}
+                            <strong className="text-cyan-400 font-mono">
+                              {maxStock.toLocaleString()} {item.unit}
+                            </strong>
+                          </span>
+                        )}
                       </div>
                     </div>
 
                     <div>
                       <div className="text-[10px] text-slate-400 mb-0.5">
-                        Enter Quantity ({item.unit})
+                        {isGeneralStore ? `New Stock Qty (${item.unit})` : `Allocate Qty (${item.unit})`}
                       </div>
                       <InputNumber
                         min={0}
-                        max={maxStock}
+                        max={isGeneralStore ? undefined : maxStock}
                         value={currentVal}
                         onChange={(v) => updateItemQty(item.id, v || 0)}
                         status={isExceeded ? 'error' : ''}
@@ -213,7 +247,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                   </div>
                   {isExceeded && (
                     <div className="text-[11px] text-rose-400 mt-2 font-semibold">
-                      ⚠️ Error: Entered quantity exceeds available stock in DB ({maxStock} {item.unit})
+                      ⚠️ Error: Entered quantity exceeds available stock in Main Store ({maxStock} {item.unit})
                     </div>
                   )}
                 </Card>

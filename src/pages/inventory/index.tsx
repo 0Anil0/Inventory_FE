@@ -507,7 +507,7 @@ export const InventoryTrackerPage: React.FC = () => {
                 disabled={selectedProjectId === undefined || selectedProjectId === null}
                 className="shadow-lg shadow-indigo-500/30"
               >
-                Add Items to Project
+                {selectedProjectId === 0 ? 'Add Stock Items' : 'Add Items to Project'}
               </Button>
             </Space>
           </div>
@@ -586,6 +586,7 @@ export const InventoryTrackerPage: React.FC = () => {
         onSubmitBatch={handleBatchAddItemsSubmit}
         availableItemTypes={availableItemTypes}
         projectName={selectedProject?.name || 'General Stock / Main Store'}
+        projectId={selectedProjectId}
       />
 
       <StockLedgerDrawer
