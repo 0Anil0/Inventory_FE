@@ -22,7 +22,6 @@ import {
   MenuUnfoldOutlined,
   DatabaseOutlined,
   ClusterOutlined,
-  FileDoneOutlined,
   SendOutlined,
 } from '@ant-design/icons';
 
@@ -120,15 +119,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       },
     },
     {
-      key: '/material-issues',
-      icon: <FileDoneOutlined style={{ fontSize: '18px' }} />,
-      label: 'Material Issue Vouchers',
-      onClick: () => {
-        navigate('/material-issues');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
       key: '/vendors',
       icon: <ShopOutlined style={{ fontSize: '18px' }} />,
       label: 'Vendor Master',
@@ -221,7 +211,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/approver-config': return 'PO Approver Configuration';
       case '/storage-locations': return 'Store Shelves & Racks Layout';
       case '/grn': return 'Stock Inward (GRN) Master';
-      case '/material-issues': return 'Material Issue Vouchers & Site Dispatch';
       default: return 'Inventory Management System';
     }
   };

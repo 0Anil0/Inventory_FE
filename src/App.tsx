@@ -16,7 +16,6 @@ import { ApproverConfigPage } from './pages/approver-config';
 import { StorageLocationsPage } from './pages/storage-locations';
 import { InventoryTrackerPage } from './pages/inventory';
 import { ProjectsPage } from './pages/projects';
-import { MaterialIssuesPage } from './pages/material-issues';
 import { ProjectAssignmentsPage } from './pages/project-assignments';
 import GRNPage from './pages/grn';
 
@@ -69,7 +68,6 @@ const AppContent: React.FC = () => {
               <Route path="/approver-config" element={<ApproverConfigPage />} />
               <Route path="/storage-locations" element={<StorageLocationsPage />} />
               <Route path="/grn" element={<GRNPage />} />
-              <Route path="/material-issues" element={<MaterialIssuesPage />} />
               <Route path="/project-assignments" element={<ProjectAssignmentsPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/item-types" replace />} />
