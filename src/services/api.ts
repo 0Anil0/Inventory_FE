@@ -828,7 +828,65 @@ export const reportApi = {
     });
     return handleResponse(res);
   },
+
+  getProcurementDistribution: async (params?: {
+    project_id?: number;
+    search?: string;
+    health?: string;
+  }): Promise<{
+    success: boolean;
+    report: {
+      summary: {
+        total_items: number;
+        total_general_po_qty: number;
+        total_project_po_qty: number;
+        total_central_stock: number;
+        total_dispatched_stock: number;
+      };
+      items: Array<{
+        id: number;
+        name: string;
+        code: string;
+        cat_no?: string;
+        make?: string;
+        rating?: string;
+        unit: string;
+        min_quantity: number;
+        general_po_qty: number;
+        project_po_qty: number;
+        total_po_qty: number;
+        project_po_breakdown: Array<{
+          project_id: number;
+          project_name: string;
+          project_code: string;
+          qty: number;
+          po_numbers: string[];
+        }>;
+        central_warehouse_qty: number;
+        dispatched_site_qty: number;
+        total_physical_stock: number;
+        dispatched_site_breakdown: Array<{
+          project_id: number;
+          project_name: string;
+          project_code: string;
+          qty: number;
+        }>;
+        health_status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
+      }>;
+    };
+  }> => {
+    const query = new URLSearchParams();
+    if (params?.project_id) query.append('project_id', String(params.project_id));
+    if (params?.search) query.append('search', params.search);
+    if (params?.health) query.append('health', params.health);
+
+    const res = await fetch(`${API_BASE_URL}/reports/procurement-distribution?${query.toString()}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
 };
+
 
 // Terms & Conditions API Client
 export const termsApi = {

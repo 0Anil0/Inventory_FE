@@ -23,7 +23,9 @@ import {
   DatabaseOutlined,
   ClusterOutlined,
   SendOutlined,
+  FileSearchOutlined,
 } from '@ant-design/icons';
+
 
 const { Header, Sider, Content } = Layout;
 
@@ -172,7 +174,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         setMobileDrawerOpen(false);
       },
     },
+    {
+      key: '/reports',
+      icon: <FileSearchOutlined style={{ fontSize: '18px' }} />,
+      label: 'Reports & Analytics',
+      onClick: () => {
+        navigate('/reports');
+        setMobileDrawerOpen(false);
+      },
+    },
   ];
+
 
   const profileMenuItems: MenuProps['items'] = [
     {
@@ -211,7 +223,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/approver-config': return 'PO Approver Configuration';
       case '/storage-locations': return 'Store Shelves & Racks Layout';
       case '/grn': return 'Stock Inward (GRN) Master';
+      case '/reports': return 'Stock Procurement & Allocation Analytics';
       default: return 'Inventory Management System';
+
     }
   };
 
