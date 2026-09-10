@@ -627,6 +627,105 @@ export const ReportsPage: React.FC = () => {
     },
   ];
 
+  // Client-side filtering logic for real-time search responsiveness across all tabs
+  const filteredProcurementData = procurementData.filter((item) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase().trim();
+    const name = (item.name || '').toLowerCase();
+    const code = (item.code || '').toLowerCase();
+    const catNo = (item.cat_no || '').toLowerCase();
+    const make = (item.make || '').toLowerCase();
+    const rating = (item.rating || '').toLowerCase();
+    const unit = (item.unit || '').toLowerCase();
+
+    const matchesProjectBreakdown = item.project_po_breakdown?.some(
+      (b) =>
+        b.project_name?.toLowerCase().includes(q) ||
+        b.project_code?.toLowerCase().includes(q) ||
+        b.po_numbers?.some((po) => po.toLowerCase().includes(q))
+    );
+
+    const matchesSiteBreakdown = item.dispatched_site_breakdown?.some(
+      (b) =>
+        b.project_name?.toLowerCase().includes(q) ||
+        b.project_code?.toLowerCase().includes(q)
+    );
+
+    return (
+      name.includes(q) ||
+      code.includes(q) ||
+      catNo.includes(q) ||
+      make.includes(q) ||
+      rating.includes(q) ||
+      unit.includes(q) ||
+      matchesProjectBreakdown ||
+      matchesSiteBreakdown
+    );
+  });
+
+  const filteredOtherReportData = otherReportData.filter((item) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase().trim();
+
+    if (reportType === 'stock-summary') {
+      const projName = (item.project?.name || 'Central Warehouse').toLowerCase();
+      const projCode = (item.project?.code || '').toLowerCase();
+      const itemName = (item.item_type?.name || '').toLowerCase();
+      const itemCode = (item.item_type?.code || '').toLowerCase();
+      const catNo = (item.item_type?.cat_no || '').toLowerCase();
+      const make = (item.item_type?.make || '').toLowerCase();
+      const rating = (item.item_type?.rating || '').toLowerCase();
+      const fullDesc = (item.item_type?.full_description || '').toLowerCase();
+      return (
+        projName.includes(q) ||
+        projCode.includes(q) ||
+        itemName.includes(q) ||
+        itemCode.includes(q) ||
+        catNo.includes(q) ||
+        make.includes(q) ||
+        rating.includes(q) ||
+        fullDesc.includes(q)
+      );
+    } else if (reportType === 'purchase-orders') {
+      const poNum = (item.po_number || '').toLowerCase();
+      const vendorName = (item.vendor?.name || '').toLowerCase();
+      const projName = (item.project?.name || '').toLowerCase();
+      const projCode = (item.project?.code || '').toLowerCase();
+      const status = (item.status || '').toLowerCase();
+      const itemMatch = item.items?.some((pi: any) => {
+        const iName = (pi.item_type?.name || '').toLowerCase();
+        const iCode = (pi.item_type?.code || '').toLowerCase();
+        return iName.includes(q) || iCode.includes(q);
+      });
+
+      return (
+        poNum.includes(q) ||
+        vendorName.includes(q) ||
+        projName.includes(q) ||
+        projCode.includes(q) ||
+        status.includes(q) ||
+        itemMatch
+      );
+    } else if (reportType === 'audit-ledger') {
+      const type = (item.type || '').toLowerCase();
+      const projName = (item.project?.name || '').toLowerCase();
+      const itemCode = (item.item_type?.code || '').toLowerCase();
+      const itemName = (item.item_type?.name || '').toLowerCase();
+      const username = (item.user?.username || '').toLowerCase();
+      const notes = (item.notes || '').toLowerCase();
+      return (
+        type.includes(q) ||
+        projName.includes(q) ||
+        itemCode.includes(q) ||
+        itemName.includes(q) ||
+        username.includes(q) ||
+        notes.includes(q)
+      );
+    }
+
+    return true;
+  });
+
   return (
     <AppLayout>
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-2 sm:px-6 py-3 sm:py-4 flex flex-col min-h-full print:p-0">
@@ -756,9 +855,9 @@ export const ReportsPage: React.FC = () => {
           {/* Total Records Counter Header */}
           <div className="flex items-center justify-between gap-3 mb-3 pb-2 border-b border-slate-200 dark:border-white/10 shrink-0 print:hidden">
             <div className="flex items-center gap-2">
-              <Badge count={reportType === 'procurement-distribution' ? procurementData.length : otherReportData.length} overflowCount={999} color="#6366f1">
+              <Badge count={reportType === 'procurement-distribution' ? filteredProcurementData.length : filteredOtherReportData.length} overflowCount={999} color="#6366f1">
                 <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
-                  Total Items: {reportType === 'procurement-distribution' ? procurementData.length : otherReportData.length} Entries
+                  Total Items: {reportType === 'procurement-distribution' ? filteredProcurementData.length : filteredOtherReportData.length} Entries
                 </Tag>
               </Badge>
             </div>
@@ -834,7 +933,7 @@ export const ReportsPage: React.FC = () => {
                   ? poColumns
                   : auditColumns
               }
-              dataSource={reportType === 'procurement-distribution' ? procurementData : otherReportData}
+              dataSource={reportType === 'procurement-distribution' ? filteredProcurementData : filteredOtherReportData}
               rowKey="id"
               loading={loading}
               scroll={{ x: 800, y: 400 }}

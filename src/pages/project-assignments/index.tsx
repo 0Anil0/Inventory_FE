@@ -69,6 +69,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isItemSelectOpen, setIsItemSelectOpen] = useState<boolean>(false);
   const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
   const [itemQuantities, setItemQuantities] = useState<Record<number, number>>({});
   const [form] = Form.useForm();
@@ -123,6 +124,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
     form.resetFields();
     setSelectedItemIds([]);
     setItemQuantities({});
+    setIsItemSelectOpen(false);
     setIsModalOpen(true);
   };
 
@@ -523,7 +525,19 @@ export const ProjectAssignmentsPage: React.FC = () => {
               label="Destination Project / Sub-Site"
               rules={[{ required: true, message: 'Please select target project or site' }]}
             >
-              <Select placeholder="Select Target Project or Site">
+              <Select
+                showSearch
+                placeholder="Select Target Project or Site"
+                filterOption={(input, option) => {
+                  const proj = projects.find((p) => p.id === option?.value);
+                  if (!proj) return false;
+                  const q = input.toLowerCase().trim();
+                  const name = (proj.name || '').toLowerCase();
+                  const code = (proj.code || '').toLowerCase();
+                  const parentName = (proj.parent?.name || '').toLowerCase();
+                  return name.includes(q) || code.includes(q) || parentName.includes(q);
+                }}
+              >
               {projects.map((p) => {
                 const parent = p.parent || projects.find((parentP) => parentP.id === p.parent_id);
                 return (
@@ -557,7 +571,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between gap-3 mb-2">
-            <label className="text-sm font-semibold text-slate-200">
+            <label className="text-sm font-semibold text-slate-800 dark:text-slate-200">
               Select Material Items from Warehouse Stock (Available &gt; 0):
             </label>
           </div>
@@ -565,6 +579,10 @@ export const ProjectAssignmentsPage: React.FC = () => {
           <Form.Item name="selected_item_ids">
             <Select
               mode="multiple"
+              open={isItemSelectOpen}
+              onDropdownVisibleChange={(open) => setIsItemSelectOpen(open)}
+              onSelect={() => setIsItemSelectOpen(false)}
+              maxTagCount="responsive"
               placeholder={
                 availableStoreStock.length === 0
                   ? 'No available stock items in General Store...'
@@ -574,30 +592,85 @@ export const ProjectAssignmentsPage: React.FC = () => {
               value={selectedItemIds}
               onChange={handleItemSelectChange}
               showSearch
-              optionFilterProp="children"
+              filterOption={(input, option) => {
+                const inv = availableStoreStock.find((i) => i.item_type_id === option?.value);
+                const catItem = catalogItems.find((c) => c.id === option?.value);
+                if (!inv && !catItem) return false;
+
+                const q = input.toLowerCase().trim();
+                const name = (inv?.item_type?.name || catItem?.name || '').toLowerCase();
+                const code = (inv?.item_type?.code || catItem?.code || '').toLowerCase();
+                const fullDesc = (inv?.item_type?.full_description || catItem?.full_description || '').toLowerCase();
+                const catNo = (inv?.item_type?.cat_no || catItem?.cat_no || '').toLowerCase();
+                const rating = (inv?.item_type?.rating || catItem?.rating || '').toLowerCase();
+                const make = (inv?.item_type?.make || catItem?.make || '').toLowerCase();
+                const unit = (inv?.item_type?.unit || catItem?.unit || '').toLowerCase();
+
+                return (
+                  name.includes(q) ||
+                  code.includes(q) ||
+                  fullDesc.includes(q) ||
+                  catNo.includes(q) ||
+                  rating.includes(q) ||
+                  make.includes(q) ||
+                  unit.includes(q)
+                );
+              }}
               className="w-full"
               disabled={availableStoreStock.length === 0}
             >
-              {availableStoreStock.map((inv) => (
-                <Select.Option key={inv.item_type_id} value={inv.item_type_id}>
-                  <div className="flex items-center justify-between py-0.5">
-                    <div>
-                      <span className="font-semibold">{inv.item_type?.name}</span>{' '}
-                      <span className="text-xs font-mono text-indigo-400">({inv.item_type?.code})</span>
+              {availableStoreStock.map((inv) => {
+                const catItem = catalogItems.find((c) => c.id === inv.item_type_id);
+                const name = inv.item_type?.name || catItem?.name || 'Item';
+                const code = inv.item_type?.code || catItem?.code || '';
+                const catNo = inv.item_type?.cat_no || catItem?.cat_no;
+                const make = inv.item_type?.make || catItem?.make;
+                const fullDesc = inv.item_type?.full_description || catItem?.full_description;
+                const rating = inv.item_type?.rating || catItem?.rating;
+                const unit = inv.item_type?.unit || catItem?.unit || 'pcs';
+
+                return (
+                  <Select.Option key={inv.item_type_id} value={inv.item_type_id}>
+                    <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/50 last:border-none">
+                      <div className="flex flex-col gap-0.5 min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">
+                            {name}
+                          </span>
+                          <span className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400">
+                            ({code})
+                          </span>
+                          {catNo && (
+                            <Tag color="emerald" className="font-mono text-[11px] border-none px-1.5 py-0 font-semibold">
+                              Cat: {catNo}
+                            </Tag>
+                          )}
+                          {make && (
+                            <Tag color="blue" className="text-[11px] border-none px-1.5 py-0 font-semibold">
+                              {make}
+                            </Tag>
+                          )}
+                        </div>
+                        {(fullDesc || rating) && (
+                          <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                            {fullDesc || rating}
+                          </div>
+                        )}
+                      </div>
+                      <Tag color="cyan" className="font-mono text-xs border-none font-bold shrink-0">
+                        Avail: {inv.quantity.toLocaleString()} {unit}
+                      </Tag>
                     </div>
-                    <Tag color="cyan" className="font-mono text-xs border-none font-bold">
-                      Avail: {inv.quantity.toLocaleString()} {inv.item_type?.unit}
-                    </Tag>
-                  </div>
-                </Select.Option>
-              ))}
+                  </Select.Option>
+                );
+              })}
             </Select>
           </Form.Item>
 
           {/* Quantity Input Cards */}
           {selectedItemIds.length > 0 && (
             <div className="mt-4 flex flex-col gap-3 max-h-72 overflow-y-auto pr-1">
-              <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
                 Set Assignment Quantity for Selected Items ({selectedItemIds.length}):
               </div>
 
@@ -607,29 +680,45 @@ export const ProjectAssignmentsPage: React.FC = () => {
                 const maxAvailable = invItem ? invItem.quantity : 0;
                 const currentVal = itemQuantities[id] || 1;
                 const isExceeded = currentVal > maxAvailable;
+                const itemName = invItem?.item_type?.name || catItem?.name || 'Item';
+                const itemCode = invItem?.item_type?.code || catItem?.code || '';
+                const catNo = invItem?.item_type?.cat_no || catItem?.cat_no;
+                const unitStr = invItem?.item_type?.unit || catItem?.unit || 'pcs';
 
                 return (
                   <Card
                     key={id}
                     size="small"
-                    className={`bg-slate-900/60 border rounded-xl transition-all ${
-                      isExceeded ? 'border-rose-500/80 bg-rose-950/20' : 'border-white/10'
+                    className={`bg-slate-50 dark:bg-slate-900/60 border rounded-xl transition-all ${
+                      isExceeded
+                        ? 'border-rose-500/80 bg-rose-50 dark:bg-rose-950/20'
+                        : 'border-slate-200 dark:border-white/10'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <div className="font-semibold text-sm text-slate-100">
-                          {invItem?.item_type?.name || catItem?.name}
+                        <div className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2 flex-wrap">
+                          <span>{itemName}</span>
+                          {itemCode && (
+                            <span className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400">
+                              ({itemCode})
+                            </span>
+                          )}
+                          {catNo && (
+                            <Tag color="emerald" className="font-mono text-[11px] border-none px-1.5 py-0 font-semibold">
+                              Cat: {catNo}
+                            </Tag>
+                          )}
                         </div>
-                        <div className="text-xs text-slate-400 font-mono">
+                        <div className="text-xs text-slate-600 dark:text-slate-400 font-mono mt-1">
                           Available in Store:{' '}
-                          <strong className="text-cyan-400 font-bold font-mono">
-                            {maxAvailable.toLocaleString()} {invItem?.item_type?.unit || catItem?.unit || 'pcs'}
+                          <strong className="text-cyan-600 dark:text-cyan-400 font-bold font-mono">
+                            {maxAvailable.toLocaleString()} {unitStr}
                           </strong>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-400">Quantity to Assign:</span>
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Quantity to Assign:</span>
                         <InputNumber
                           min={1}
                           max={maxAvailable}
@@ -641,9 +730,8 @@ export const ProjectAssignmentsPage: React.FC = () => {
                       </div>
                     </div>
                     {isExceeded && (
-                      <div className="text-[11px] text-rose-400 mt-2 font-semibold">
-                        ⚠️ Entered quantity exceeds available stock in General Store ({maxAvailable}{' '}
-                        {invItem?.item_type?.unit || 'pcs'})
+                      <div className="text-[11px] text-rose-500 dark:text-rose-400 mt-2 font-semibold">
+                        ⚠️ Entered quantity exceeds available stock in General Store ({maxAvailable} {unitStr})
                       </div>
                     )}
                   </Card>

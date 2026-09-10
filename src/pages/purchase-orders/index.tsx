@@ -1093,7 +1093,9 @@ export const PurchaseOrdersPage: React.FC = () => {
               <Select
                 placeholder="Select Vendor"
                 showSearch
-                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
+                }
                 options={vendors.map((v) => ({
                   value: v.id,
                   label: `${v.name}${v.tax_id ? ` (GST: ${v.tax_id})` : ''}`,
@@ -1108,6 +1110,10 @@ export const PurchaseOrdersPage: React.FC = () => {
               <Select
                 placeholder="General / Select Project"
                 allowClear
+                showSearch
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
+                }
                 options={projects.map((p) => ({
                   value: p.id,
                   label: `${p.code} - ${p.name}`,
@@ -1191,7 +1197,23 @@ export const PurchaseOrdersPage: React.FC = () => {
                                   <Select
                                     placeholder="Select Material Item"
                                     showSearch
-                                    optionFilterProp="children"
+                                    filterOption={(input, option) => {
+                                      const item = itemTypes.find((i) => i.id === option?.value);
+                                      if (!item) return false;
+                                      const q = input.toLowerCase().trim();
+                                      const name = (item.name || '').toLowerCase();
+                                      const code = (item.code || '').toLowerCase();
+                                      const catNo = (item.cat_no || '').toLowerCase();
+                                      const fullDesc = (item.full_description || '').toLowerCase();
+                                      const make = (item.make || '').toLowerCase();
+                                      return (
+                                        name.includes(q) ||
+                                        code.includes(q) ||
+                                        catNo.includes(q) ||
+                                        fullDesc.includes(q) ||
+                                        make.includes(q)
+                                      );
+                                    }}
                                     style={{ width: '100%', minWidth: 0 }}
                                     onChange={(val) => {
                                       const item = itemTypes.find((i) => i.id === val);
