@@ -936,7 +936,7 @@ export const ReportsPage: React.FC = () => {
               dataSource={reportType === 'procurement-distribution' ? filteredProcurementData : filteredOtherReportData}
               rowKey="id"
               loading={loading}
-              scroll={{ x: 800, y: 400 }}
+              scroll={{ x: 800 }}
               pagination={{ pageSize: 15, showSizeChanger: true }}
               size="small"
             />

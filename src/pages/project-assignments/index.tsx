@@ -346,7 +346,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-4 flex flex-col gap-4 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
+      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-4 flex flex-col gap-4 min-h-screen overflow-y-auto pb-12">
         {/* Top Header Card */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 shadow-md dark:shadow-2xl transition-colors duration-300">
           <div className="flex items-center gap-3.5">
@@ -493,7 +493,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
             dataSource={filteredAssignments}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 1000, y: 'calc(100vh - 490px)' }}
+            scroll={{ x: 1000 }}
             pagination={{
               pageSize: 15,
               showSizeChanger: true,

@@ -170,71 +170,37 @@ html.dark .ant-card {
   box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5) !important;
 }
 
-/* Desktop Viewport Docked Layout (>= 1024px) */
-@media (min-width: 1024px) {
-  .ant-card-body {
-    padding: 16px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100% !important;
-    overflow: hidden !important;
-  }
-
-  .ant-table-wrapper {
-    display: flex !important;
-    flex-direction: column !important;
-    flex: 1 !important;
-    overflow: hidden !important;
-  }
-
-  .ant-spin-nested-loading, .ant-spin-container {
-    display: flex !important;
-    flex-direction: column !important;
-    flex: 1 !important;
-    overflow: hidden !important;
-  }
+/* Natural Outer Page Scroll Styling for Tables & Cards */
+.ant-card-body {
+  padding: 16px !important;
+  display: block !important;
+  height: auto !important;
+  overflow: visible !important;
 }
 
-/* Mobile & Tablet Devices Layout (< 1024px): Allow Natural Mobile Scroll */
-@media (max-width: 1023px) {
-  .ant-card-body {
-    padding: 12px !important;
-    display: block !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
+.ant-table-wrapper {
+  display: block !important;
+  height: auto !important;
+  overflow: visible !important;
+}
 
-  .ant-table-wrapper {
-    display: block !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
-
-  .ant-spin-nested-loading, .ant-spin-container {
-    display: block !important;
-    height: auto !important;
-    overflow: visible !important;
-  }
+.ant-spin-nested-loading, .ant-spin-container {
+  display: block !important;
+  height: auto !important;
+  overflow: visible !important;
 }
 
 .ant-table {
   background: transparent !important;
   color: var(--text-main) !important;
   border-radius: 12px !important;
-  flex: 1 !important;
 }
 
 .ant-pagination {
-  margin: 8px 0 0 0 !important;
-  padding: 8px 12px !important;
+  margin: 12px 0 0 0 !important;
+  padding: 12px 0 4px 0 !important;
   border-top: 1px solid var(--border-color) !important;
-  flex-shrink: 0 !important;
-  position: sticky !important;
-  bottom: 0 !important;
-  z-index: 20 !important;
-  background: var(--bg-card) !important;
-  border-bottom-left-radius: 12px !important;
-  border-bottom-right-radius: 12px !important;
+  background: transparent !important;
 }
 
 

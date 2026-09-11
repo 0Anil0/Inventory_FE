@@ -394,7 +394,7 @@ export const POItemTrackingPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
+      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 py-4 flex flex-col gap-4 min-h-screen overflow-y-auto pb-12">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
@@ -602,7 +602,7 @@ export const POItemTrackingPage: React.FC = () => {
               dataSource={records}
               rowKey="id"
               loading={loading}
-              scroll={{ x: 1350, y: 'calc(100vh - 495px)' }}
+              scroll={{ x: 1350 }}
               pagination={{
                 defaultPageSize: 20,
                 showSizeChanger: true,

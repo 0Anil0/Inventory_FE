@@ -335,7 +335,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   };
 
   return (
-    <Layout style={{ minHeight: '100vh', maxHeight: '100vh', height: '100vh', overflow: 'hidden', background: 'transparent' }}>
+    <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
       <div className="background-decor">
         <div className="glow-circle glow-1"></div>
         <div className="glow-circle glow-2"></div>
@@ -408,7 +408,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       </Sider>
 
       {/* Right Main Page Layout Container */}
-      <Layout style={{ background: 'transparent', height: '100vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Layout style={{ background: 'transparent', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         {/* Top Control Header */}
         <Header
           style={{
@@ -485,7 +485,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </Header>
 
         {/* Content Body */}
-        <Content style={{ position: 'relative', zIndex: 10, flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <Content style={{ position: 'relative', zIndex: 10, flex: 1, minHeight: 'calc(100vh - 68px)', display: 'flex', flexDirection: 'column' }}>
           {children}
         </Content>
       </Layout>

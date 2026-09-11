@@ -491,7 +491,7 @@ const GRNPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-4 md:px-6 py-4 flex flex-col gap-4 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
+      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-4 md:px-6 py-4 flex flex-col gap-4 min-h-screen overflow-y-auto pb-12">
         {/* Header Ribbon */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-5 rounded-xl border border-slate-200 shadow-sm gap-4 shrink-0">
           <div>
@@ -577,13 +577,13 @@ const GRNPage: React.FC = () => {
         </Card>
 
         {/* GRN List Table */}
-        <Card className="shadow-sm border-slate-200 flex-1 overflow-hidden" bodyStyle={{ padding: '0px' }}>
+        <Card className="shadow-sm border-slate-200" bodyStyle={{ padding: '0px' }}>
           <Table
             columns={columns}
             dataSource={filteredGRNs}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 1000, y: 'calc(100vh - 485px)' }}
+            scroll={{ x: 1000 }}
             pagination={{ pageSize: 10 }}
           />
         </Card>
