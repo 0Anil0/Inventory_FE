@@ -25,9 +25,9 @@ import {
   SendOutlined,
   FileSearchOutlined,
   DollarOutlined,
+  DashboardOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
-
-
 
 const { Header, Sider, Content } = Layout;
 
@@ -57,146 +57,188 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
   };
 
-  // Menu hierarchy: Unit Master -> Make Master -> Item Master -> Vendor Master -> User Management -> Terms & Conditions
+  // Structured Parent - Child Menu Hierarchy
   const navMenuItems: MenuProps['items'] = [
     {
-      key: '/units',
-      icon: <TagsOutlined style={{ fontSize: '18px' }} />,
-      label: 'Unit Master',
+      key: '/dashboard',
+      icon: <DashboardOutlined style={{ fontSize: '18px' }} />,
+      label: 'Dashboard Overview',
       onClick: () => {
-        navigate('/units');
+        navigate('/dashboard');
         setMobileDrawerOpen(false);
       },
     },
     {
-      key: '/makes',
-      icon: <ShopOutlined style={{ fontSize: '18px' }} />,
-      label: 'Make Master',
-      onClick: () => {
-        navigate('/makes');
-        setMobileDrawerOpen(false);
-      },
+      key: 'sub-masters',
+      icon: <AppstoreOutlined style={{ fontSize: '18px' }} />,
+      label: 'Master Data Setup',
+      children: [
+        {
+          key: '/item-types',
+          icon: <CodeSandboxOutlined style={{ fontSize: '16px' }} />,
+          label: 'Item Master',
+          onClick: () => {
+            navigate('/item-types');
+            setMobileDrawerOpen(false);
+          },
+        },
+        {
+          key: '/makes',
+          icon: <ShopOutlined style={{ fontSize: '16px' }} />,
+          label: 'Make Master (Brands)',
+          onClick: () => {
+            navigate('/makes');
+            setMobileDrawerOpen(false);
+          },
+        },
+        {
+          key: '/units',
+          icon: <TagsOutlined style={{ fontSize: '16px' }} />,
+          label: 'Unit Master (UOM)',
+          onClick: () => {
+            navigate('/units');
+            setMobileDrawerOpen(false);
+          },
+        },
+        {
+          key: '/vendors',
+          icon: <ShopOutlined style={{ fontSize: '16px' }} />,
+          label: 'Vendor Master',
+          onClick: () => {
+            navigate('/vendors');
+            setMobileDrawerOpen(false);
+          },
+        },
+        {
+          key: '/storage-locations',
+          icon: <HddOutlined style={{ fontSize: '16px' }} />,
+          label: 'Store Shelves & Racks',
+          onClick: () => {
+            navigate('/storage-locations');
+            setMobileDrawerOpen(false);
+          },
+        },
+      ],
     },
     {
-      key: '/item-types',
-      icon: <CodeSandboxOutlined style={{ fontSize: '18px' }} />,
-      label: 'Item Master',
-      onClick: () => {
-        navigate('/item-types');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
-      key: '/projects',
+      key: 'sub-projects-inventory',
       icon: <ClusterOutlined style={{ fontSize: '18px' }} />,
-      label: 'Project Master',
-      onClick: () => {
-        navigate('/projects');
-        setMobileDrawerOpen(false);
-      },
+      label: 'Projects & Inventory',
+      children: [
+        {
+          key: '/projects',
+          icon: <ClusterOutlined style={{ fontSize: '16px' }} />,
+          label: 'Project Master',
+          onClick: () => {
+            navigate('/projects');
+            setMobileDrawerOpen(false);
+          },
+        },
+        {
+          key: '/project-assignments',
+          icon: <SendOutlined style={{ fontSize: '16px' }} />,
+          label: 'Project Stock Assignments',
+          onClick: () => {
+            navigate('/project-assignments');
+            setMobileDrawerOpen(false);
+          },
+        },
+        {
+          key: '/inventory',
+          icon: <DatabaseOutlined style={{ fontSize: '16px' }} />,
+          label: 'Central Stock Tracker',
+          onClick: () => {
+            navigate('/inventory');
+            setMobileDrawerOpen(false);
+          },
+        },
+        {
+          key: '/grn',
+          icon: <AuditOutlined style={{ fontSize: '16px' }} />,
+          label: 'Stock Inward (GRN)',
+          onClick: () => {
+            navigate('/grn');
+            setMobileDrawerOpen(false);
+          },
+        },
+      ],
     },
     {
-      key: '/project-assignments',
-      icon: <SendOutlined style={{ fontSize: '18px' }} />,
-      label: 'Project Stock Assignments',
-      onClick: () => {
-        navigate('/project-assignments');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
-      key: '/inventory',
-      icon: <DatabaseOutlined style={{ fontSize: '18px' }} />,
-      label: 'Inventory Stock Items',
-      onClick: () => {
-        navigate('/inventory');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
-      key: '/grn',
-      icon: <AuditOutlined style={{ fontSize: '18px' }} />,
-      label: 'Stock Inward (GRN)',
-      onClick: () => {
-        navigate('/grn');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
-      key: '/vendors',
-      icon: <ShopOutlined style={{ fontSize: '18px' }} />,
-      label: 'Vendor Master',
-      onClick: () => {
-        navigate('/vendors');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
-      key: '/users',
-      icon: <TeamOutlined style={{ fontSize: '18px' }} />,
-      label: 'User Management',
-      onClick: () => {
-        navigate('/users');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
-      key: '/terms-and-conditions',
-      icon: <FileTextOutlined style={{ fontSize: '18px' }} />,
-      label: 'Terms & Conditions',
-      onClick: () => {
-        navigate('/terms-and-conditions');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
-      key: '/purchase-orders',
+      key: 'sub-procurement',
       icon: <ShoppingOutlined style={{ fontSize: '18px' }} />,
-      label: 'Purchase Orders',
-      onClick: () => {
-        navigate('/purchase-orders');
-        setMobileDrawerOpen(false);
-      },
+      label: 'Procurement & Orders',
+      children: [
+        {
+          key: '/purchase-orders',
+          icon: <FileTextOutlined style={{ fontSize: '16px' }} />,
+          label: 'Purchase Orders',
+          onClick: () => {
+            navigate('/purchase-orders');
+            setMobileDrawerOpen(false);
+          },
+        },
+        {
+          key: '/approver-config',
+          icon: <SafetyCertificateOutlined style={{ fontSize: '16px' }} />,
+          label: 'PO Approvers Setup',
+          onClick: () => {
+            navigate('/approver-config');
+            setMobileDrawerOpen(false);
+          },
+        },
+        {
+          key: '/terms-and-conditions',
+          icon: <FileTextOutlined style={{ fontSize: '16px' }} />,
+          label: 'Terms & Conditions',
+          onClick: () => {
+            navigate('/terms-and-conditions');
+            setMobileDrawerOpen(false);
+          },
+        },
+      ],
     },
     {
-      key: '/approver-config',
-      icon: <SafetyCertificateOutlined style={{ fontSize: '18px' }} />,
-      label: 'PO Approvers',
-      onClick: () => {
-        navigate('/approver-config');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
-      key: '/storage-locations',
-      icon: <HddOutlined style={{ fontSize: '18px' }} />,
-      label: 'Store Shelves & Racks',
-      onClick: () => {
-        navigate('/storage-locations');
-        setMobileDrawerOpen(false);
-      },
-    },
-    {
-      key: '/project-costing',
+      key: 'sub-analytics',
       icon: <DollarOutlined style={{ fontSize: '18px' }} />,
-      label: 'Project Financial Costing',
-      onClick: () => {
-        navigate('/project-costing');
-        setMobileDrawerOpen(false);
-      },
+      label: 'Finance & Analytics',
+      children: [
+        {
+          key: '/project-costing',
+          icon: <DollarOutlined style={{ fontSize: '16px' }} />,
+          label: 'Project Financial Costing',
+          onClick: () => {
+            navigate('/project-costing');
+            setMobileDrawerOpen(false);
+          },
+        },
+        {
+          key: '/reports',
+          icon: <FileSearchOutlined style={{ fontSize: '16px' }} />,
+          label: 'Reports & Analytics',
+          onClick: () => {
+            navigate('/reports');
+            setMobileDrawerOpen(false);
+          },
+        },
+      ],
     },
     {
-      key: '/reports',
-      icon: <FileSearchOutlined style={{ fontSize: '18px' }} />,
-      label: 'Reports & Analytics',
-      onClick: () => {
-        navigate('/reports');
-        setMobileDrawerOpen(false);
-      },
+      key: 'sub-admin',
+      icon: <TeamOutlined style={{ fontSize: '18px' }} />,
+      label: 'System Admin',
+      children: [
+        {
+          key: '/users',
+          icon: <TeamOutlined style={{ fontSize: '16px' }} />,
+          label: 'User Management',
+          onClick: () => {
+            navigate('/users');
+            setMobileDrawerOpen(false);
+          },
+        },
+      ],
     },
   ];
-
-
 
   const profileMenuItems: MenuProps['items'] = [
     {
@@ -222,11 +264,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   // Helper to determine active root menu section title
   const getPageTitle = (path: string) => {
     switch (path) {
+      case '/dashboard': return 'Dashboard Overview';
       case '/units': return 'Unit Master';
       case '/makes': return 'Make Master';
       case '/item-types': return 'Item Master';
       case '/projects': return 'Project & Sub-Project Master';
-      case '/project-assignments': return 'Project Material Assignment & Dispatch Master';
+      case '/project-assignments': return 'Project Stock Assignments';
       case '/inventory': return 'Inventory Stock Items & Tracker';
       case '/vendors': return 'Vendor Master';
       case '/users': return 'User Management';
@@ -235,11 +278,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/approver-config': return 'PO Approver Configuration';
       case '/storage-locations': return 'Store Shelves & Racks Layout';
       case '/grn': return 'Stock Inward (GRN) Master';
+      case '/project-costing': return 'Project Financial Costing';
       case '/reports': return 'Stock Procurement & Allocation Analytics';
       default: return 'Inventory Management System';
-
     }
   };
+
+  const defaultOpenKeys = ['sub-masters', 'sub-projects-inventory', 'sub-procurement', 'sub-analytics', 'sub-admin'];
 
   return (
     <Layout style={{ minHeight: '100vh', maxHeight: '100vh', height: '100vh', overflow: 'hidden', background: 'transparent' }}>
@@ -300,7 +345,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               mode="inline"
               theme={isDark ? 'dark' : 'light'}
               selectedKeys={[location.pathname]}
-              defaultOpenKeys={['sub-master']}
+              defaultOpenKeys={defaultOpenKeys}
               items={navMenuItems}
               style={{
                 background: 'transparent',
@@ -421,7 +466,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             mode="inline"
             theme={isDark ? 'dark' : 'light'}
             selectedKeys={[location.pathname]}
-            defaultOpenKeys={['sub-master']}
+            defaultOpenKeys={defaultOpenKeys}
             items={navMenuItems}
             style={{ background: 'transparent', borderRight: 0 }}
           />
