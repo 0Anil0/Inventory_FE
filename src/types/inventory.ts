@@ -33,6 +33,7 @@ export interface ItemType {
   name: string;
   code: string;
   cat_no?: string | null;
+  hsn_code?: string | null;
   make?: string | null;
   rating?: string | null;
   switchgear_family?: string | null;
@@ -145,6 +146,7 @@ export interface PurchaseOrderItem {
   cat_no?: string | null;
   make?: string | null;
   rating?: string | null;
+  hsn_code?: string | null;
   ordered_qty: number;
   received_qty: number;
   unit_price: number;

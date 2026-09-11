@@ -180,6 +180,7 @@ export const ItemTypesPage: React.FC = () => {
       rating: item.rating || '',
       full_description: item.full_description || '',
       cat_no: item.cat_no || '',
+      hsn_code: item.hsn_code || '',
       make: item.make || '',
       unit: item.unit || 'PCS',
       base_price: item.base_price ?? item.unit_rate ?? 0,
@@ -309,6 +310,7 @@ export const ItemTypesPage: React.FC = () => {
         'Item Name': 'MCB 1P',
         'Category': '6A C-Curve',
         'Cat No': 'DS1A7A1',
+        'HSN Code': '8536',
         'Make': 'L&T',
         'Unit': 'PCS',
         'Base Price (INR)': 185.50,
@@ -319,6 +321,7 @@ export const ItemTypesPage: React.FC = () => {
         'Item Name': 'MCCB 3P',
         'Category': '100A 25kA',
         'Cat No': 'DS2B8B2',
+        'HSN Code': '8537',
         'Make': 'Schneider',
         'Unit': 'NOS',
         'Base Price (INR)': 4250.00,
@@ -333,6 +336,7 @@ export const ItemTypesPage: React.FC = () => {
       { wch: 20 }, // Item Name
       { wch: 20 }, // Category
       { wch: 18 }, // Cat No
+      { wch: 14 }, // HSN Code
       { wch: 15 }, // Make
       { wch: 10 }, // Unit
       { wch: 18 }, // Base Price (INR)
@@ -380,6 +384,7 @@ export const ItemTypesPage: React.FC = () => {
           const name = String(getVal('item name', 'name', 'item', 'item_name') || '').trim();
           const rating = String(getVal('category', 'rating', 'item description', 'item_description') || '').trim();
           const cat_no = String(getVal('cat no', 'cat_no', 'catno', 'catalog no', 'catalog_no') || '').trim();
+          const hsn_code = String(getVal('hsn code', 'hsn_code', 'hsn') || '').trim();
           const make = String(getVal('make', 'brand') || '').trim();
           const unit = String(getVal('unit', 'uom') || 'PCS').trim().toUpperCase();
           const rawPrice = getVal('base price (inr)', 'base price (₹)', 'base price', 'unit rate', 'price', 'rate', 'base_price', 'unit_rate');
@@ -391,6 +396,7 @@ export const ItemTypesPage: React.FC = () => {
             name,
             rating,
             cat_no,
+            hsn_code,
             make,
             unit,
             base_price,
@@ -497,6 +503,18 @@ export const ItemTypesPage: React.FC = () => {
           <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{catNo}</span>
         ) : (
           <span className="app-text-muted italic">N/A</span>
+        ),
+    },
+    {
+      title: 'HSN Code',
+      dataIndex: 'hsn_code',
+      key: 'hsn_code',
+      width: 130,
+      render: (hsn: string | null) =>
+        hsn ? (
+          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{hsn}</span>
+        ) : (
+          <span className="app-text-muted italic">-</span>
         ),
     },
     {
@@ -1108,13 +1126,23 @@ export const ItemTypesPage: React.FC = () => {
             </Form.Item>
           </div>
 
-          {/* Row 4: Full Description */}
-          <Form.Item
-            name="full_description"
-            label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Full description (input)</span>}
-          >
-            <Input placeholder="e.g. MCB 2A 4P" size="large" />
-          </Form.Item>
+          {/* Row 4: HSN Code & Full Description */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1">
+            <Form.Item
+              name="hsn_code"
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">HSN Code</span>}
+            >
+              <Input placeholder="e.g. 8536" size="large" className="font-mono" />
+            </Form.Item>
+
+            <Form.Item
+              name="full_description"
+              className="sm:col-span-2"
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Full description (input)</span>}
+            >
+              <Input placeholder="e.g. MCB 2A 4P" size="large" />
+            </Form.Item>
+          </div>
         </Form>
       </Modal>
     </AppLayout>

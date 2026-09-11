@@ -1139,19 +1139,20 @@ export const PurchaseOrdersPage: React.FC = () => {
             </div>
 
             <div className="overflow-x-auto pb-1">
-              <div style={{ minWidth: '950px' }}>
+              <div style={{ minWidth: '1020px' }}>
                 {/* Pixel-Perfect CSS Grid Header Bar */}
                 <div
                   className="px-3 py-2 bg-slate-100 dark:bg-slate-800/80 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-200 mb-2 border border-slate-200 dark:border-white/10 items-center"
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'minmax(180px, 1fr) 110px 100px 75px 110px 75px 75px 110px 36px',
+                    gridTemplateColumns: 'minmax(170px, 1fr) 95px 95px 80px 70px 100px 65px 65px 100px 36px',
                     gap: '8px',
                   }}
                 >
                   <div className="truncate">Item Master (Select Name)</div>
                   <div className="truncate text-center">Item Code</div>
                   <div className="truncate text-center">Cat No.</div>
+                  <div className="truncate text-center">HSN Code</div>
                   <div className="truncate text-center">Qty</div>
                   <div className="truncate text-center">Unit Price (₹)</div>
                   <div className="truncate text-center">Disc %</div>
@@ -1182,7 +1183,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                               className="items-center"
                               style={{
                                 display: 'grid',
-                                gridTemplateColumns: 'minmax(180px, 1fr) 110px 100px 75px 110px 75px 75px 110px 36px',
+                                gridTemplateColumns: 'minmax(170px, 1fr) 95px 95px 80px 70px 100px 65px 65px 100px 36px',
                                 gap: '8px',
                               }}
                             >
@@ -1227,6 +1228,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                                         createForm.setFieldValue(['items', name, 'cat_no'], item.cat_no || '');
                                         createForm.setFieldValue(['items', name, 'make'], item.make || '');
                                         createForm.setFieldValue(['items', name, 'rating'], item.rating || '');
+                                        createForm.setFieldValue(['items', name, 'hsn_code'], item.hsn_code || '');
                                       }
                                     }}
                                     options={itemTypes.map((it) => ({
@@ -1256,6 +1258,17 @@ export const PurchaseOrdersPage: React.FC = () => {
                                   className="mb-0"
                                 >
                                   <Input placeholder="Cat No" disabled style={{ width: '100%', minWidth: 0 }} className="font-mono text-xs text-center bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200" />
+                                </Form.Item>
+                              </div>
+
+                              {/* 4. HSN Code */}
+                              <div className="min-w-0">
+                                <Form.Item
+                                  {...restField}
+                                  name={[name, 'hsn_code']}
+                                  className="mb-0"
+                                >
+                                  <Input placeholder="HSN" style={{ width: '100%', minWidth: 0 }} className="font-mono text-xs text-center font-semibold" />
                                 </Form.Item>
                               </div>
 
@@ -1591,17 +1604,18 @@ export const PurchaseOrdersPage: React.FC = () => {
                         <table style={{ borderCollapse: 'collapse', border: '1.5px solid #1e293b', width: '100%', fontSize: '13px', fontFamily: 'sans-serif', marginBottom: '18px' }}>
                           <thead>
                             <tr style={{ backgroundColor: '#f1f5f9', color: '#0f172a', fontWeight: 'bold', borderBottom: '1.5px solid #1e293b' }}>
-                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '44px', fontSize: '13px' }}>S.No.</th>
-                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '115px', fontSize: '13px' }}>Item Code</th>
-                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '100px', fontSize: '13px' }}>Cat. No.</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '40px', fontSize: '13px' }}>S.No.</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '105px', fontSize: '13px' }}>Item Code</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '90px', fontSize: '13px' }}>Cat. No.</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '70px', fontSize: '13px' }}>HSN</th>
                               <th style={{ border: '1px solid #1e293b', padding: '10px 8px', textAlign: 'left', fontSize: '13px' }}>Description & Specification</th>
-                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '85px', fontSize: '13px' }}>Make</th>
-                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '50px', fontSize: '13px' }}>Qty</th>
-                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '50px', fontSize: '13px' }}>Unit</th>
-                              <th style={{ border: '1px solid #1e293b', padding: '10px 8px', textAlign: 'right', width: '85px', fontSize: '13px' }}>Unit Rate</th>
-                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '60px', fontSize: '13px' }}>Disc %</th>
-                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '60px', fontSize: '13px' }}>GST %</th>
-                              <th style={{ border: '1px solid #1e293b', padding: '10px 8px', textAlign: 'right', width: '105px', fontSize: '13px' }}>Net Amount</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '80px', fontSize: '13px' }}>Make</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '45px', fontSize: '13px' }}>Qty</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '45px', fontSize: '13px' }}>Unit</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 8px', textAlign: 'right', width: '80px', fontSize: '13px' }}>Unit Rate</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '55px', fontSize: '13px' }}>Disc %</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '55px', fontSize: '13px' }}>GST %</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 8px', textAlign: 'right', width: '100px', fontSize: '13px' }}>Net Amount</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1615,6 +1629,9 @@ export const PurchaseOrdersPage: React.FC = () => {
                                   </td>
                                   <td style={{ border: '1px solid #1e293b', padding: '9px 6px', textAlign: 'center', fontFamily: 'monospace', fontSize: '13px', verticalAlign: 'middle' }}>
                                     {item.cat_no || item.item_type?.cat_no || '-'}
+                                  </td>
+                                  <td style={{ border: '1px solid #1e293b', padding: '9px 6px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '13px', verticalAlign: 'middle' }}>
+                                    {item.hsn_code || item.item_type?.hsn_code || '-'}
                                   </td>
                                   <td style={{ border: '1px solid #1e293b', padding: '9px 8px', fontWeight: 500, fontSize: '13px', verticalAlign: 'middle' }}>
                                     {item.item_type?.name || 'Material Item'}
