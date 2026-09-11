@@ -20,6 +20,7 @@ import { ProjectAssignmentsPage } from './pages/project-assignments';
 import GRNPage from './pages/grn';
 import ReportsPage from './pages/reports';
 import { ProjectCostingPage } from './pages/project-costing';
+import { POItemTrackingPage } from './pages/po-item-tracking';
 
 const RootRedirect: React.FC = () => {
 
@@ -69,6 +70,7 @@ const AppContent: React.FC = () => {
               <Route path="/users" element={<UserManagementPage />} />
               <Route path="/terms-and-conditions" element={<TermsAndConditionsPage />} />
               <Route path="/purchase-orders" element={<PurchaseOrdersPage />} />
+              <Route path="/po-item-tracking" element={<POItemTrackingPage />} />
               <Route path="/approver-config" element={<ApproverConfigPage />} />
               <Route path="/storage-locations" element={<StorageLocationsPage />} />
               <Route path="/grn" element={<GRNPage />} />

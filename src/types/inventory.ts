@@ -329,4 +329,49 @@ export interface ProjectCostingReport {
   selected_project?: Project | null;
 }
 
+export interface POItemTrackRecord {
+  id: number;
+  po_id: number;
+  po_number: string;
+  order_date?: string;
+  expected_date?: string;
+  po_status: string;
+  vendor_id?: number;
+  vendor_name: string;
+  project_id?: number;
+  project_name: string;
+  created_by: string;
+
+  item_type_id: number;
+  item_code: string;
+  item_name: string;
+  cat_no: string;
+  make: string;
+  rating: string;
+  unit: string;
+  hsn_code: string;
+
+  ordered_qty: number;
+  received_qty: number;
+  pending_qty: number;
+  unit_price: number;
+  discount_percent: number;
+  gst_percent: number;
+  tax_amount: number;
+  net_subtotal: number;
+  total_price: number;
+}
+
+export interface POItemTrackingResponse {
+  success: boolean;
+  summary: {
+    totalRecords: number;
+    totalOrderedQty: number;
+    totalReceivedQty: number;
+    totalPendingQty: number;
+    totalSpend: number;
+  };
+  items: POItemTrackRecord[];
+}
+
 

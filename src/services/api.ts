@@ -15,6 +15,7 @@ import type {
   TermsAndConditions,
   ProjectAssignment,
   ProjectCostingReport,
+  POItemTrackingResponse,
 } from '../types/inventory';
 
 import type { StorageShelf, StorageRack } from '../types/storage';
@@ -650,6 +651,26 @@ export const poApi = {
   delete: async (id: number): Promise<{ success: boolean; message: string }> => {
     const res = await fetch(`${API_BASE_URL}/purchase-orders/${id}`, {
       method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getItemTracking: async (params?: {
+    item_type_id?: number;
+    vendor_id?: number;
+    project_id?: number;
+    status?: string;
+    search?: string;
+  }): Promise<POItemTrackingResponse> => {
+    const query = new URLSearchParams();
+    if (params?.item_type_id) query.append('item_type_id', String(params.item_type_id));
+    if (params?.vendor_id) query.append('vendor_id', String(params.vendor_id));
+    if (params?.project_id) query.append('project_id', String(params.project_id));
+    if (params?.status) query.append('status', params.status);
+    if (params?.search) query.append('search', params.search);
+
+    const res = await fetch(`${API_BASE_URL}/purchase-orders/item-tracking?${query.toString()}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(res);

@@ -27,6 +27,7 @@ import {
   DollarOutlined,
   DashboardOutlined,
   AppstoreOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -178,6 +179,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           },
         },
         {
+          key: '/po-item-tracking',
+          icon: <HistoryOutlined style={{ fontSize: '16px' }} />,
+          label: 'PO Item History & Tracker',
+          onClick: () => {
+            navigate('/po-item-tracking');
+            setMobileDrawerOpen(false);
+          },
+        },
+        {
           key: '/approver-config',
           icon: <SafetyCertificateOutlined style={{ fontSize: '16px' }} />,
           label: 'PO Approvers Setup',
@@ -275,6 +285,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/users': return 'User Management';
       case '/terms-and-conditions': return 'Terms & Conditions Templates';
       case '/purchase-orders': return 'Purchase Orders & PDF Documents';
+      case '/po-item-tracking': return 'PO Item History & Tracker';
       case '/approver-config': return 'PO Approver Configuration';
       case '/storage-locations': return 'Store Shelves & Racks Layout';
       case '/grn': return 'Stock Inward (GRN) Master';
