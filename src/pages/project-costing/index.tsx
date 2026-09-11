@@ -12,10 +12,7 @@ import {
   Progress,
   Modal,
   Typography,
-  Divider,
-  Spin,
   message,
-  Tooltip,
 } from 'antd';
 
 import type { ColumnsType } from 'antd/es/table';
@@ -28,12 +25,9 @@ import {
   PrinterOutlined,
   FilterOutlined,
   SafetyCertificateOutlined,
-  RiseOutlined,
-  CheckCircleOutlined,
   PieChartOutlined,
   UnorderedListOutlined,
   BankOutlined,
-  InfoCircleOutlined,
 } from '@ant-design/icons';
 import { reportApi, projectApi } from '../../services/api';
 import type {
@@ -45,7 +39,7 @@ import type {
 } from '../../types/inventory';
 import { AppLayout } from '../../components/layout/AppLayout';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 // Helper to format Indian Currency
 const formatINR = (amount: number): string => {

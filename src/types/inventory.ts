@@ -374,4 +374,53 @@ export interface POItemTrackingResponse {
   items: POItemTrackRecord[];
 }
 
+export type PRStatus =
+  | 'DRAFT'
+  | 'PENDING_APPROVAL'
+  | 'APPROVED'
+  | 'PARTIALLY_APPROVED'
+  | 'REJECTED'
+  | 'PO_CREATED'
+  | 'CLOSED';
+
+export type PRPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+
+export interface PurchaseRequisitionItem {
+  id: number;
+  pr_id: number;
+  item_type_id: number;
+  cat_no?: string | null;
+  make?: string | null;
+  hsn_code?: string | null;
+  requested_qty: number;
+  allowed_po_qty?: number | null;
+  converted_po_qty?: number | null;
+  estimated_unit_price?: number | null;
+  notes?: string | null;
+  item_type?: ItemType;
+  central_stock?: number;
+  project_stock?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PurchaseRequisition {
+  id: number;
+  pr_number: string;
+  project_id?: number | null;
+  requested_by_id?: number | null;
+  reviewed_by_id?: number | null;
+  approved_at?: string | null;
+  status: PRStatus;
+  priority: PRPriority;
+  required_date?: string | null;
+  notes?: string | null;
+  project?: Project;
+  requested_by_user?: { id: number; username: string; email?: string };
+  reviewed_by_user?: { id: number; username: string; email?: string };
+  items?: PurchaseRequisitionItem[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 

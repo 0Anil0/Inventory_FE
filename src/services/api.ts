@@ -16,6 +16,7 @@ import type {
   ProjectAssignment,
   ProjectCostingReport,
   POItemTrackingResponse,
+  PurchaseRequisition,
 } from '../types/inventory';
 
 import type { StorageShelf, StorageRack } from '../types/storage';
@@ -1176,6 +1177,116 @@ export const projectAssignmentApi = {
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
       });
+    return handleResponse(res);
+  },
+};
+
+// Purchase Requisition (PR) API Client
+export const prApi = {
+  getAll: async (params?: {
+    project_id?: number;
+    status?: string;
+    priority?: string;
+    search?: string;
+  }): Promise<{ success: boolean; count: number; items: PurchaseRequisition[] }> => {
+    const query = new URLSearchParams();
+    if (params?.project_id) query.append('project_id', String(params.project_id));
+    if (params?.status) query.append('status', params.status);
+    if (params?.priority) query.append('priority', params.priority);
+    if (params?.search) query.append('search', params.search);
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${API_BASE_URL}/purchase-requisitions${queryString}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getById: async (id: number): Promise<{ success: boolean; requisition: PurchaseRequisition }> => {
+    const res = await fetch(`${API_BASE_URL}/purchase-requisitions/${id}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  create: async (data: {
+    pr_number?: string;
+    project_id?: number | null;
+    priority?: string;
+    required_date?: string;
+    notes?: string;
+    items: Array<{
+      item_type_id: number;
+      cat_no?: string;
+      make?: string;
+      hsn_code?: string;
+      requested_qty: number;
+      estimated_unit_price?: number;
+      notes?: string;
+    }>;
+  }): Promise<{ success: boolean; message: string; requisition: PurchaseRequisition }> => {
+    const res = await fetch(`${API_BASE_URL}/purchase-requisitions`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  reviewAndApprove: async (
+    id: number,
+    data: {
+      status: 'APPROVED' | 'PARTIALLY_APPROVED' | 'REJECTED';
+      items?: Array<{
+        id: number;
+        allowed_po_qty: number;
+        notes?: string;
+      }>;
+      notes?: string;
+    }
+  ): Promise<{ success: boolean; message: string; requisition: PurchaseRequisition }> => {
+    const res = await fetch(`${API_BASE_URL}/purchase-requisitions/${id}/review`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  convertToPO: async (
+    id: number,
+    data: {
+      vendor_id: number;
+      terms_and_conditions_id?: number;
+      order_date?: string;
+      expected_date?: string;
+      notes?: string;
+      items: Array<{
+        pr_item_id: number;
+        item_type_id: number;
+        ordered_qty: number;
+        unit_price: number;
+        discount_percent?: number;
+        gst_percent?: number;
+        cat_no?: string;
+        make?: string;
+        hsn_code?: string;
+      }>;
+    }
+  ): Promise<{ success: boolean; message: string; purchaseOrder: any }> => {
+    const res = await fetch(`${API_BASE_URL}/purchase-requisitions/${id}/convert-to-po`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  delete: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const res = await fetch(`${API_BASE_URL}/purchase-requisitions/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
     return handleResponse(res);
   },
 };

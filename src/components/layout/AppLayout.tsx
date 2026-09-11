@@ -42,7 +42,37 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [collapsed, setCollapsed] = useState<boolean>(false);
+  // Persisted Collapsed Sidebar State
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    const saved = localStorage.getItem('sidebar_collapsed');
+    return saved !== null ? JSON.parse(saved) : false;
+  });
+
+  const handleToggleCollapse = (val: boolean) => {
+    setCollapsed(val);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(val));
+  };
+
+  // Persisted Submenu Open Keys State
+  const allSubMenuKeys = ['sub-masters', 'sub-projects-inventory', 'sub-procurement', 'sub-analytics', 'sub-admin'];
+
+  const [openKeys, setOpenKeys] = useState<string[]>(() => {
+    const saved = localStorage.getItem('sidebar_open_keys');
+    if (saved !== null) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return allSubMenuKeys;
+      }
+    }
+    return allSubMenuKeys;
+  });
+
+  const handleOpenChange = (keys: string[]) => {
+    setOpenKeys(keys);
+    localStorage.setItem('sidebar_open_keys', JSON.stringify(keys));
+  };
+
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState<boolean>(false);
 
   const roleName = (typeof user?.role === 'object' ? user.role.name : user?.role || 'user').toUpperCase();
@@ -170,9 +200,18 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       label: 'Procurement & Orders',
       children: [
         {
+          key: '/purchase-requisitions',
+          icon: <FileTextOutlined style={{ fontSize: '16px' }} />,
+          label: 'Purchase Requisitions (PR)',
+          onClick: () => {
+            navigate('/purchase-requisitions');
+            setMobileDrawerOpen(false);
+          },
+        },
+        {
           key: '/purchase-orders',
           icon: <FileTextOutlined style={{ fontSize: '16px' }} />,
-          label: 'Purchase Orders',
+          label: 'Purchase Orders (PO)',
           onClick: () => {
             navigate('/purchase-orders');
             setMobileDrawerOpen(false);
@@ -295,8 +334,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     }
   };
 
-  const defaultOpenKeys = ['sub-masters', 'sub-projects-inventory', 'sub-procurement', 'sub-analytics', 'sub-admin'];
-
   return (
     <Layout style={{ minHeight: '100vh', maxHeight: '100vh', height: '100vh', overflow: 'hidden', background: 'transparent' }}>
       <div className="background-decor">
@@ -323,7 +360,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         }}
         breakpoint="lg"
         onBreakpoint={(broken) => {
-          if (broken) setCollapsed(true);
+          if (broken) handleToggleCollapse(true);
         }}
       >
         <div className="flex flex-col h-full overflow-hidden">
@@ -356,7 +393,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               mode="inline"
               theme={isDark ? 'dark' : 'light'}
               selectedKeys={[location.pathname]}
-              defaultOpenKeys={defaultOpenKeys}
+              openKeys={openKeys}
+              onOpenChange={handleOpenChange}
               items={navMenuItems}
               style={{
                 background: 'transparent',
@@ -399,7 +437,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 if (window.innerWidth < 1024) {
                   setMobileDrawerOpen(true);
                 } else {
-                  setCollapsed(!collapsed);
+                  handleToggleCollapse(!collapsed);
                 }
               }}
               className="hover:bg-indigo-500/10"
@@ -477,7 +515,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             mode="inline"
             theme={isDark ? 'dark' : 'light'}
             selectedKeys={[location.pathname]}
-            defaultOpenKeys={defaultOpenKeys}
+            openKeys={openKeys}
+            onOpenChange={handleOpenChange}
             items={navMenuItems}
             style={{ background: 'transparent', borderRight: 0 }}
           />

@@ -564,38 +564,6 @@ export const PurchaseOrdersPage: React.FC = () => {
     }
   };
 
-  // Open Create PO Modal
-  const handleOpenCreate = () => {
-    setEditingPO(null);
-    createForm.resetFields();
-    const nextSeq = purchaseOrders.length + 55;
-    const defaultPONumber = `EEEA/26-27/${nextSeq}`;
-    
-    const defaultTemplate = termsTemplates.find((t) => t.is_default) || termsTemplates[0];
-    if (defaultTemplate) {
-      setSelectedTerms(defaultTemplate);
-    }
-
-    createForm.setFieldsValue({
-      po_number: defaultPONumber,
-      order_date: dayjs(),
-      expected_date: dayjs().add(15, 'day'),
-      terms_and_conditions_id: defaultTemplate?.id,
-      items: [
-        {
-          item_type_id: undefined,
-          item_code: '',
-          cat_no: '',
-          ordered_qty: 1,
-          unit_price: undefined,
-          discount_percent: 0,
-          gst_percent: 18,
-        },
-      ],
-    });
-    setIsCreateModalOpen(true);
-  };
-
   // Open Edit PO Modal
   const handleOpenEdit = (po: PurchaseOrder) => {
     if (po.status === 'APPROVED' || po.status === 'RECEIVED') {
@@ -608,7 +576,14 @@ export const PurchaseOrdersPage: React.FC = () => {
     const template = termsTemplates.find((t) => t.id === po.terms_and_conditions_id);
     if (template) setSelectedTerms(template);
 
+    let prDisplay = 'N/A';
+    if (po.notes && po.notes.includes('PR')) {
+      const match = po.notes.match(/PR\s*([A-Za-z0-9_\-\/]+)/i);
+      prDisplay = match ? match[0] : po.notes;
+    }
+
     createForm.setFieldsValue({
+      pr_number_display: prDisplay,
       po_number: po.po_number,
       vendor_id: po.vendor_id,
       project_id: po.project_id || undefined,
@@ -618,9 +593,11 @@ export const PurchaseOrdersPage: React.FC = () => {
       expected_date: po.expected_date ? dayjs(po.expected_date) : undefined,
       items: (po.items || []).map((item) => ({
         item_type_id: item.item_type_id,
+        item_code: item.item_type?.code || '',
         cat_no: item.cat_no || item.item_type?.cat_no || '',
         make: item.make || item.item_type?.make || '',
         rating: item.rating || item.item_type?.rating || '',
+        hsn_code: item.hsn_code || item.item_type?.hsn_code || '',
         ordered_qty: item.ordered_qty,
         unit_price: item.unit_price,
         discount_percent: item.discount_percent || 0,
@@ -965,14 +942,6 @@ export const PurchaseOrdersPage: React.FC = () => {
             <Button icon={<ReloadOutlined />} onClick={fetchPurchaseOrders} loading={loading}>
               Refresh
             </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleOpenCreate}
-              className="bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-500/30"
-            >
-              Create Purchase Order
-            </Button>
           </Space>
         </div>
 
@@ -1078,8 +1047,15 @@ export const PurchaseOrdersPage: React.FC = () => {
           onFinish={handleCreateSubmit}
           className="mt-3 pt-2 border-t border-slate-100 dark:border-white/10"
         >
-          {/* Header Row: PO #, Vendor, Project, Dates */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Header Row: Source PR #, PO #, Vendor, Project, Dates */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <Form.Item
+              name="pr_number_display"
+              label={<span className="font-semibold text-xs text-indigo-700 dark:text-indigo-300">Source PR (Read-Only)</span>}
+            >
+              <Input disabled readOnly className="font-mono font-bold text-indigo-700 dark:text-indigo-300 bg-slate-100 dark:bg-slate-800 border-indigo-200" />
+            </Form.Item>
+
             <Form.Item
               name="po_number"
               label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">PO Number</span>}
