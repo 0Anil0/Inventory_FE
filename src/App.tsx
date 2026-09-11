@@ -19,8 +19,10 @@ import { ProjectsPage } from './pages/projects';
 import { ProjectAssignmentsPage } from './pages/project-assignments';
 import GRNPage from './pages/grn';
 import ReportsPage from './pages/reports';
+import { ProjectCostingPage } from './pages/project-costing';
 
 const RootRedirect: React.FC = () => {
+
 
   const { user, loading } = useAuth();
   const { isDark } = useTheme();
@@ -71,8 +73,10 @@ const AppContent: React.FC = () => {
               <Route path="/storage-locations" element={<StorageLocationsPage />} />
               <Route path="/grn" element={<GRNPage />} />
               <Route path="/project-assignments" element={<ProjectAssignmentsPage />} />
+              <Route path="/project-costing" element={<ProjectCostingPage />} />
               <Route path="/reports" element={<ReportsPage />} />
             </Route>
+
 
             <Route path="*" element={<Navigate to="/item-types" replace />} />
           </Routes>

@@ -24,7 +24,9 @@ import {
   ClusterOutlined,
   SendOutlined,
   FileSearchOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
+
 
 
 const { Header, Sider, Content } = Layout;
@@ -175,6 +177,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       },
     },
     {
+      key: '/project-costing',
+      icon: <DollarOutlined style={{ fontSize: '18px' }} />,
+      label: 'Project Financial Costing',
+      onClick: () => {
+        navigate('/project-costing');
+        setMobileDrawerOpen(false);
+      },
+    },
+    {
       key: '/reports',
       icon: <FileSearchOutlined style={{ fontSize: '18px' }} />,
       label: 'Reports & Analytics',
@@ -184,6 +195,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       },
     },
   ];
+
 
 
   const profileMenuItems: MenuProps['items'] = [

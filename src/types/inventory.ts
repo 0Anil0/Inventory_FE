@@ -43,9 +43,11 @@ export interface ItemType {
   total_quantity?: number;
   description?: string | null;
   unit_rate?: number;
+  base_price?: number;
   discount?: number;
   createdAt?: string;
 }
+
 
 export interface Project {
   id: number;
@@ -55,11 +57,18 @@ export interface Project {
   description?: string | null;
   parent_id?: number | null;
   parent?: Project | null;
+  client_id?: number | null;
+  client?: {
+    id: number;
+    name: string;
+    code?: string;
+  } | null;
   sub_projects?: Project[];
   children?: Project[];
   createdAt?: string;
   updatedAt?: string;
 }
+
 
 export interface ProjectInventory {
   id: number;
@@ -259,3 +268,63 @@ export interface ProjectAssignment {
   items?: ProjectAssignmentItem[];
   createdAt?: string;
 }
+
+export interface SubProjectCostingItem {
+  id: number;
+  name: string;
+  code: string;
+  location?: string;
+  items_count: number;
+  total_qty: number;
+  money_invested: number;
+  percent_share: number;
+}
+
+export interface CategoryCostingItem {
+  category: string;
+  items_count: number;
+  total_qty: number;
+  total_cost: number;
+  percent_share: number;
+}
+
+export interface CostingLedgerItem {
+  id: number;
+  assignment_id: number;
+  assignment_no: string;
+  site_id: number;
+  site_name: string;
+  site_code: string;
+  item_type_id: number;
+  code: string;
+  name: string;
+  cat_no: string;
+  make: string;
+  unit: string;
+  category: string;
+  quantity: number;
+  base_unit_price: number;
+  disc_percent: number;
+  gst_percent: number;
+  unit_cost: number; // Effective purchase rate incl. GST
+  total_cost: number;
+  status: string;
+  assigned_at?: string;
+}
+
+export interface ProjectCostingReport {
+  summary: {
+    total_projects: number;
+    total_money_invested: number;
+    total_project_cost: number;
+    total_quantity_assigned: number;
+    total_item_types: number;
+    total_sub_projects: number;
+  };
+  sub_projects_costing: SubProjectCostingItem[];
+  category_costing: CategoryCostingItem[];
+  itemized_ledger: CostingLedgerItem[];
+  selected_project?: Project | null;
+}
+
+

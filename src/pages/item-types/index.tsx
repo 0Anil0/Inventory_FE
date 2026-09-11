@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, Modal, Form, Select, Popconfirm, Space, Tag, Badge, message } from 'antd';
+import { Table, Card, Button, Input, InputNumber, Modal, Form, Select, Popconfirm, Space, Tag, Badge, Upload, message, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -16,10 +16,18 @@ import {
   ThunderboltOutlined,
   FilterOutlined,
   ClearOutlined,
+  DownloadOutlined,
+  UploadOutlined,
+  FileExcelOutlined,
+  InboxOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
+import * as XLSX from 'xlsx';
 import type { ItemType, Make, ItemDescription, Unit } from '../../types/inventory';
 import { itemTypeApi, makeApi, itemDescriptionApi, unitApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
+
+const { Text } = Typography;
 
 export const ItemTypesPage: React.FC = () => {
   const [items, setItems] = useState<ItemType[]>([]);
@@ -56,9 +64,16 @@ export const ItemTypesPage: React.FC = () => {
   const [creatingDesc, setCreatingDesc] = useState<boolean>(false);
   const [creatingUnit, setCreatingUnit] = useState<boolean>(false);
 
+  // Add/Edit Modal state
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [itemToEdit, setItemToEdit] = useState<ItemType | null>(null);
   const [form] = Form.useForm();
+
+  // Excel Bulk Import Modal state
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
+  const [uploading, setUploading] = useState<boolean>(false);
+  const [parsedImportData, setParsedImportData] = useState<any[]>([]);
+  const [fileList, setFileList] = useState<any[]>([]);
 
   const fetchItems = async (page = currentPage, limit = pageSize, filters = appliedFilters, search = searchQuery) => {
     setLoading(true);
@@ -150,6 +165,7 @@ export const ItemTypesPage: React.FC = () => {
     } else {
       form.setFieldValue('unit', 'PCS');
     }
+    form.setFieldValue('base_price', 0);
     setIsModalOpen(true);
   };
 
@@ -166,6 +182,7 @@ export const ItemTypesPage: React.FC = () => {
       cat_no: item.cat_no || '',
       make: item.make || '',
       unit: item.unit || 'PCS',
+      base_price: item.base_price ?? item.unit_rate ?? 0,
     });
     setIsModalOpen(true);
   };
@@ -252,13 +269,18 @@ export const ItemTypesPage: React.FC = () => {
 
   const handleFinish = async (values: any) => {
     try {
+      const payload = {
+        ...values,
+        unit_rate: values.base_price ?? 0,
+      };
+
       if (itemToEdit) {
-        const res = await itemTypeApi.update(itemToEdit.id, values);
+        const res = await itemTypeApi.update(itemToEdit.id, payload);
         if (res.success) {
           message.success('Item master updated successfully');
         }
       } else {
-        const res = await itemTypeApi.create(values);
+        const res = await itemTypeApi.create(payload);
         if (res.success) {
           message.success('Item master created successfully');
         }
@@ -279,6 +301,139 @@ export const ItemTypesPage: React.FC = () => {
     }
   };
 
+  // Excel Download Template Handler
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        'Item Code': '1001',
+        'Item Name': 'MCB 1P',
+        'Category': '6A C-Curve',
+        'Cat No': 'DS1A7A1',
+        'Make': 'L&T',
+        'Unit': 'PCS',
+        'Base Price (INR)': 185.50,
+        'Description': 'MCB 1P 6A C-Curve L&T',
+      },
+      {
+        'Item Code': '1002',
+        'Item Name': 'MCCB 3P',
+        'Category': '100A 25kA',
+        'Cat No': 'DS2B8B2',
+        'Make': 'Schneider',
+        'Unit': 'NOS',
+        'Base Price (INR)': 4250.00,
+        'Description': 'MCCB 3P 100A 25kA Schneider',
+      },
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 15 }, // Item Code
+      { wch: 20 }, // Item Name
+      { wch: 20 }, // Category
+      { wch: 18 }, // Cat No
+      { wch: 15 }, // Make
+      { wch: 10 }, // Unit
+      { wch: 18 }, // Base Price (INR)
+      { wch: 30 }, // Description
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Item Master Template');
+    XLSX.writeFile(workbook, 'Item_Master_Import_Template.xlsx');
+    message.success('Excel import template downloaded successfully!');
+  };
+
+  // File Parse Handler for Upload
+  const handleFileRead = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const buffer = e.target?.result;
+        const workbook = XLSX.read(buffer, { type: 'binary' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rawJson: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+        if (!rawJson || rawJson.length === 0) {
+          message.error('Uploaded file contains no valid data rows!');
+          return;
+        }
+
+        // Normalize keys and map fields flexibly
+        const formattedItems = rawJson.map((row) => {
+          const keys = Object.keys(row);
+          const getVal = (...possibleHeaders: string[]) => {
+            for (const header of possibleHeaders) {
+              const matchedKey = keys.find(
+                (k) => k.trim().toLowerCase() === header.trim().toLowerCase()
+              );
+              if (matchedKey && row[matchedKey] !== undefined && row[matchedKey] !== '') {
+                return row[matchedKey];
+              }
+            }
+            return undefined;
+          };
+
+          const code = String(getVal('item code', 'code', 'item number', 'itemno', 'item_code') || '').trim();
+          const name = String(getVal('item name', 'name', 'item', 'item_name') || '').trim();
+          const rating = String(getVal('category', 'rating', 'item description', 'item_description') || '').trim();
+          const cat_no = String(getVal('cat no', 'cat_no', 'catno', 'catalog no', 'catalog_no') || '').trim();
+          const make = String(getVal('make', 'brand') || '').trim();
+          const unit = String(getVal('unit', 'uom') || 'PCS').trim().toUpperCase();
+          const rawPrice = getVal('base price (inr)', 'base price (₹)', 'base price', 'unit rate', 'price', 'rate', 'base_price', 'unit_rate');
+          const base_price = rawPrice !== undefined && rawPrice !== '' ? Number(rawPrice) : 0;
+          const description = String(getVal('description', 'full description', 'full_description') || '').trim();
+
+          return {
+            code,
+            name,
+            rating,
+            cat_no,
+            make,
+            unit,
+            base_price,
+            description,
+          };
+        }).filter((item) => item.code && item.name); // Require code and name
+
+        if (formattedItems.length === 0) {
+          message.error('No valid rows with Item Code and Item Name found in file!');
+          return;
+        }
+
+        setParsedImportData(formattedItems);
+        message.success(`Successfully parsed ${formattedItems.length} items from file!`);
+      } catch (err: any) {
+        message.error(`Failed to parse file: ${err.message}`);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleExecuteBulkImport = async () => {
+    if (parsedImportData.length === 0) {
+      message.warning('No parsed data available to import!');
+      return;
+    }
+    setUploading(true);
+    try {
+      const res = await itemTypeApi.bulkImport(parsedImportData);
+      if (res.success) {
+        message.success(res.message || `Imported ${res.totalProcessed || parsedImportData.length} items!`);
+        setIsUploadModalOpen(false);
+        setParsedImportData([]);
+        setFileList([]);
+        fetchItems(1, pageSize, appliedFilters, searchQuery);
+      }
+    } catch (err: any) {
+      message.error(err.message || 'Bulk import failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const columns: ColumnsType<ItemType> = [
     {
       title: 'Item Number (input)',
@@ -293,6 +448,21 @@ export const ItemTypesPage: React.FC = () => {
       key: 'name',
       width: 140,
       render: (name: string) => <span className="font-bold app-text-main">{name}</span>,
+    },
+    {
+      title: 'Base Price (₹)',
+      dataIndex: 'base_price',
+      key: 'base_price',
+      width: 140,
+      align: 'right',
+      render: (val: number | null, record) => {
+        const price = val ?? record.unit_rate ?? 0;
+        return (
+          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+            ₹{price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        );
+      },
     },
     {
       title: 'Item description (master)',
@@ -383,7 +553,7 @@ export const ItemTypesPage: React.FC = () => {
   return (
     <AppLayout>
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <CodeSandboxOutlined className="text-3xl text-indigo-500" />
             <div>
@@ -391,29 +561,55 @@ export const ItemTypesPage: React.FC = () => {
                 Item Master
               </h1>
               <p className="text-xs sm:text-sm app-text-muted mb-0">
-                Item Number, Item, Item Description (Master), Full Description, Cat No, Unit (Master) & Make (Master)
+                Manage item numbers, base prices, brand makes & bulk Excel imports
               </p>
             </div>
           </div>
 
-          <Space>
-            <Button icon={<ReloadOutlined />} onClick={() => fetchItems(currentPage, pageSize, appliedFilters, searchQuery)} loading={loading}>
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleOpenAdd}
+              className="bg-indigo-600 shadow-md shadow-indigo-500/20 font-semibold"
+            >
+              Add New Item
+            </Button>
+            <Button
+              icon={<UploadOutlined />}
+              onClick={() => {
+                setParsedImportData([]);
+                setFileList([]);
+                setIsUploadModalOpen(true);
+              }}
+              className="border-indigo-500 text-indigo-600 font-semibold"
+            >
+              Upload Excel Data
+            </Button>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadTemplate}
+              className="border-emerald-500 text-emerald-600 hover:text-emerald-500 font-semibold"
+            >
+              Download Template
+            </Button>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={() => fetchItems(currentPage, pageSize, appliedFilters, searchQuery)}
+              loading={loading}
+            >
               Refresh
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} size="middle" onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30">
-              Add New Item Master
-            </Button>
-          </Space>
+          </div>
         </div>
 
-        <Card className="shadow-2xl flex-1 flex flex-col h-auto lg:h-full overflow-visible lg:overflow-hidden">
+        <Card className="shadow-2xl flex-1 flex flex-col h-auto lg:h-full overflow-hidden">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-200 dark:border-white/10 shrink-0">
             <div className="flex items-center gap-3">
-              <Badge count={totalItems} overflowCount={9999} color="#6366f1">
-                <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
-                  Total Items: {totalItems} Records
-                </Tag>
-              </Badge>
+              <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none flex items-center gap-1.5">
+                <span>Total Items:</span>
+                <span className="bg-indigo-600 text-white px-2 py-0.5 rounded-full text-xs font-mono">{totalItems} Records</span>
+              </Tag>
             </div>
           </div>
 
@@ -443,15 +639,15 @@ export const ItemTypesPage: React.FC = () => {
             )}
           </div>
 
-          <div className="flex-1 overflow-visible lg:overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col justify-between">
             <Table
               columns={columns}
               dataSource={items}
               rowKey="id"
               loading={loading}
               scroll={{
-                x: 1300,
-                y: isDesktop ? 'calc(100vh - 385px)' : undefined,
+                x: 1400,
+                y: isDesktop ? 'calc(100vh - 440px)' : undefined,
               }}
               pagination={{
                 current: currentPage,
@@ -460,11 +656,115 @@ export const ItemTypesPage: React.FC = () => {
                 showSizeChanger: true,
                 pageSizeOptions: ['10', '15', '25', '50', '100'],
                 onChange: handlePageChange,
+                className: '!mb-1 !mt-2 px-2',
               }}
             />
           </div>
         </Card>
       </main>
+
+      {/* Upload Excel Modal */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2.5 text-slate-800 dark:text-slate-100">
+            <FileExcelOutlined className="text-emerald-500 text-xl" />
+            <span className="font-bold text-lg font-['Outfit']">Upload & Import Item Master Data</span>
+          </div>
+        }
+        open={isUploadModalOpen}
+        onCancel={() => {
+          if (!uploading) setIsUploadModalOpen(false);
+        }}
+        centered
+        width={750}
+        footer={[
+          <Button key="cancel" onClick={() => setIsUploadModalOpen(false)} disabled={uploading}>
+            Cancel
+          </Button>,
+          <Button
+            key="import"
+            type="primary"
+            icon={<UploadOutlined />}
+            loading={uploading}
+            disabled={parsedImportData.length === 0}
+            onClick={handleExecuteBulkImport}
+            className="bg-indigo-600"
+          >
+            Import {parsedImportData.length > 0 ? `${parsedImportData.length} Items` : ''}
+          </Button>,
+        ]}
+      >
+        <div className="py-3 flex flex-col gap-4">
+          <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200 dark:border-white/10">
+            <div className="text-xs app-text-secondary">
+              Need the standard structure? Download our pre-formatted template.
+            </div>
+            <Button
+              size="small"
+              icon={<DownloadOutlined />}
+              onClick={handleDownloadTemplate}
+              className="text-emerald-600 border-emerald-400 font-semibold"
+            >
+              Download Template
+            </Button>
+          </div>
+
+          <Upload.Dragger
+            accept=".xlsx, .xls, .csv"
+            maxCount={1}
+            beforeUpload={(file) => {
+              setFileList([file]);
+              handleFileRead(file);
+              return false; // Prevent automatic HTTP upload
+            }}
+            onRemove={() => {
+              setFileList([]);
+              setParsedImportData([]);
+            }}
+            fileList={fileList}
+          >
+            <p className="ant-upload-drag-icon text-indigo-500 text-4xl mb-2">
+              <InboxOutlined />
+            </p>
+            <p className="ant-upload-text text-sm font-semibold">Click or drag Excel/CSV file to this area</p>
+            <p className="ant-upload-hint text-xs app-text-muted">
+              Supports .xlsx, .xls, and .csv files. Columns: Item Code, Item Name, Category, Cat No, Make, Unit, Base Price (INR), Description
+            </p>
+          </Upload.Dragger>
+
+          {parsedImportData.length > 0 && (
+            <div className="flex flex-col gap-2 mt-2">
+              <div className="flex items-center justify-between">
+                <Text className="font-bold text-sm text-indigo-600 dark:text-indigo-400">
+                  Preview ({parsedImportData.length} Items Parsed)
+                </Text>
+                <Tag color="blue">{parsedImportData.length} Records Ready</Tag>
+              </div>
+
+              <Table
+                dataSource={parsedImportData}
+                rowKey={(r, index) => r.code || index?.toString()}
+                size="small"
+                pagination={{ pageSize: 5 }}
+                columns={[
+                  { title: 'Code', dataIndex: 'code', key: 'code', render: (c) => <span className="font-mono font-bold text-indigo-600">{c}</span> },
+                  { title: 'Name', dataIndex: 'name', key: 'name', render: (n) => <span className="font-bold">{n}</span> },
+                  { title: 'Cat No', dataIndex: 'cat_no', key: 'cat_no' },
+                  { title: 'Make', dataIndex: 'make', key: 'make' },
+                  { title: 'Unit', dataIndex: 'unit', key: 'unit' },
+                  {
+                    title: 'Base Price (₹)',
+                    dataIndex: 'base_price',
+                    key: 'base_price',
+                    align: 'right',
+                    render: (p: number) => <span className="font-mono text-emerald-600">₹{(p || 0).toFixed(2)}</span>,
+                  },
+                ]}
+              />
+            </div>
+          )}
+        </div>
+      </Modal>
 
       {/* Filter Modal */}
       <Modal
@@ -725,15 +1025,15 @@ export const ItemTypesPage: React.FC = () => {
             </Form.Item>
           </div>
 
-          {/* Row 3: Unit (master) & Cat No (input unique) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+          {/* Row 3: Unit (master), Base Price (₹) & Cat No (input unique) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1">
             <Form.Item
               name="unit"
               label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Unit (master)</span>}
               rules={[{ required: true, message: 'Unit is required' }]}
             >
               <Select
-                placeholder="Select or Search Unit (e.g. PCS, KG, MTR)..."
+                placeholder="Select or Search Unit..."
                 showSearch
                 size="large"
                 onSearch={(val) => setSearchUnitText(val)}
@@ -787,10 +1087,24 @@ export const ItemTypesPage: React.FC = () => {
             </Form.Item>
 
             <Form.Item
+              name="base_price"
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Base Price (₹)</span>}
+            >
+              <InputNumber
+                className="w-full"
+                size="large"
+                prefix="₹"
+                min={0}
+                step={0.01}
+                placeholder="e.g. 150.00"
+              />
+            </Form.Item>
+
+            <Form.Item
               name="cat_no"
               label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Cat No (input unique)</span>}
             >
-              <Input prefix={<SafetyOutlined className="text-emerald-500" />} placeholder="e.g. DS1A7A1, A9N1P02CGN" size="large" />
+              <Input prefix={<SafetyOutlined className="text-emerald-500" />} placeholder="e.g. DS1A7A1" size="large" />
             </Form.Item>
           </div>
 

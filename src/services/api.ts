@@ -14,7 +14,9 @@ import type {
   ItemDescription,
   TermsAndConditions,
   ProjectAssignment,
+  ProjectCostingReport,
 } from '../types/inventory';
+
 import type { StorageShelf, StorageRack } from '../types/storage';
 
 
@@ -314,7 +316,17 @@ export const itemTypeApi = {
     });
     return handleResponse(res);
   },
+
+  bulkImport: async (items: Array<any>): Promise<{ success: boolean; createdCount: number; updatedCount: number; message: string }> => {
+    const res = await fetch(`${API_BASE_URL}/item-types/bulk-import`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ items }),
+    });
+    return handleResponse(res);
+  },
 };
+
 
 // Project API Client
 export const projectApi = {
@@ -885,7 +897,23 @@ export const reportApi = {
     });
     return handleResponse(res);
   },
+
+  getProjectFinancialCosting: async (params?: {
+    project_id?: number;
+    search?: string;
+  }): Promise<{ success: boolean; report: ProjectCostingReport }> => {
+    const query = new URLSearchParams();
+    if (params?.project_id) query.append('project_id', String(params.project_id));
+    if (params?.search) query.append('search', params.search);
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${API_BASE_URL}/reports/project-costing${queryString}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
 };
+
 
 
 // Terms & Conditions API Client
@@ -1130,4 +1158,6 @@ export const projectAssignmentApi = {
     return handleResponse(res);
   },
 };
+
+
 
