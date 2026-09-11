@@ -246,6 +246,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
       title: 'Assignment Ref #',
       key: 'assignment_no',
       width: 170,
+      fixed: 'left',
       render: (_, record) => (
         <div>
           <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-sm">
@@ -334,6 +335,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
       title: 'Status',
       key: 'status',
       width: 140,
+      fixed: 'right',
       render: () => (
         <Tag icon={<CheckCircleFilled />} color="success" className="font-bold border-none py-0.5 px-2.5">
           ALLOCATED
@@ -344,7 +346,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
+      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-4 flex flex-col gap-4 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
         {/* Top Header Card */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 shadow-md dark:shadow-2xl transition-colors duration-300">
           <div className="flex items-center gap-3.5">
@@ -491,7 +493,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
             dataSource={filteredAssignments}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 800, y: 360 }}
+            scroll={{ x: 1000, y: 'calc(100vh - 490px)' }}
             pagination={{
               pageSize: 15,
               showSizeChanger: true,

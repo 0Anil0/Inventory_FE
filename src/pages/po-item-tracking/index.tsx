@@ -13,7 +13,6 @@ import {
   Tooltip,
   Modal,
   Spin,
-  Badge,
   message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -21,7 +20,6 @@ import {
   SearchOutlined,
   ReloadOutlined,
   FileExcelOutlined,
-  FilePdfOutlined,
   FilterOutlined,
   ClearOutlined,
   ShoppingOutlined,
@@ -31,7 +29,6 @@ import {
   CloseCircleOutlined,
   InboxOutlined,
   EyeOutlined,
-  UserOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
@@ -397,24 +394,25 @@ export const POItemTrackingPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="p-4 md:p-6 space-y-4 max-w-[1600px] mx-auto">
+      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-xs border border-slate-200 dark:border-slate-700">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              <ShoppingOutlined className="text-indigo-600 dark:text-indigo-400" />
-              PO Item History & Tracker
-            </h1>
-            <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Track Purchase Orders raised per item across vendors, projects, prices, quantities & fulfillment statuses.
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-3">
+            <ShoppingOutlined className="text-3xl text-indigo-500" />
+            <div>
+              <h1 className="text-2xl font-bold app-text-main font-['Outfit'] mb-0.5">
+                PO Item History & Tracker
+              </h1>
+              <p className="text-xs sm:text-sm app-text-muted mb-0">
+                Track Purchase Orders raised per item across vendors, projects, prices, quantities & fulfillment statuses
+              </p>
+            </div>
           </div>
           <Space wrap className="justify-end">
             <Button
               icon={<ReloadOutlined />}
               onClick={() => fetchTrackingData()}
               loading={loading}
-              className="hover:bg-slate-50"
             >
               Refresh
             </Button>
@@ -422,7 +420,7 @@ export const POItemTrackingPage: React.FC = () => {
               type="primary"
               icon={<FileExcelOutlined />}
               onClick={handleExportExcel}
-              className="bg-emerald-600 hover:bg-emerald-500 border-none shadow-xs"
+              className="bg-emerald-600 hover:bg-emerald-500 border-none shadow-xs font-semibold"
             >
               Export Excel
             </Button>
@@ -430,52 +428,52 @@ export const POItemTrackingPage: React.FC = () => {
         </div>
 
         {/* Metrics Summary Cards */}
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} md={6}>
-            <Card className="shadow-xs border-slate-200 dark:border-slate-700 dark:bg-slate-800">
+        <Row gutter={[12, 12]} className="shrink-0">
+          <Col xs={12} sm={6}>
+            <Card className="shadow-xs border-slate-200 dark:border-slate-700 dark:bg-slate-800" bodyStyle={{ padding: '12px 16px' }}>
               <Statistic
                 title={<span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Line Items Tracked</span>}
                 value={summary.totalRecords}
                 prefix={<ShoppingOutlined className="text-indigo-500 mr-2" />}
-                valueStyle={{ fontWeight: 700, fontSize: '20px' }}
+                valueStyle={{ fontWeight: 700, fontSize: '18px' }}
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card className="shadow-xs border-slate-200 dark:border-slate-700 dark:bg-slate-800">
+          <Col xs={12} sm={6}>
+            <Card className="shadow-xs border-slate-200 dark:border-slate-700 dark:bg-slate-800" bodyStyle={{ padding: '12px 16px' }}>
               <Statistic
                 title={<span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Ordered Quantity</span>}
                 value={summary.totalOrderedQty}
                 prefix={<InboxOutlined className="text-blue-500 mr-2" />}
-                valueStyle={{ fontWeight: 700, fontSize: '20px' }}
+                valueStyle={{ fontWeight: 700, fontSize: '18px' }}
               />
-              <div className="text-[11px] text-slate-500 mt-1 flex justify-between">
+              <div className="text-[11px] text-slate-500 mt-0.5 flex justify-between">
                 <span>Received: <strong className="text-emerald-600">{summary.totalReceivedQty}</strong></span>
                 <span>Pending: <strong className="text-amber-600">{summary.totalPendingQty}</strong></span>
               </div>
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card className="shadow-xs border-slate-200 dark:border-slate-700 dark:bg-slate-800">
+          <Col xs={12} sm={6}>
+            <Card className="shadow-xs border-slate-200 dark:border-slate-700 dark:bg-slate-800" bodyStyle={{ padding: '12px 16px' }}>
               <Statistic
                 title={<span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Total Item PO Value (incl. Tax)</span>}
                 value={summary.totalSpend}
                 precision={2}
                 prefix={<DollarOutlined className="text-emerald-500 mr-2" />}
                 suffix="₹"
-                valueStyle={{ fontWeight: 700, fontSize: '20px', color: '#10b981' }}
+                valueStyle={{ fontWeight: 700, fontSize: '18px', color: '#10b981' }}
               />
             </Card>
           </Col>
-          <Col xs={24} sm={12} md={6}>
-            <Card className="shadow-xs border-slate-200 dark:border-slate-700 dark:bg-slate-800">
+          <Col xs={12} sm={6}>
+            <Card className="shadow-xs border-slate-200 dark:border-slate-700 dark:bg-slate-800" bodyStyle={{ padding: '12px 16px' }}>
               <Statistic
                 title={<span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Pending Fulfillment Qty</span>}
                 value={summary.totalPendingQty}
                 prefix={<ClockCircleOutlined className="text-amber-500 mr-2" />}
                 valueStyle={{
                   fontWeight: 700,
-                  fontSize: '20px',
+                  fontSize: '18px',
                   color: summary.totalPendingQty > 0 ? '#f59e0b' : '#10b981',
                 }}
               />
@@ -484,10 +482,10 @@ export const POItemTrackingPage: React.FC = () => {
         </Row>
 
         {/* Filter Bar */}
-        <Card className="shadow-xs border-slate-200 dark:border-slate-700 dark:bg-slate-800" bodyStyle={{ padding: '16px' }}>
-          <Row gutter={[12, 12]} align="middle">
+        <Card className="shadow-xs border-slate-200 dark:border-slate-700 dark:bg-slate-800 shrink-0" bodyStyle={{ padding: '12px' }}>
+          <Row gutter={[10, 10]} align="middle">
             <Col xs={24} sm={12} md={6} lg={5}>
-              <div className="text-xs font-semibold text-slate-500 mb-1">Filter by Item Master:</div>
+              <div className="text-[11px] font-semibold text-slate-500 mb-0.5">Filter by Item Master:</div>
               <Select
                 showSearch
                 allowClear
@@ -507,7 +505,7 @@ export const POItemTrackingPage: React.FC = () => {
             </Col>
 
             <Col xs={24} sm={12} md={6} lg={5}>
-              <div className="text-xs font-semibold text-slate-500 mb-1">Filter by Vendor:</div>
+              <div className="text-[11px] font-semibold text-slate-500 mb-0.5">Filter by Vendor:</div>
               <Select
                 showSearch
                 allowClear
@@ -527,7 +525,7 @@ export const POItemTrackingPage: React.FC = () => {
             </Col>
 
             <Col xs={24} sm={12} md={6} lg={4}>
-              <div className="text-xs font-semibold text-slate-500 mb-1">Filter by Project:</div>
+              <div className="text-[11px] font-semibold text-slate-500 mb-0.5">Filter by Project:</div>
               <Select
                 showSearch
                 allowClear
@@ -547,7 +545,7 @@ export const POItemTrackingPage: React.FC = () => {
             </Col>
 
             <Col xs={24} sm={12} md={6} lg={3}>
-              <div className="text-xs font-semibold text-slate-500 mb-1">PO Status:</div>
+              <div className="text-[11px] font-semibold text-slate-500 mb-0.5">PO Status:</div>
               <Select
                 className="w-full"
                 value={selectedStatus}
@@ -564,7 +562,7 @@ export const POItemTrackingPage: React.FC = () => {
             </Col>
 
             <Col xs={24} sm={12} md={6} lg={4}>
-              <div className="text-xs font-semibold text-slate-500 mb-1">Search Keywords:</div>
+              <div className="text-[11px] font-semibold text-slate-500 mb-0.5">Search Keywords:</div>
               <Input
                 placeholder="Cat No, Make, HSN..."
                 prefix={<SearchOutlined className="text-slate-400" />}
@@ -575,7 +573,7 @@ export const POItemTrackingPage: React.FC = () => {
               />
             </Col>
 
-            <Col xs={24} sm={12} md={6} lg={3} className="flex items-end gap-2 pt-4">
+            <Col xs={24} sm={12} md={6} lg={3} className="flex items-end gap-1.5 pt-3">
               <Button
                 type="primary"
                 icon={<FilterOutlined />}
@@ -595,23 +593,25 @@ export const POItemTrackingPage: React.FC = () => {
 
         {/* Data Table */}
         <Card
-          className="shadow-xs border-slate-200 dark:border-slate-700 dark:bg-slate-800"
+          className="shadow-2xl flex-1 flex flex-col h-auto lg:h-full overflow-hidden"
           bodyStyle={{ padding: '0px' }}
         >
-          <Table
-            columns={columns}
-            dataSource={records}
-            rowKey="id"
-            loading={loading}
-            scroll={{ x: 1300, y: 'calc(100vh - 430px)' }}
-            pagination={{
-              defaultPageSize: 20,
-              showSizeChanger: true,
-              pageSizeOptions: ['10', '20', '50', '100'],
-              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} records`,
-            }}
-            size="middle"
-          />
+          <div className="flex-1 overflow-hidden flex flex-col justify-between">
+            <Table
+              columns={columns}
+              dataSource={records}
+              rowKey="id"
+              loading={loading}
+              scroll={{ x: 1350, y: 'calc(100vh - 495px)' }}
+              pagination={{
+                defaultPageSize: 20,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50', '100'],
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} records`,
+              }}
+              size="middle"
+            />
+          </div>
         </Card>
 
         {/* PO Details Modal */}
@@ -739,7 +739,7 @@ export const POItemTrackingPage: React.FC = () => {
             <div className="py-8 text-center text-slate-400">No PO data found</div>
           )}
         </Modal>
-      </div>
+      </main>
     </AppLayout>
   );
 };

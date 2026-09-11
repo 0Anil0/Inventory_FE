@@ -159,6 +159,7 @@ export const TermsAndConditionsPage: React.FC = () => {
       key: 'sno',
       width: 70,
       align: 'center',
+      fixed: 'left',
       render: (_, __, index: number) => (
         <span className="font-mono font-bold text-slate-500">{(currentPage - 1) * pageSize + index + 1}</span>
       ),
@@ -167,6 +168,7 @@ export const TermsAndConditionsPage: React.FC = () => {
       title: 'Template Title & Scope',
       dataIndex: 'title',
       key: 'title',
+      fixed: 'left',
       render: (title: string, record) => (
         <div>
           <div className="font-bold app-text-main flex items-center gap-2 font-['Outfit'] text-base">
@@ -217,6 +219,7 @@ export const TermsAndConditionsPage: React.FC = () => {
       key: 'actions',
       width: 180,
       align: 'right',
+      fixed: 'right',
       render: (_, record) => (
         <Space size="small">
           <Tooltip title="Preview Formatted Document">
@@ -263,7 +266,7 @@ export const TermsAndConditionsPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
+      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
         {/* Top Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
@@ -310,7 +313,7 @@ export const TermsAndConditionsPage: React.FC = () => {
               loading={loading}
               scroll={{
                 x: 800,
-                y: isDesktop ? 'calc(100vh - 385px)' : undefined,
+                y: isDesktop ? 'calc(100vh - 480px)' : undefined,
               }}
               pagination={{
                 current: currentPage,

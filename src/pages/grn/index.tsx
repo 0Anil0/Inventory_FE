@@ -407,6 +407,7 @@ const GRNPage: React.FC = () => {
       title: 'GRN Number',
       dataIndex: 'grn_number',
       key: 'grn_number',
+      fixed: 'left' as const,
       render: (text: string, record: GoodsReceiptNote) => (
         <div>
           <Text strong style={{ color: '#312e81', fontSize: '14px', fontFamily: 'monospace' }}>
@@ -468,6 +469,7 @@ const GRNPage: React.FC = () => {
     {
       title: 'Action',
       key: 'action',
+      fixed: 'right' as const,
       render: (record: GoodsReceiptNote) => (
         <Space>
           <Button
@@ -489,9 +491,9 @@ const GRNPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="p-6 space-y-6">
+      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-4 md:px-6 py-4 flex flex-col gap-4 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
         {/* Header Ribbon */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-5 rounded-xl border border-slate-200 shadow-sm gap-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-5 rounded-xl border border-slate-200 shadow-sm gap-4 shrink-0">
           <div>
             <Title level={3} style={{ margin: 0, color: '#0f172a' }} className="flex items-center gap-2">
               <CheckOutlined className="text-indigo-600" /> Stock Inward & GRN Master
@@ -512,7 +514,7 @@ const GRNPage: React.FC = () => {
         </div>
 
         {/* Filter & Search Bar Controls */}
-        <Card className="shadow-sm border-slate-200" bodyStyle={{ padding: '16px' }}>
+        <Card className="shadow-sm border-slate-200 shrink-0" bodyStyle={{ padding: '16px' }}>
           <Row gutter={[16, 16]} justify="space-between" align="middle">
             <Col xs={24} sm={16} md={12} className="flex gap-2">
               <Input
@@ -575,16 +577,17 @@ const GRNPage: React.FC = () => {
         </Card>
 
         {/* GRN List Table */}
-        <Card className="shadow-sm border-slate-200" bodyStyle={{ padding: '0px' }}>
+        <Card className="shadow-sm border-slate-200 flex-1 overflow-hidden" bodyStyle={{ padding: '0px' }}>
           <Table
             columns={columns}
             dataSource={filteredGRNs}
             rowKey="id"
             loading={loading}
+            scroll={{ x: 1000, y: 'calc(100vh - 485px)' }}
             pagination={{ pageSize: 10 }}
           />
         </Card>
-      </div>
+      </main>
 
       {/* FILTER MODAL */}
       <Modal

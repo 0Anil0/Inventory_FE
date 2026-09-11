@@ -20,7 +20,6 @@ import {
   UploadOutlined,
   FileExcelOutlined,
   InboxOutlined,
-  DollarOutlined,
 } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
 import type { ItemType, Make, ItemDescription, Unit } from '../../types/inventory';
@@ -427,7 +426,7 @@ export const ItemTypesPage: React.FC = () => {
     try {
       const res = await itemTypeApi.bulkImport(parsedImportData);
       if (res.success) {
-        message.success(res.message || `Imported ${res.totalProcessed || parsedImportData.length} items!`);
+        message.success(res.message || `Imported ${(res.createdCount || 0) + (res.updatedCount || 0) || parsedImportData.length} items!`);
         setIsUploadModalOpen(false);
         setParsedImportData([]);
         setFileList([]);
@@ -446,6 +445,7 @@ export const ItemTypesPage: React.FC = () => {
       dataIndex: 'code',
       key: 'code',
       width: 170,
+      fixed: 'left',
       render: (code: string) => <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{code}</span>,
     },
     {
@@ -547,6 +547,7 @@ export const ItemTypesPage: React.FC = () => {
       key: 'actions',
       width: 100,
       align: 'right',
+      fixed: 'right',
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -570,7 +571,7 @@ export const ItemTypesPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
+      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <CodeSandboxOutlined className="text-3xl text-indigo-500" />
@@ -665,7 +666,7 @@ export const ItemTypesPage: React.FC = () => {
               loading={loading}
               scroll={{
                 x: 1400,
-                y: isDesktop ? 'calc(100vh - 440px)' : undefined,
+                y: isDesktop ? 'calc(100vh - 495px)' : undefined,
               }}
               pagination={{
                 current: currentPage,

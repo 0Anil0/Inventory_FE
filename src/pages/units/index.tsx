@@ -154,6 +154,7 @@ export const UnitsPage: React.FC = () => {
       key: 'sno',
       width: 90,
       align: 'center',
+      fixed: 'left',
       render: (_, __, index: number) => (
         <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
           {(currentPage - 1) * pageSize + index + 1}
@@ -165,6 +166,7 @@ export const UnitsPage: React.FC = () => {
       dataIndex: 'code',
       key: 'code',
       width: 140,
+      fixed: 'left',
       render: (code: string) => (
         <Tag color="purple" className="font-mono font-bold text-sm px-2.5 py-0.5">
           {code}
@@ -193,6 +195,7 @@ export const UnitsPage: React.FC = () => {
       key: 'actions',
       align: 'right',
       width: 120,
+      fixed: 'right',
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -216,7 +219,7 @@ export const UnitsPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
+      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <TagsOutlined className="text-3xl text-indigo-500" />
@@ -286,7 +289,7 @@ export const UnitsPage: React.FC = () => {
               loading={loading}
               scroll={{
                 x: 600,
-                y: isDesktop ? 'calc(100vh - 385px)' : undefined,
+                y: isDesktop ? 'calc(100vh - 480px)' : undefined,
               }}
               pagination={{
                 current: currentPage,

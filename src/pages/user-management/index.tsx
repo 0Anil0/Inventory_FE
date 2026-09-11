@@ -241,12 +241,14 @@ export const UserManagementPage: React.FC = () => {
       dataIndex: 'id',
       key: 'id',
       width: 70,
+      fixed: 'left',
       render: (id: number) => <span className="text-gray-400 font-mono">#{id}</span>,
     },
     {
       title: 'User Name',
       dataIndex: 'username',
       key: 'username',
+      fixed: 'left',
       render: (username: string) => (
         <Space className="py-1">
           <Avatar style={{ backgroundColor: '#6366f1' }} icon={<UserOutlined />}>
@@ -292,6 +294,7 @@ export const UserManagementPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       align: 'right',
+      fixed: 'right',
       render: (_: any, record: User) => (
         <Space size="small">
           <Button
@@ -319,12 +322,14 @@ export const UserManagementPage: React.FC = () => {
       dataIndex: 'id',
       key: 'id',
       width: 90,
+      fixed: 'left',
       render: (id: number) => <span className="font-mono text-gray-400">#{id}</span>,
     },
     {
       title: 'Role Identifier',
       dataIndex: 'name',
       key: 'name',
+      fixed: 'left',
       render: (name: string) => (
         <Tag color={getRoleTagColor(name)} className="font-bold uppercase py-0.5 px-3 rounded-full border-none text-xs font-mono">
           {name}
@@ -356,6 +361,7 @@ export const UserManagementPage: React.FC = () => {
       title: 'Actions',
       key: 'actions',
       align: 'right',
+      fixed: 'right',
       render: (_, record: Role) => (
         <Space size="small">
           <Button
@@ -381,7 +387,7 @@ export const UserManagementPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
+      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
@@ -476,7 +482,7 @@ export const UserManagementPage: React.FC = () => {
                         loading={loading}
                         scroll={{
                           x: 750,
-                          y: isDesktop ? 'calc(100vh - 430px)' : undefined,
+                          y: isDesktop ? 'calc(100vh - 490px)' : undefined,
                         }}
                         pagination={{
                           current: currentPage,

@@ -153,6 +153,7 @@ export const MakesPage: React.FC = () => {
       key: 'sno',
       width: 80,
       align: 'center',
+      fixed: 'left',
       render: (_, __, index: number) => (
         <span className="font-mono font-bold text-slate-500">{(currentPage - 1) * pageSize + index + 1}</span>
       ),
@@ -161,6 +162,7 @@ export const MakesPage: React.FC = () => {
       title: 'Brand / Make Name',
       dataIndex: 'name',
       key: 'name',
+      fixed: 'left',
       render: (name: string) => (
         <Tag color="blue" icon={<ShopOutlined />} className="font-bold text-sm py-1 px-3">
           {name}
@@ -186,6 +188,7 @@ export const MakesPage: React.FC = () => {
       key: 'actions',
       width: 100,
       align: 'right',
+      fixed: 'right',
       render: (_, record) => (
         <Space size="small">
           <Button
@@ -209,7 +212,7 @@ export const MakesPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-5xl w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
+      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-3 sm:px-6 py-3 flex flex-col gap-3 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <ShopOutlined className="text-3xl text-indigo-500" />
@@ -269,7 +272,7 @@ export const MakesPage: React.FC = () => {
               loading={loading}
               scroll={{
                 x: 650,
-                y: isDesktop ? 'calc(100vh - 385px)' : undefined,
+                y: isDesktop ? 'calc(100vh - 480px)' : undefined,
               }}
               pagination={{
                 current: currentPage,

@@ -203,6 +203,7 @@ export const ProjectsPage: React.FC = () => {
       dataIndex: 'code',
       key: 'code',
       width: 160,
+      fixed: 'left',
       render: (code: string, record) => (
         <Tag color={record.parent_id ? 'purple' : 'indigo'} className="font-mono font-bold px-2 py-0.5 border-none text-sm">
           {code}
@@ -308,6 +309,7 @@ export const ProjectsPage: React.FC = () => {
       key: 'actions',
       align: 'right',
       width: 200,
+      fixed: 'right',
       render: (_, record) => (
         <Space size="small">
           {!record.parent_id && (
@@ -438,7 +440,7 @@ export const ProjectsPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col gap-6">
+      <main className="relative z-10 flex-1 max-w-[1600px] w-full mx-auto px-4 md:px-6 py-4 flex flex-col gap-4 h-auto lg:h-[calc(100vh-68px)] overflow-y-auto lg:overflow-hidden">
         {/* Top Header Card */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/80 shadow-md dark:shadow-2xl transition-colors duration-300">
           <div className="flex items-center gap-3.5">
@@ -556,6 +558,7 @@ export const ProjectsPage: React.FC = () => {
               dataSource={treeTableData}
               rowKey="id"
               loading={loading}
+              scroll={{ x: 1100, y: 'calc(100vh - 490px)' }}
               defaultExpandAllRows={true}
               expandable={{
                 defaultExpandAllRows: true,
