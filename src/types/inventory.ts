@@ -166,6 +166,9 @@ export interface PurchaseOrder {
   created_by_id?: number | null;
   approved_by_id?: number | null;
   approved_at?: string | null;
+  rejected_by_id?: number | null;
+  rejected_at?: string | null;
+  rejection_reason?: string | null;
   status: 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'ORDERED' | 'PARTIALLY_RECEIVED' | 'RECEIVED' | 'CANCELLED' | 'REJECTED';
   total_amount: number;
   order_date: string;
@@ -180,6 +183,11 @@ export interface PurchaseOrder {
     email?: string;
   } | null;
   approved_by_user?: {
+    id: number;
+    username: string;
+    email?: string;
+  } | null;
+  rejected_by_user?: {
     id: number;
     username: string;
     email?: string;
@@ -409,18 +417,24 @@ export interface PurchaseRequisition {
   pr_number: string;
   project_id?: number | null;
   requested_by_id?: number | null;
+  created_by_id?: number | null;
   reviewed_by_id?: number | null;
+  approved_by_id?: number | null;
+  rejected_by_id?: number | null;
   approved_at?: string | null;
+  rejected_at?: string | null;
+  rejection_reason?: string | null;
   status: PRStatus;
   priority: PRPriority;
   required_date?: string | null;
   notes?: string | null;
   project?: Project;
-  requested_by_user?: { id: number; username: string; email?: string };
-  reviewed_by_user?: { id: number; username: string; email?: string };
+  requested_by_user?: { id: number; username: string; email?: string } | null;
+  created_by_user?: { id: number; username: string; email?: string } | null;
+  reviewed_by_user?: { id: number; username: string; email?: string } | null;
+  approved_by_user?: { id: number; username: string; email?: string } | null;
+  rejected_by_user?: { id: number; username: string; email?: string } | null;
   items?: PurchaseRequisitionItem[];
   createdAt?: string;
   updatedAt?: string;
 }
-
-

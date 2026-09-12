@@ -446,11 +446,52 @@ export const PurchaseRequisitionsPage: React.FC = () => {
         ),
     },
     {
-      title: 'Requested By',
-      dataIndex: 'requested_by_user',
-      key: 'requested_by_user',
+      title: 'Created By',
+      key: 'created_by',
       width: 140,
-      render: (user) => user?.username || 'System User',
+      render: (_, record) => (
+        <span className="font-medium text-slate-700 dark:text-slate-300">
+          {record.created_by_user?.username || record.requested_by_user?.username || 'System User'}
+        </span>
+      ),
+    },
+    {
+      title: 'Approved By',
+      key: 'approved_by',
+      width: 140,
+      render: (_, record) => {
+        const approver = record.approved_by_user?.username || record.reviewed_by_user?.username;
+        if (approver && (record.status === 'APPROVED' || record.status === 'PARTIALLY_APPROVED' || record.status === 'PO_CREATED')) {
+          return (
+            <div>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">{approver}</span>
+              {record.approved_at && (
+                <div className="text-[10px] text-slate-400">{dayjs(record.approved_at).format('DD/MM/YY HH:mm')}</div>
+              )}
+            </div>
+          );
+        }
+        return <span className="text-slate-400 text-xs">-</span>;
+      },
+    },
+    {
+      title: 'Rejected By',
+      key: 'rejected_by',
+      width: 140,
+      render: (_, record) => {
+        const rejector = record.rejected_by_user?.username || record.reviewed_by_user?.username;
+        if (record.status === 'REJECTED') {
+          return (
+            <div>
+              <span className="font-semibold text-red-600 dark:text-red-400">{rejector || 'Reviewer'}</span>
+              {record.rejected_at && (
+                <div className="text-[10px] text-slate-400">{dayjs(record.rejected_at).format('DD/MM/YY HH:mm')}</div>
+              )}
+            </div>
+          );
+        }
+        return <span className="text-slate-400 text-xs">-</span>;
+      },
     },
     {
       title: 'Required Date',
@@ -1200,14 +1241,42 @@ export const PurchaseRequisitionsPage: React.FC = () => {
                   </span>
                 </Col>
                 <Col span={8}>
-                  <span className="text-xs text-slate-400 block">Requested By</span>
+                  <span className="text-xs text-slate-400 block">Created / Requested By</span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    {selectedPR.requested_by_user?.username || 'System'}
+                    {selectedPR.created_by_user?.username || selectedPR.requested_by_user?.username || 'System User'}
                   </span>
                 </Col>
                 <Col span={8}>
                   <span className="text-xs text-slate-400 block">Status</span>
                   {getStatusBadge(selectedPR.status)}
+                </Col>
+              </Row>
+
+              <Row gutter={[16, 16]} className="pt-2">
+                <Col span={12}>
+                  <span className="text-xs text-slate-400 block">Approved By</span>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    {selectedPR.approved_by_user?.username || selectedPR.reviewed_by_user?.username || 'Not Approved Yet'}
+                  </span>
+                  {selectedPR.approved_at && (
+                    <span className="text-xs text-slate-400 block">
+                      {dayjs(selectedPR.approved_at).format('DD/MM/YYYY HH:mm')}
+                    </span>
+                  )}
+                </Col>
+                <Col span={12}>
+                  <span className="text-xs text-slate-400 block">Rejected By</span>
+                  <span className="font-semibold text-red-600 dark:text-red-400">
+                    {selectedPR.rejected_by_user?.username || (selectedPR.status === 'REJECTED' ? 'Reviewer' : 'N/A')}
+                  </span>
+                  {selectedPR.rejected_at && (
+                    <span className="text-xs text-slate-400 block">
+                      {dayjs(selectedPR.rejected_at).format('DD/MM/YYYY HH:mm')}
+                    </span>
+                  )}
+                  {selectedPR.rejection_reason && (
+                    <span className="text-xs text-red-500 block italic">Reason: {selectedPR.rejection_reason}</span>
+                  )}
                 </Col>
               </Row>
 

@@ -746,6 +746,46 @@ export const PurchaseOrdersPage: React.FC = () => {
       ),
     },
     {
+      title: 'Approved By',
+      key: 'approved_by',
+      width: 130,
+      className: 'whitespace-nowrap',
+      render: (_, record) => {
+        const approver = record.approved_by_user?.username;
+        if (approver && (record.status === 'APPROVED' || record.status === 'RECEIVED' || record.status === 'PARTIALLY_RECEIVED' || record.status === 'ORDERED')) {
+          return (
+            <div>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400 text-xs">{approver}</span>
+              {record.approved_at && (
+                <div className="text-[10px] text-slate-400">{dayjs(record.approved_at).format('DD/MM/YY HH:mm')}</div>
+              )}
+            </div>
+          );
+        }
+        return <span className="text-slate-400 text-xs">-</span>;
+      },
+    },
+    {
+      title: 'Rejected By',
+      key: 'rejected_by',
+      width: 130,
+      className: 'whitespace-nowrap',
+      render: (_, record) => {
+        const rejector = record.rejected_by_user?.username;
+        if (record.status === 'REJECTED') {
+          return (
+            <div>
+              <span className="font-semibold text-red-600 dark:text-red-400 text-xs">{rejector || 'Approver'}</span>
+              {record.rejected_at && (
+                <div className="text-[10px] text-slate-400">{dayjs(record.rejected_at).format('DD/MM/YY HH:mm')}</div>
+              )}
+            </div>
+          );
+        }
+        return <span className="text-slate-400 text-xs">-</span>;
+      },
+    },
+    {
       title: 'Items & Total Amount',
       key: 'amount',
       width: 210,
@@ -1702,16 +1742,39 @@ export const PurchaseOrdersPage: React.FC = () => {
                               {selectedPO.created_by_user?.username || 'Admin'}
                             </div>
                             <div style={{ borderTop: '1.5px solid #64748b', paddingTop: '6px' }} className="font-bold text-slate-800 text-[12px] uppercase">
-                              Prepared By
+                              Created / Prepared By
                             </div>
                           </div>
                           <div style={{ width: '180px', textAlign: 'center' }}>
-                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', marginBottom: '4px', textTransform: 'capitalize' }}>
-                              {selectedPO.approved_by_user?.username || '\u00A0'}
-                            </div>
-                            <div style={{ borderTop: '1.5px solid #64748b', paddingTop: '6px' }} className="font-bold text-slate-800 text-[12px] uppercase">
-                              Verified / Checked By
-                            </div>
+                            {selectedPO.status === 'REJECTED' ? (
+                              <>
+                                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#dc2626', marginBottom: '2px', textTransform: 'capitalize' }}>
+                                  {selectedPO.rejected_by_user?.username || 'Approver'}
+                                </div>
+                                {selectedPO.rejected_at && (
+                                  <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '4px' }}>
+                                    {dayjs(selectedPO.rejected_at).format('DD/MM/YYYY HH:mm')}
+                                  </div>
+                                )}
+                                <div style={{ borderTop: '1.5px solid #dc2626', paddingTop: '6px' }} className="font-bold text-red-700 text-[12px] uppercase">
+                                  Rejected By
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#15803d', marginBottom: '2px', textTransform: 'capitalize' }}>
+                                  {selectedPO.approved_by_user?.username || '\u00A0'}
+                                </div>
+                                {selectedPO.approved_at && (
+                                  <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '4px' }}>
+                                    {dayjs(selectedPO.approved_at).format('DD/MM/YYYY HH:mm')}
+                                  </div>
+                                )}
+                                <div style={{ borderTop: '1.5px solid #64748b', paddingTop: '6px' }} className="font-bold text-slate-800 text-[12px] uppercase">
+                                  Approved By
+                                </div>
+                              </>
+                            )}
                           </div>
                           <div style={{ width: '280px', borderTop: '1.5px solid #0f172a', paddingTop: '6px' }} className="text-center font-bold text-slate-900 text-[13px]">
                             For EFFICIENT ELECTRICAL ENERGY AND AUTOMATION PRIVATE LIMITED
