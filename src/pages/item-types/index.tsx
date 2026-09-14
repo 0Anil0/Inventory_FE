@@ -304,43 +304,30 @@ export const ItemTypesPage: React.FC = () => {
 
   // Excel Download Template Handler
   const handleDownloadTemplate = () => {
-    const templateData = [
-      {
-        'Item Code': '1001',
-        'Item Name': 'MCB 1P',
-        'Category': '6A C-Curve',
-        'Cat No': 'DS1A7A1',
-        'HSN Code': '8536',
-        'Make': 'L&T',
-        'Unit': 'PCS',
-        'Base Price (INR)': 185.50,
-        'Description': 'MCB 1P 6A C-Curve L&T',
-      },
-      {
-        'Item Code': '1002',
-        'Item Name': 'MCCB 3P',
-        'Category': '100A 25kA',
-        'Cat No': 'DS2B8B2',
-        'HSN Code': '8537',
-        'Make': 'Schneider',
-        'Unit': 'NOS',
-        'Base Price (INR)': 4250.00,
-        'Description': 'MCCB 3P 100A 25kA Schneider',
-      },
+    const headers = [
+      'Item Number',
+      'Item Name',
+      'Base Price (INR)',
+      'Item Description',
+      'Full Description',
+      'Cat No',
+      'HSN Code',
+      'Unit',
+      'Make',
     ];
 
-    const worksheet = XLSX.utils.json_to_sheet(templateData);
-    // Set column widths
+    const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+    // Set column widths matching table layout
     worksheet['!cols'] = [
-      { wch: 15 }, // Item Code
+      { wch: 15 }, // Item Number
       { wch: 20 }, // Item Name
-      { wch: 20 }, // Category
+      { wch: 18 }, // Base Price (INR)
+      { wch: 20 }, // Item Description
+      { wch: 30 }, // Full Description
       { wch: 18 }, // Cat No
       { wch: 14 }, // HSN Code
-      { wch: 15 }, // Make
       { wch: 10 }, // Unit
-      { wch: 18 }, // Base Price (INR)
-      { wch: 30 }, // Description
+      { wch: 15 }, // Make
     ];
 
     const workbook = XLSX.utils.book_new();
@@ -380,32 +367,33 @@ export const ItemTypesPage: React.FC = () => {
             return undefined;
           };
 
-          const code = String(getVal('item code', 'code', 'item number', 'itemno', 'item_code') || '').trim();
-          const name = String(getVal('item name', 'name', 'item', 'item_name') || '').trim();
-          const rating = String(getVal('category', 'rating', 'item description', 'item_description') || '').trim();
+          const code = String(getVal('item number', 'item code', 'code', 'itemno', 'item_code') || '').trim();
+          const name = String(getVal('item name', 'item', 'name', 'item_name') || '').trim();
+          const rating = String(getVal('item description', 'rating', 'category', 'item_description') || '').trim();
+          const full_description = String(getVal('full description', 'description', 'full_description') || '').trim();
           const cat_no = String(getVal('cat no', 'cat_no', 'catno', 'catalog no', 'catalog_no') || '').trim();
           const hsn_code = String(getVal('hsn code', 'hsn_code', 'hsn') || '').trim();
           const make = String(getVal('make', 'brand') || '').trim();
           const unit = String(getVal('unit', 'uom') || 'PCS').trim().toUpperCase();
           const rawPrice = getVal('base price (inr)', 'base price (₹)', 'base price', 'unit rate', 'price', 'rate', 'base_price', 'unit_rate');
           const base_price = rawPrice !== undefined && rawPrice !== '' ? Number(rawPrice) : 0;
-          const description = String(getVal('description', 'full description', 'full_description') || '').trim();
 
           return {
             code,
             name,
             rating,
+            full_description,
+            description: full_description,
             cat_no,
             hsn_code,
             make,
             unit,
             base_price,
-            description,
           };
         }).filter((item) => item.code && item.name); // Require code and name
 
         if (formattedItems.length === 0) {
-          message.error('No valid rows with Item Code and Item Name found in file!');
+          message.error('No valid rows with Item Number and Item Name found in file!');
           return;
         }
 
@@ -442,7 +430,7 @@ export const ItemTypesPage: React.FC = () => {
 
   const columns: ColumnsType<ItemType> = [
     {
-      title: 'Item Number (input)',
+      title: 'Item Number',
       dataIndex: 'code',
       key: 'code',
       width: 170,
@@ -450,10 +438,10 @@ export const ItemTypesPage: React.FC = () => {
       render: (code: string) => <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">{code}</span>,
     },
     {
-      title: 'Item (input)',
+      title: 'Item Name',
       dataIndex: 'name',
       key: 'name',
-      width: 140,
+      width: 160,
       render: (name: string) => <span className="font-bold app-text-main">{name}</span>,
     },
     {
@@ -472,7 +460,7 @@ export const ItemTypesPage: React.FC = () => {
       },
     },
     {
-      title: 'Item description (master)',
+      title: 'Item Description',
       dataIndex: 'rating',
       key: 'rating',
       width: 210,
@@ -486,16 +474,16 @@ export const ItemTypesPage: React.FC = () => {
         ),
     },
     {
-      title: 'Full description (input)',
+      title: 'Full Description',
       dataIndex: 'full_description',
       key: 'full_description',
-      width: 220,
+      width: 230,
       render: (fullDesc: string | null, record) => (
         <span className="text-sm app-text-secondary">{fullDesc || `${record.name} ${record.rating || ''}`.trim()}</span>
       ),
     },
     {
-      title: 'Cat No (input unique)',
+      title: 'Cat No',
       dataIndex: 'cat_no',
       key: 'cat_no',
       width: 180,
@@ -519,7 +507,7 @@ export const ItemTypesPage: React.FC = () => {
         ),
     },
     {
-      title: 'Unit (master)',
+      title: 'Unit',
       dataIndex: 'unit',
       key: 'unit',
       width: 130,
@@ -530,7 +518,7 @@ export const ItemTypesPage: React.FC = () => {
       ),
     },
     {
-      title: 'Make (master)',
+      title: 'Make',
       dataIndex: 'make',
       key: 'make',
       width: 150,
@@ -748,7 +736,7 @@ export const ItemTypesPage: React.FC = () => {
             </p>
             <p className="ant-upload-text text-sm font-semibold">Click or drag Excel/CSV file to this area</p>
             <p className="ant-upload-hint text-xs app-text-muted">
-              Supports .xlsx, .xls, and .csv files. Columns: Item Code, Item Name, Category, Cat No, Make, Unit, Base Price (INR), Description
+              Supports .xlsx, .xls, and .csv files. Columns: Item Number, Item Name, Base Price (INR), Item Description, Full Description, Cat No, HSN Code, Unit, Make
             </p>
           </Upload.Dragger>
 
@@ -767,8 +755,10 @@ export const ItemTypesPage: React.FC = () => {
                 size="small"
                 pagination={{ pageSize: 5 }}
                 columns={[
-                  { title: 'Code', dataIndex: 'code', key: 'code', render: (c) => <span className="font-mono font-bold text-indigo-600">{c}</span> },
-                  { title: 'Name', dataIndex: 'name', key: 'name', render: (n) => <span className="font-bold">{n}</span> },
+                  { title: 'Item Number', dataIndex: 'code', key: 'code', render: (c) => <span className="font-mono font-bold text-indigo-600">{c}</span> },
+                  { title: 'Item Name', dataIndex: 'name', key: 'name', render: (n) => <span className="font-bold">{n}</span> },
+                  { title: 'Item Description', dataIndex: 'rating', key: 'rating' },
+                  { title: 'Full Description', dataIndex: 'full_description', key: 'full_description' },
                   { title: 'Cat No', dataIndex: 'cat_no', key: 'cat_no' },
                   { title: 'Make', dataIndex: 'make', key: 'make' },
                   { title: 'Unit', dataIndex: 'unit', key: 'unit' },
@@ -914,7 +904,7 @@ export const ItemTypesPage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <Form.Item
               name="code"
-              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Item Number (input)</span>}
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Item Number</span>}
               rules={[{ required: true, message: 'Item Number is required' }]}
             >
               <Input prefix={<TagOutlined className="text-slate-400" />} placeholder="e.g. 1001" size="large" />
@@ -922,7 +912,7 @@ export const ItemTypesPage: React.FC = () => {
 
             <Form.Item
               name="make"
-              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Make (master)</span>}
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Make</span>}
               rules={[{ required: true, message: 'Make is required' }]}
             >
               <Select
@@ -984,15 +974,15 @@ export const ItemTypesPage: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <Form.Item
               name="name"
-              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Item (input)</span>}
-              rules={[{ required: true, message: 'Item name is required' }]}
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Item Name</span>}
+              rules={[{ required: true, message: 'Item Name is required' }]}
             >
               <Input placeholder="e.g. MCB" size="large" />
             </Form.Item>
 
             <Form.Item
               name="rating"
-              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Item description (master)</span>}
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Item Description</span>}
             >
               <Select
                 placeholder="Select or Search Item Description..."
@@ -1050,11 +1040,11 @@ export const ItemTypesPage: React.FC = () => {
             </Form.Item>
           </div>
 
-          {/* Row 3: Unit (master), Base Price (₹) & Cat No (input unique) */}
+          {/* Row 3: Unit, Base Price (₹) & Cat No */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-1">
             <Form.Item
               name="unit"
-              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Unit (master)</span>}
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Unit</span>}
               rules={[{ required: true, message: 'Unit is required' }]}
             >
               <Select
@@ -1127,7 +1117,7 @@ export const ItemTypesPage: React.FC = () => {
 
             <Form.Item
               name="cat_no"
-              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Cat No (input unique)</span>}
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Cat No</span>}
             >
               <Input prefix={<SafetyOutlined className="text-emerald-500" />} placeholder="e.g. DS1A7A1" size="large" />
             </Form.Item>
@@ -1145,7 +1135,7 @@ export const ItemTypesPage: React.FC = () => {
             <Form.Item
               name="full_description"
               className="sm:col-span-2"
-              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Full description (input)</span>}
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Full Description</span>}
             >
               <Input placeholder="e.g. MCB 2A 4P" size="large" />
             </Form.Item>
