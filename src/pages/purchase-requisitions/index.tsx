@@ -853,7 +853,7 @@ export const PurchaseRequisitionsPage: React.FC = () => {
                       >
                         {itemTypes.map((it) => (
                           <Select.Option key={it.id} value={it.id}>
-                            {it.code} - {it.name} ({it.cat_no || '-'})
+                            {it.code} - {it.name} {it.full_description ? `| ${it.full_description}` : ''} {it.cat_no ? `(Cat No: ${it.cat_no})` : ''} {it.make ? `[${it.make}]` : ''}
                           </Select.Option>
                         ))}
                       </Select>

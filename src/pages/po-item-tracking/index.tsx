@@ -497,7 +497,7 @@ export const POItemTrackingPage: React.FC = () => {
                 filterOption={filterSelectOption}
                 options={itemsList.map((item) => ({
                   value: item.id,
-                  label: `${item.code} - ${item.name}`,
+                  label: `${item.code} - ${item.name}${item.full_description ? ` | ${item.full_description}` : ''}${item.cat_no ? ` (Cat No: ${item.cat_no})` : ''}${item.make ? ` [${item.make}]` : ''}`,
                 }))}
               />
             </Col>

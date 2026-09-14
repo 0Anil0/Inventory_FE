@@ -1216,23 +1216,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                                   <Select
                                     placeholder="Select Material Item"
                                     showSearch
-                                    filterOption={(input, option) => {
-                                      const item = itemTypes.find((i) => i.id === option?.value);
-                                      if (!item) return false;
-                                      const q = input.toLowerCase().trim();
-                                      const name = (item.name || '').toLowerCase();
-                                      const code = (item.code || '').toLowerCase();
-                                      const catNo = (item.cat_no || '').toLowerCase();
-                                      const fullDesc = (item.full_description || '').toLowerCase();
-                                      const make = (item.make || '').toLowerCase();
-                                      return (
-                                        name.includes(q) ||
-                                        code.includes(q) ||
-                                        catNo.includes(q) ||
-                                        fullDesc.includes(q) ||
-                                        make.includes(q)
-                                      );
-                                    }}
+                                    filterOption={filterSelectOption}
                                     style={{ width: '100%', minWidth: 0 }}
                                     onChange={(val) => {
                                       const item = itemTypes.find((i) => i.id === val);
@@ -1251,7 +1235,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                                     }}
                                     options={itemTypes.map((it) => ({
                                       value: it.id,
-                                      label: `${it.name}${it.cat_no ? ` (${it.cat_no})` : ''}`,
+                                      label: `${it.code} - ${it.name}${it.full_description ? ` | ${it.full_description}` : ''}${it.cat_no ? ` (Cat No: ${it.cat_no})` : ''}${it.make ? ` [${it.make}]` : ''}`,
                                     }))}
                                   />
                                 </Form.Item>
@@ -1654,7 +1638,10 @@ export const PurchaseOrdersPage: React.FC = () => {
                                     {item.hsn_code || item.item_type?.hsn_code || '-'}
                                   </td>
                                   <td style={{ border: '1px solid #1e293b', padding: '9px 8px', fontWeight: 500, fontSize: '13px', verticalAlign: 'middle' }}>
-                                    {item.item_type?.name || 'Material Item'}
+                                    {item.item_type?.full_description || item.item_type?.name || 'Material Item'}
+                                    {item.item_type?.full_description && item.item_type?.name && item.item_type.name !== item.item_type.full_description && (
+                                      <span style={{ display: 'block', fontSize: '11px', color: '#64748b', marginTop: '1px' }}>({item.item_type.name})</span>
+                                    )}
                                     {item.rating && <span style={{ display: 'block', fontSize: '12px', color: '#475569', marginTop: '2px' }}>Rating: {item.rating}</span>}
                                   </td>
                                   <td style={{ border: '1px solid #1e293b', padding: '9px 6px', textAlign: 'center', fontWeight: 600, fontSize: '13px', verticalAlign: 'middle' }}>{item.make || item.item_type?.make || 'L&T'}</td>

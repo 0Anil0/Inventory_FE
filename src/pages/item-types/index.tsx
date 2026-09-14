@@ -308,7 +308,7 @@ export const ItemTypesPage: React.FC = () => {
       'Item Number',
       'Item Name',
       'Base Price (INR)',
-      'Item Description',
+      'Rating',
       'Full Description',
       'Cat No',
       'HSN Code',
@@ -322,7 +322,7 @@ export const ItemTypesPage: React.FC = () => {
       { wch: 15 }, // Item Number
       { wch: 20 }, // Item Name
       { wch: 18 }, // Base Price (INR)
-      { wch: 20 }, // Item Description
+      { wch: 20 }, // Rating
       { wch: 30 }, // Full Description
       { wch: 18 }, // Cat No
       { wch: 14 }, // HSN Code
@@ -460,7 +460,7 @@ export const ItemTypesPage: React.FC = () => {
       },
     },
     {
-      title: 'Item Description',
+      title: 'Rating',
       dataIndex: 'rating',
       key: 'rating',
       width: 210,
@@ -736,7 +736,7 @@ export const ItemTypesPage: React.FC = () => {
             </p>
             <p className="ant-upload-text text-sm font-semibold">Click or drag Excel/CSV file to this area</p>
             <p className="ant-upload-hint text-xs app-text-muted">
-              Supports .xlsx, .xls, and .csv files. Columns: Item Number, Item Name, Base Price (INR), Item Description, Full Description, Cat No, HSN Code, Unit, Make
+              Supports .xlsx, .xls, and .csv files. Columns: Item Number, Item Name, Base Price (INR), Rating, Full Description, Cat No, HSN Code, Unit, Make
             </p>
           </Upload.Dragger>
 
@@ -757,7 +757,7 @@ export const ItemTypesPage: React.FC = () => {
                 columns={[
                   { title: 'Item Number', dataIndex: 'code', key: 'code', render: (c) => <span className="font-mono font-bold text-indigo-600">{c}</span> },
                   { title: 'Item Name', dataIndex: 'name', key: 'name', render: (n) => <span className="font-bold">{n}</span> },
-                  { title: 'Item Description', dataIndex: 'rating', key: 'rating' },
+                  { title: 'Rating', dataIndex: 'rating', key: 'rating' },
                   { title: 'Full Description', dataIndex: 'full_description', key: 'full_description' },
                   { title: 'Cat No', dataIndex: 'cat_no', key: 'cat_no' },
                   { title: 'Make', dataIndex: 'make', key: 'make' },
@@ -836,9 +836,9 @@ export const ItemTypesPage: React.FC = () => {
             />
           </Form.Item>
 
-          <Form.Item name="rating" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Item Description (Rating)</span>}>
+          <Form.Item name="rating" label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Filter by Rating</span>}>
             <Select
-              placeholder="All Item Descriptions"
+              placeholder="All Ratings"
               allowClear
               showSearch
               filterOption={filterSelectOption}
@@ -970,7 +970,7 @@ export const ItemTypesPage: React.FC = () => {
             </Form.Item>
           </div>
 
-          {/* Row 2: Item Name & Item Description */}
+          {/* Row 2: Item Name & Rating */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
             <Form.Item
               name="name"
@@ -982,10 +982,10 @@ export const ItemTypesPage: React.FC = () => {
 
             <Form.Item
               name="rating"
-              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Item Description</span>}
+              label={<span className="font-semibold text-xs text-slate-700 dark:text-slate-200">Rating</span>}
             >
               <Select
-                placeholder="Select or Search Item Description..."
+                placeholder="Select or Search Rating..."
                 showSearch
                 allowClear
                 size="large"
@@ -1012,7 +1012,7 @@ export const ItemTypesPage: React.FC = () => {
                             onClick={() => handleCreateDescInline(searchDescText)}
                             className="text-purple-600 dark:text-purple-400 border-purple-300 dark:border-purple-700 font-semibold"
                           >
-                            + Create "{trimmed}" in Description Master
+                            + Create "{trimmed}" in Rating Master
                           </Button>
                         </div>
                       )}
@@ -1022,7 +1022,7 @@ export const ItemTypesPage: React.FC = () => {
                 notFoundContent={
                   searchDescText.trim().length > 0 ? (
                     <div className="p-3 text-center">
-                      <p className="text-slate-400 text-xs mb-2">No matching item description found</p>
+                      <p className="text-slate-400 text-xs mb-2">No matching rating found</p>
                       <Button
                         type="primary"
                         size="small"
@@ -1031,7 +1031,7 @@ export const ItemTypesPage: React.FC = () => {
                         onClick={() => handleCreateDescInline(searchDescText)}
                         className="bg-purple-600"
                       >
-                        Create "{searchDescText.trim()}" Master
+                        Create "{searchDescText.trim()}" Rating Master
                       </Button>
                     </div>
                   ) : undefined

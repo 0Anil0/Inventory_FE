@@ -926,11 +926,11 @@ const GRNPage: React.FC = () => {
                                 value={extra.item_type_id}
                                 onChange={(val) => handleExtraItemChange(extra.key, 'item_type_id', val)}
                               >
-                                {masterItems.map((m) => (
-                                  <Option key={m.id} value={m.id}>
-                                    <span className="font-mono text-indigo-800">{m.code}</span> - {m.name} ({m.make || 'Gen'})
-                                  </Option>
-                                ))}
+                                 {masterItems.map((m) => (
+                                   <Option key={m.id} value={m.id}>
+                                     <span className="font-mono text-indigo-800">{m.code}</span> - {m.name} {m.full_description ? `| ${m.full_description}` : ''} {m.cat_no ? `(Cat No: ${m.cat_no})` : ''} [{m.make || 'Gen'}]
+                                   </Option>
+                                 ))}
                               </Select>
                             </td>
                             <td className="p-2 border-r border-amber-200 text-center">
@@ -1199,8 +1199,12 @@ const GRNPage: React.FC = () => {
                       {item.item_type?.code || '-'}
                     </td>
                     <td className="border border-slate-900 p-2 font-medium">
-                      {item.item_type?.name}
+                      {item.item_type?.full_description || item.item_type?.name || 'Material Item'}
+                      {item.item_type?.full_description && item.item_type?.name && item.item_type.name !== item.item_type.full_description && (
+                        <span className="block text-[11px] text-slate-600">({item.item_type.name})</span>
+                      )}
                       {item.item_type?.cat_no && <span className="block text-[11px] text-slate-600">Cat: {item.item_type.cat_no}</span>}
+                      {item.item_type?.make && <span className="block text-[11px] text-indigo-700 font-semibold">Make: {item.item_type.make}</span>}
                     </td>
                     <td className="border border-slate-900 p-2 text-center font-mono font-bold text-slate-900">{item.received_qty}</td>
                     <td className="border border-slate-900 p-2 text-center">{item.item_type?.unit || 'Nos'}</td>
