@@ -35,6 +35,7 @@ import {
 import type { Project, ProjectInventory, ItemType } from '../../types/inventory';
 import { projectApi, inventoryApi, itemTypeApi, projectAssignmentApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
+import { filterSelectOption } from '../../utils/select.utils';
 
 export interface ProjectAssignmentRecord {
   id: number;
@@ -445,6 +446,8 @@ export const ProjectAssignmentsPage: React.FC = () => {
               onChange={setFilterProjectId}
               allowClear
               className="w-full"
+              showSearch
+              filterOption={filterSelectOption}
             >
               {projects.map((p) => {
                 const parent = p.parent || projects.find((parentP) => parentP.id === p.parent_id);

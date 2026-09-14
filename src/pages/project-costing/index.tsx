@@ -38,6 +38,7 @@ import type {
   CostingLedgerItem,
 } from '../../types/inventory';
 import { AppLayout } from '../../components/layout/AppLayout';
+import { filterSelectOption } from '../../utils/select.utils';
 
 const { Title, Text } = Typography;
 
@@ -77,12 +78,15 @@ export const ProjectCostingPage: React.FC = () => {
   };
 
   // Fetch Report Data
-  const fetchReport = async () => {
+  const fetchReport = async (overrideParams?: { projectId?: number; search?: string }) => {
     setLoading(true);
     try {
+      const pId = overrideParams && 'projectId' in overrideParams ? overrideParams.projectId : selectedProjectId;
+      const sQuery = overrideParams && 'search' in overrideParams ? overrideParams.search : searchQuery;
+
       const res = await reportApi.getProjectFinancialCosting({
-        project_id: selectedProjectId,
-        search: searchQuery,
+        project_id: pId,
+        search: sQuery,
       });
       if (res.success && res.report) {
         setReportData(res.report);
@@ -100,9 +104,13 @@ export const ProjectCostingPage: React.FC = () => {
     fetchProjects();
   }, []);
 
+  // Debounced search and project selection update
   useEffect(() => {
-    fetchReport();
-  }, [selectedProjectId]);
+    const timer = setTimeout(() => {
+      fetchReport();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [selectedProjectId, searchQuery]);
 
   const handleSearch = () => {
     fetchReport();
@@ -111,6 +119,7 @@ export const ProjectCostingPage: React.FC = () => {
   const handleReset = () => {
     setSelectedProjectId(undefined);
     setSearchQuery('');
+    fetchReport({ projectId: undefined, search: '' });
   };
 
   // Export to CSV
@@ -478,7 +487,7 @@ export const ProjectCostingPage: React.FC = () => {
               <Space wrap size="middle">
                 <Button
                   icon={<ReloadOutlined />}
-                  onClick={fetchReport}
+                  onClick={() => fetchReport()}
                   loading={loading}
                   style={{ borderRadius: '8px', background: 'rgba(255, 255, 255, 0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
                 >
@@ -526,6 +535,8 @@ export const ProjectCostingPage: React.FC = () => {
                 value={selectedProjectId}
                 onChange={(val) => setSelectedProjectId(val)}
                 size="large"
+                showSearch
+                filterOption={filterSelectOption}
               >
                 {projects.map((p) => (
                   <Select.Option key={p.id} value={p.id}>

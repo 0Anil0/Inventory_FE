@@ -25,6 +25,7 @@ import { poApproverApi, userApi } from '../../services/api';
 import type { POApprover } from '../../types/inventory';
 import type { User } from '../../types/auth';
 import { AppLayout } from '../../components/layout/AppLayout';
+import { filterSelectOption } from '../../utils/select.utils';
 
 export const ApproverConfigPage: React.FC = () => {
   const [approvers, setApprovers] = useState<POApprover[]>([]);
@@ -292,7 +293,7 @@ export const ApproverConfigPage: React.FC = () => {
               <Select
                 placeholder="Choose user from list..."
                 showSearch
-                optionFilterProp="children"
+                filterOption={filterSelectOption}
                 size="large"
                 disabled={!!editingApprover}
               >
@@ -314,7 +315,7 @@ export const ApproverConfigPage: React.FC = () => {
                 label="Approver Status"
                 rules={[{ required: true, message: 'Please select status' }]}
               >
-                <Select size="large">
+                <Select size="large" showSearch optionFilterProp="children">
                   <Select.Option value={true}>
                     <span className="font-bold text-emerald-600">ACTIVE</span>
                   </Select.Option>

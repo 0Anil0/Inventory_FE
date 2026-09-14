@@ -33,6 +33,7 @@ import {
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
 import { AppLayout } from '../../components/layout/AppLayout';
+import { filterSelectOption } from '../../utils/select.utils';
 import type {
   POItemTrackRecord,
   POItemTrackingResponse,
@@ -493,10 +494,7 @@ export const POItemTrackingPage: React.FC = () => {
                 className="w-full"
                 value={selectedItemTypeId}
                 onChange={(val) => setSelectedItemTypeId(val)}
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={filterSelectOption}
                 options={itemsList.map((item) => ({
                   value: item.id,
                   label: `${item.code} - ${item.name}`,
@@ -513,10 +511,7 @@ export const POItemTrackingPage: React.FC = () => {
                 className="w-full"
                 value={selectedVendorId}
                 onChange={(val) => setSelectedVendorId(val)}
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={filterSelectOption}
                 options={vendorsList.map((v) => ({
                   value: v.id,
                   label: v.name,
@@ -533,10 +528,7 @@ export const POItemTrackingPage: React.FC = () => {
                 className="w-full"
                 value={selectedProjectId}
                 onChange={(val) => setSelectedProjectId(val)}
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={filterSelectOption}
                 options={projectsList.map((p) => ({
                   value: p.id,
                   label: `${p.code} - ${p.name}`,
@@ -550,6 +542,8 @@ export const POItemTrackingPage: React.FC = () => {
                 className="w-full"
                 value={selectedStatus}
                 onChange={(val) => setSelectedStatus(val)}
+                showSearch
+                filterOption={filterSelectOption}
                 options={[
                   { value: 'ALL', label: 'All Statuses' },
                   { value: 'PENDING_APPROVAL', label: 'Pending' },

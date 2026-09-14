@@ -34,6 +34,7 @@ import {
 import type { Project, ProjectInventory, ItemType } from '../../types/inventory';
 import { projectApi, inventoryApi, itemTypeApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
+import { filterSelectOption } from '../../utils/select.utils';
 import { QuantityModal } from '../../components/inventory/QuantityModal';
 import { AddItemModal } from '../../components/inventory/AddItemModal';
 import { StockLedgerDrawer } from '../../components/inventory/StockLedgerDrawer';
@@ -403,6 +404,8 @@ export const InventoryTrackerPage: React.FC = () => {
                 size="middle"
                 variant="borderless"
                 loading={loading}
+                showSearch
+                filterOption={filterSelectOption}
               >
                 <Select.Option key={0} value={0}>
                   <span className="font-semibold text-indigo-600">📦 General Stock / Main Store</span>

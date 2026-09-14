@@ -3,6 +3,7 @@ import { Modal, Form, Select, DatePicker, Input, Button } from 'antd';
 import { FilterOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import type { Role } from '../../types/auth';
 import type { Project, Vendor } from '../../types/inventory';
+import { filterSelectOption } from '../../utils/select.utils';
 
 const { RangePicker } = DatePicker;
 
@@ -101,7 +102,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         {/* Project Site Filter */}
         {projects && projects.length > 0 && (
           <Form.Item name="project_id" label="Filter by Project Site">
-            <Select placeholder="All Project Sites" allowClear>
+            <Select placeholder="All Project Sites" allowClear showSearch filterOption={filterSelectOption}>
               <Select.Option value={null}>All Project Sites</Select.Option>
               {projects.map((p) => (
                 <Select.Option key={p.id} value={p.id}>
@@ -115,7 +116,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         {/* Supplier / Vendor Filter */}
         {vendors && vendors.length > 0 && (
           <Form.Item name="vendor_id" label="Filter by Supplier / Vendor">
-            <Select placeholder="All Suppliers" allowClear>
+            <Select placeholder="All Suppliers" allowClear showSearch filterOption={filterSelectOption}>
               <Select.Option value={null}>All Suppliers</Select.Option>
               {vendors.map((v) => (
                 <Select.Option key={v.id} value={v.id}>
@@ -129,7 +130,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         {/* Custom Status Filter */}
         {statusOptions && statusOptions.length > 0 && (
           <Form.Item name="status" label="Filter by Status">
-            <Select placeholder="All Statuses" allowClear>
+            <Select placeholder="All Statuses" allowClear showSearch filterOption={filterSelectOption}>
               <Select.Option value={null}>All Statuses</Select.Option>
               {statusOptions.map((s) => (
                 <Select.Option key={s.value} value={s.value}>
@@ -143,7 +144,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
         {/* User Role Filter */}
         {roles && roles.length > 0 && (
           <Form.Item name="role_id" label="Filter by User Role">
-            <Select placeholder="All Roles" allowClear>
+            <Select placeholder="All Roles" allowClear showSearch filterOption={filterSelectOption}>
               <Select.Option value={null}>All Roles</Select.Option>
               {roles.map((r) => (
                 <Select.Option key={r.id} value={r.id}>

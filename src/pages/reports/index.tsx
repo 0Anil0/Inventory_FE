@@ -33,9 +33,10 @@ import {
   HomeOutlined,
   RocketOutlined,
 } from '@ant-design/icons';
-import { reportApi, projectApi } from '../../services/api';
 import type { Project } from '../../types/inventory';
+import { reportApi, projectApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
+import { filterSelectOption } from '../../utils/select.utils';
 
 const { RangePicker } = DatePicker;
 
@@ -151,8 +152,11 @@ export const ReportsPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchReportData();
-  }, [reportType, selectedProjectId, healthFilter, dateRange]);
+    const timer = setTimeout(() => {
+      fetchReportData();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [reportType, selectedProjectId, healthFilter, dateRange, searchQuery]);
 
   // Export CSV Helper
   const handleExportCSV = () => {
@@ -891,6 +895,8 @@ export const ReportsPage: React.FC = () => {
               onChange={setSelectedProjectId}
               allowClear
               className="w-full"
+              showSearch
+              filterOption={filterSelectOption}
             >
               {projects.map((p) => (
                 <Select.Option key={p.id} value={p.id}>
@@ -900,7 +906,7 @@ export const ReportsPage: React.FC = () => {
             </Select>
 
             {(reportType === 'procurement-distribution' || reportType === 'stock-summary') && (
-              <Select value={healthFilter} onChange={setHealthFilter} className="w-full">
+              <Select value={healthFilter} onChange={setHealthFilter} className="w-full" showSearch filterOption={filterSelectOption}>
                 <Select.Option value="ALL">All Stock Health Levels</Select.Option>
                 <Select.Option value="IN_STOCK">🟢 Optimal In Stock</Select.Option>
                 <Select.Option value="LOW_STOCK">🟡 Low Stock Warning</Select.Option>

@@ -25,6 +25,7 @@ import * as XLSX from 'xlsx';
 import type { ItemType, Make, ItemDescription, Unit } from '../../types/inventory';
 import { itemTypeApi, makeApi, itemDescriptionApi, unitApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
+import { filterSelectOption } from '../../utils/select.utils';
 
 const { Text } = Typography;
 
@@ -823,6 +824,8 @@ export const ItemTypesPage: React.FC = () => {
             <Select
               placeholder="All Makes"
               allowClear
+              showSearch
+              filterOption={filterSelectOption}
               options={[
                 { value: 'ALL', label: 'All Makes' },
                 ...makes.map((m) => ({ value: m.name, label: m.name })),
@@ -834,6 +837,8 @@ export const ItemTypesPage: React.FC = () => {
             <Select
               placeholder="All Units"
               allowClear
+              showSearch
+              filterOption={filterSelectOption}
               options={[
                 { value: 'ALL', label: 'All Units' },
                 ...unitsList.map((u) => ({ value: u.code, label: `${u.name} (${u.code})` })),
@@ -846,6 +851,7 @@ export const ItemTypesPage: React.FC = () => {
               placeholder="All Item Descriptions"
               allowClear
               showSearch
+              filterOption={filterSelectOption}
               options={itemDescriptions.map((d) => ({ value: d.name, label: d.name }))}
             />
           </Form.Item>

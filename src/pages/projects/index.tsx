@@ -39,6 +39,7 @@ import {
 import type { Project } from '../../types/inventory';
 import { projectApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
+import { filterSelectOption } from '../../utils/select.utils';
 
 export const ProjectsPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -532,7 +533,7 @@ export const ProjectsPage: React.FC = () => {
               />
 
               {viewMode === 'TREE_TABLE' && (
-                <Select value={typeFilter} onChange={setTypeFilter} className="w-44">
+                <Select value={typeFilter} onChange={setTypeFilter} className="w-44" showSearch filterOption={filterSelectOption}>
                   <Select.Option value="ALL">All Categories</Select.Option>
                   <Select.Option value="MAIN">Main Projects</Select.Option>
                   <Select.Option value="SUB">Sub-Projects</Select.Option>
@@ -666,7 +667,7 @@ export const ProjectsPage: React.FC = () => {
               rules={[{ required: true, message: 'Please select parent project' }]}
               tooltip="The main project under which this sub-project/site belongs"
             >
-              <Select placeholder="Select Parent Project">
+              <Select placeholder="Select Parent Project" showSearch filterOption={filterSelectOption}>
                 {mainProjects
                   .filter((p) => !editingProject || p.id !== editingProject.id)
                   .map((p) => (

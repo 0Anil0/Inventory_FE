@@ -32,6 +32,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { storageApi } from '../../services/api';
 import type { StorageShelf, StorageRack } from '../../types/storage';
 import { AppLayout } from '../../components/layout/AppLayout';
+import { filterSelectOption } from '../../utils/select.utils';
 
 export const StorageLocationsPage: React.FC = () => {
   const [shelves, setShelves] = useState<StorageShelf[]>([]);
@@ -419,6 +420,8 @@ export const StorageLocationsPage: React.FC = () => {
               onChange={(v) => setSelectedZone(v)}
               size="large"
               className="w-48"
+              showSearch
+              filterOption={filterSelectOption}
             >
               <Select.Option value="ALL">All Store Zones ({shelves.length})</Select.Option>
               {zones.map((z) => (
@@ -811,7 +814,7 @@ export const StorageLocationsPage: React.FC = () => {
               label="Belongs to Shelf Cabinet Stand"
               rules={[{ required: true, message: 'Please select a shelf' }]}
             >
-              <Select placeholder="Choose shelf..." size="large">
+              <Select placeholder="Choose shelf..." size="large" showSearch filterOption={filterSelectOption}>
                 {shelves.map((s) => (
                   <Select.Option key={s.id} value={s.id}>
                     <span className="font-mono font-bold text-indigo-600">[{s.code}]</span> {s.name}{' '}

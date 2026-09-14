@@ -38,6 +38,7 @@ import {
 import dayjs from 'dayjs';
 import * as XLSX from 'xlsx';
 import { AppLayout } from '../../components/layout/AppLayout';
+import { filterSelectOption } from '../../utils/select.utils';
 import type {
   PurchaseRequisition,
   Project,
@@ -687,6 +688,8 @@ export const PurchaseRequisitionsPage: React.FC = () => {
                 onChange={(val) => setSelectedProject(val)}
                 allowClear
                 className="w-full sm:w-56"
+                showSearch
+                filterOption={filterSelectOption}
               >
                 {projects.map((p) => (
                   <Select.Option key={p.id} value={p.id}>
@@ -699,6 +702,8 @@ export const PurchaseRequisitionsPage: React.FC = () => {
                 value={selectedStatus}
                 onChange={(val) => setSelectedStatus(val)}
                 className="w-40"
+                showSearch
+                filterOption={filterSelectOption}
               >
                 <Select.Option value="ALL">All Statuses</Select.Option>
                 <Select.Option value="PENDING_APPROVAL">Pending Review</Select.Option>
@@ -712,6 +717,8 @@ export const PurchaseRequisitionsPage: React.FC = () => {
                 value={selectedPriority}
                 onChange={(val) => setSelectedPriority(val)}
                 className="w-36"
+                showSearch
+                filterOption={filterSelectOption}
               >
                 <Select.Option value="ALL">All Priorities</Select.Option>
                 <Select.Option value="LOW">Low</Select.Option>
@@ -779,7 +786,7 @@ export const PurchaseRequisitionsPage: React.FC = () => {
               </Col>
               <Col span={12}>
                 <Form.Item name="project_id" label="Target Project">
-                  <Select placeholder="Select Project (or leave for General Stock)" allowClear>
+                  <Select placeholder="Select Project (or leave for General Stock)" allowClear showSearch filterOption={filterSelectOption}>
                     {projects.map((p) => (
                       <Select.Option key={p.id} value={p.id}>
                         {p.code} - {p.name}
@@ -793,7 +800,7 @@ export const PurchaseRequisitionsPage: React.FC = () => {
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item name="priority" label="Priority" initialValue="MEDIUM">
-                  <Select>
+                  <Select showSearch filterOption={filterSelectOption}>
                     <Select.Option value="LOW">Low</Select.Option>
                     <Select.Option value="MEDIUM">Medium</Select.Option>
                     <Select.Option value="HIGH">High</Select.Option>
@@ -842,7 +849,7 @@ export const PurchaseRequisitionsPage: React.FC = () => {
                           );
                         }}
                         className="w-full"
-                        optionFilterProp="children"
+                        filterOption={filterSelectOption}
                       >
                         {itemTypes.map((it) => (
                           <Select.Option key={it.id} value={it.id}>
@@ -921,6 +928,8 @@ export const PurchaseRequisitionsPage: React.FC = () => {
                   value={reviewStatus}
                   onChange={(val) => setReviewStatus(val as any)}
                   className="w-56"
+                  showSearch
+                  filterOption={filterSelectOption}
                 >
                   <Select.Option value="APPROVED">Approve All (Ready for PO)</Select.Option>
                   <Select.Option value="PARTIALLY_APPROVED">Partially Approve Qty</Select.Option>
@@ -1046,7 +1055,7 @@ export const PurchaseRequisitionsPage: React.FC = () => {
                     label="Select Vendor"
                     rules={[{ required: true, message: 'Please select a vendor for this PO' }]}
                   >
-                    <Select placeholder="Choose Vendor...">
+                    <Select placeholder="Choose Vendor..." showSearch filterOption={filterSelectOption}>
                       {vendors.map((v) => (
                         <Select.Option key={v.id} value={v.id}>
                           {v.name}
@@ -1057,7 +1066,7 @@ export const PurchaseRequisitionsPage: React.FC = () => {
                 </Col>
                 <Col span={12}>
                   <Form.Item name="terms_and_conditions_id" label="Terms & Conditions Template">
-                    <Select placeholder="Select Terms Template..." allowClear>
+                    <Select placeholder="Select Terms Template..." allowClear showSearch filterOption={filterSelectOption}>
                       {terms.map((t) => (
                         <Select.Option key={t.id} value={t.id}>
                           {t.title}
@@ -1179,6 +1188,8 @@ export const PurchaseRequisitionsPage: React.FC = () => {
                           )
                         }
                         className="w-full text-xs"
+                        showSearch
+                        filterOption={filterSelectOption}
                       >
                         <Select.Option value={0}>0%</Select.Option>
                         <Select.Option value={5}>5%</Select.Option>

@@ -42,6 +42,7 @@ import dayjs from 'dayjs';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { useAuth } from '../../context/AuthContext';
+import { filterSelectOption } from '../../utils/select.utils';
 import type { PurchaseOrder, Vendor, Project, ItemType, TermsAndConditions } from '../../types/inventory';
 import type { StorageShelf } from '../../types/storage';
 import { poApi, vendorApi, projectApi, itemTypeApi, termsApi, poApproverApi, grnApi, storageApi } from '../../services/api';
@@ -1002,6 +1003,8 @@ export const PurchaseOrdersPage: React.FC = () => {
                 value={statusFilter}
                 onChange={(val) => setStatusFilter(val)}
                 className="w-40"
+                showSearch
+                filterOption={filterSelectOption}
                 options={[
                   { value: 'ALL', label: 'All Statuses' },
                   { value: 'ORDERED', label: 'Ordered (Pending)' },
@@ -1112,9 +1115,7 @@ export const PurchaseOrdersPage: React.FC = () => {
               <Select
                 placeholder="Select Vendor"
                 showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={filterSelectOption}
                 options={vendors.map((v) => ({
                   value: v.id,
                   label: `${v.name}${v.tax_id ? ` (GST: ${v.tax_id})` : ''}`,
@@ -1130,9 +1131,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                 placeholder="General / Select Project"
                 allowClear
                 showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={filterSelectOption}
                 options={projects.map((p) => ({
                   value: p.id,
                   label: `${p.code} - ${p.name}`,
@@ -1395,6 +1394,8 @@ export const PurchaseOrdersPage: React.FC = () => {
               >
                 <Select
                   placeholder="Select Terms & Conditions Template"
+                  showSearch
+                  filterOption={filterSelectOption}
                   onChange={(val) => {
                     const tmpl = termsTemplates.find((t) => t.id === val);
                     if (tmpl) setSelectedTerms(tmpl);
@@ -1911,6 +1912,8 @@ export const PurchaseOrdersPage: React.FC = () => {
                               value={currentInput.shelfId}
                               onChange={(val) => handleReceiveItemInputChange(item.id, 'shelfId', val)}
                               allowClear
+                              showSearch
+                              filterOption={filterSelectOption}
                             >
                               {receiveShelves.map((shelf) => (
                                 <Select.Option key={shelf.id} value={shelf.id}>
@@ -1928,6 +1931,8 @@ export const PurchaseOrdersPage: React.FC = () => {
                               disabled={!currentInput.shelfId}
                               onChange={(val) => handleReceiveItemInputChange(item.id, 'rackId', val)}
                               allowClear
+                              showSearch
+                              filterOption={filterSelectOption}
                             >
                               {availableRacks.map((rack) => (
                                 <Select.Option key={rack.id} value={rack.id}>

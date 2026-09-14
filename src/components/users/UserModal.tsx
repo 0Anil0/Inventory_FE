@@ -3,6 +3,7 @@ import { Modal, Form, Input, Select, message } from 'antd';
 import { UserOutlined, MailOutlined, LockOutlined, SafetyOutlined } from '@ant-design/icons';
 import type { User, Role } from '../../types/auth';
 import { encryptPasswordPayload } from '../../utils/crypto.utils';
+import { filterSelectOption } from '../../utils/select.utils';
 
 interface UserModalProps {
   isOpen: boolean;
@@ -113,7 +114,7 @@ export const UserModal: React.FC<UserModalProps> = ({
           label="Assigned Role"
           rules={[{ required: true, message: 'Please select a role' }]}
         >
-          <Select suffixIcon={<SafetyOutlined className="text-gray-400" />}>
+          <Select suffixIcon={<SafetyOutlined className="text-gray-400" />} showSearch filterOption={filterSelectOption}>
             {roles.map((r) => (
               <Select.Option key={r.id} value={r.id}>
                 <span className="font-semibold">{r.name.toUpperCase()}</span>

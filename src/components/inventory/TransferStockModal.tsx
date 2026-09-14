@@ -3,6 +3,7 @@ import { Modal, Form, Select, InputNumber, Input, message } from 'antd';
 import { SwapOutlined } from '@ant-design/icons';
 import type { Project, ProjectInventory } from '../../types/inventory';
 import { inventoryApi } from '../../services/api';
+import { filterSelectOption } from '../../utils/select.utils';
 
 interface TransferStockModalProps {
   isOpen: boolean;
@@ -89,7 +90,7 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
             label="Source Location (From)"
             rules={[{ required: true, message: 'Select source location' }]}
           >
-            <Select disabled placeholder="Source Location">
+            <Select disabled placeholder="Source Location" showSearch filterOption={filterSelectOption}>
               {allLocations.map((loc) => (
                 <Select.Option key={loc.id} value={loc.id}>
                   {loc.name} ({loc.code})
@@ -103,7 +104,7 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
             label="Destination Location (To)"
             rules={[{ required: true, message: 'Select target location' }]}
           >
-            <Select placeholder="Select Target Location">
+            <Select placeholder="Select Target Location" showSearch filterOption={filterSelectOption}>
               {allLocations
                 .filter((loc) => loc.id !== fromProjectId)
                 .map((loc) => (
@@ -122,6 +123,8 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
         >
           <Select
             placeholder="Select available item"
+            showSearch
+            filterOption={filterSelectOption}
             onChange={(val) => {
               const inv = currentInventory.find((i) => i.item_type_id === val);
               setSelectedItem(inv || null);

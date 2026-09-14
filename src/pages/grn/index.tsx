@@ -31,6 +31,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { AppLayout } from '../../components/layout/AppLayout';
+import { filterSelectOption } from '../../utils/select.utils';
 import { grnApi, poApi, storageApi, itemTypeApi, vendorApi, projectApi, unitApi, makeApi } from '../../services/api';
 import type { GoodsReceiptNote } from '../../types/grn';
 import type { PurchaseOrder, ItemType, Vendor, Project, Unit } from '../../types/inventory';
@@ -627,7 +628,7 @@ const GRNPage: React.FC = () => {
             <Select
               placeholder="All Vendors"
               showSearch
-              optionFilterProp="children"
+              filterOption={filterSelectOption}
               value={filterVendorId}
               onChange={(val) => setFilterVendorId(val)}
               allowClear
@@ -644,7 +645,7 @@ const GRNPage: React.FC = () => {
             <Select
               placeholder="All Projects / General Stock"
               showSearch
-              optionFilterProp="children"
+              filterOption={filterSelectOption}
               value={filterProjectId}
               onChange={(val) => setFilterProjectId(val)}
               allowClear
@@ -661,7 +662,7 @@ const GRNPage: React.FC = () => {
             <Select
               placeholder="All Purchase Orders"
               showSearch
-              optionFilterProp="children"
+              filterOption={filterSelectOption}
               value={filterPoId}
               onChange={(val) => setFilterPoId(val)}
               allowClear
@@ -725,7 +726,7 @@ const GRNPage: React.FC = () => {
                 <Select
                   placeholder="Select Approved PO"
                   showSearch
-                  optionFilterProp="children"
+                  filterOption={filterSelectOption}
                   onChange={handlePoChange}
                 >
                   {eligiblePOs.map((po) => (
@@ -832,6 +833,8 @@ const GRNPage: React.FC = () => {
                               value={currentInput.shelfId}
                               onChange={(val) => handleItemInputChange(item.id, 'shelfId', val)}
                               allowClear
+                              showSearch
+                              filterOption={filterSelectOption}
                             >
                               {shelves.map((shelf) => (
                                 <Option key={shelf.id} value={shelf.id}>
@@ -849,6 +852,8 @@ const GRNPage: React.FC = () => {
                               disabled={!currentInput.shelfId}
                               onChange={(val) => handleItemInputChange(item.id, 'rackId', val)}
                               allowClear
+                              showSearch
+                              filterOption={filterSelectOption}
                             >
                               {availableRacks.map((rack) => (
                                 <Option key={rack.id} value={rack.id}>
@@ -917,7 +922,7 @@ const GRNPage: React.FC = () => {
                                 size="small"
                                 className="w-full"
                                 showSearch
-                                optionFilterProp="children"
+                                filterOption={filterSelectOption}
                                 value={extra.item_type_id}
                                 onChange={(val) => handleExtraItemChange(extra.key, 'item_type_id', val)}
                               >
@@ -945,6 +950,8 @@ const GRNPage: React.FC = () => {
                                 value={extra.shelfId}
                                 onChange={(val) => handleExtraItemChange(extra.key, 'shelfId', val)}
                                 allowClear
+                                showSearch
+                                filterOption={filterSelectOption}
                               >
                                 {shelves.map((shelf) => (
                                   <Option key={shelf.id} value={shelf.id}>
@@ -962,6 +969,8 @@ const GRNPage: React.FC = () => {
                                 disabled={!extra.shelfId}
                                 onChange={(val) => handleExtraItemChange(extra.key, 'rackId', val)}
                                 allowClear
+                                showSearch
+                                filterOption={filterSelectOption}
                               >
                                 {availableRacks.map((rack) => (
                                   <Option key={rack.id} value={rack.id}>
