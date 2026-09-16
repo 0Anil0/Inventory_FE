@@ -216,11 +216,26 @@ export const InventoryTrackerPage: React.FC = () => {
   const filteredInventory = inventoryList.filter((inv) => {
     const item = inv.item_type;
     if (!item) return false;
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
+
+    const shelfName = (inv.shelf?.name || '').toLowerCase();
+    const shelfCode = (inv.shelf?.code || '').toLowerCase();
+    const rackName = (inv.rack?.name || '').toLowerCase();
+    const rackCode = (inv.rack?.rack_code || '').toLowerCase();
+    const locationText = `${shelfName} ${shelfCode} ${rackName} ${rackCode}`;
+
     const matchesSearch =
-      item.name.toLowerCase().includes(q) ||
-      item.code.toLowerCase().includes(q) ||
-      item.unit.toLowerCase().includes(q);
+      (item.name || '').toLowerCase().includes(q) ||
+      (item.code || '').toLowerCase().includes(q) ||
+      (item.cat_no || '').toLowerCase().includes(q) ||
+      (item.make || '').toLowerCase().includes(q) ||
+      (item.rating || '').toLowerCase().includes(q) ||
+      (item.full_description || '').toLowerCase().includes(q) ||
+      (item.description || '').toLowerCase().includes(q) ||
+      (item.unit || '').toLowerCase().includes(q) ||
+      locationText.includes(q) ||
+      inv.quantity.toString().includes(q);
 
     if (!matchesSearch) return false;
 
@@ -283,7 +298,7 @@ export const InventoryTrackerPage: React.FC = () => {
     {
       title: 'Item Code',
       key: 'code',
-      width: 140,
+      width: 130,
       fixed: 'left',
       render: (_, record) => (
         <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">
@@ -292,18 +307,32 @@ export const InventoryTrackerPage: React.FC = () => {
       ),
     },
     {
+      title: 'CAT NO.',
+      key: 'cat_no',
+      width: 140,
+      render: (_, record) => (
+        <span className="font-mono text-slate-700 dark:text-slate-200 font-semibold">
+          {record.item_type?.cat_no || '-'}
+        </span>
+      ),
+    },
+    {
       title: 'Item Name',
       key: 'name',
-      render: (_, record) => (
-        <div>
-          <div className="font-semibold text-slate-800 dark:text-slate-100">
-            {record.item_type?.name || 'Unnamed Item'}
+      render: (_, record) => {
+        const item = record.item_type;
+        const subtext = item?.full_description || item?.description || item?.rating;
+        return (
+          <div>
+            <div className="font-semibold text-slate-800 dark:text-slate-100">
+              {item?.name || 'Unnamed Item'}
+            </div>
+            {subtext && (
+              <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">{subtext}</div>
+            )}
           </div>
-          {record.item_type?.description && (
-            <div className="text-xs text-slate-500 dark:text-slate-400">{record.item_type.description}</div>
-          )}
-        </div>
-      ),
+        );
+      },
     },
     {
       title: 'Current Quantity',
@@ -520,7 +549,7 @@ export const InventoryTrackerPage: React.FC = () => {
           {/* Full Enterprise Toolbar: Keyword Search + Date Range + Filters */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <Input
-              placeholder="Search by code, name, or unit..."
+              placeholder="Search by code, CAT NO, name, location, rating..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

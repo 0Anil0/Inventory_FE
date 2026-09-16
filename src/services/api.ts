@@ -1176,7 +1176,36 @@ export const projectAssignmentApi = {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
-      });
+    });
+    return handleResponse(res);
+  },
+
+  update: async (
+    id: number,
+    data: {
+      from_project_id?: number | null;
+      to_project_id?: number;
+      assigned_to_person?: string;
+      notes?: string;
+      items?: Array<{
+        item_type_id: number;
+        quantity: number;
+      }>;
+    }
+  ): Promise<{ success: boolean; message: string; assignment: ProjectAssignment }> => {
+    const res = await fetch(`${API_BASE_URL}/project-assignments/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  delete: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const res = await fetch(`${API_BASE_URL}/project-assignments/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
     return handleResponse(res);
   },
 };

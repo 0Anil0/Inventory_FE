@@ -16,6 +16,9 @@ import {
   Statistic,
   message,
   Popover,
+  Popconfirm,
+  Space,
+  Tooltip,
 } from 'antd';
 const { RangePicker } = DatePicker;
 import type { ColumnsType } from 'antd/es/table';
@@ -31,6 +34,8 @@ import {
   CheckCircleFilled,
   AppstoreOutlined,
   ClusterOutlined,
+  EditOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import type { Project, ProjectInventory, ItemType } from '../../types/inventory';
 import { projectApi, inventoryApi, itemTypeApi, projectAssignmentApi } from '../../services/api';
@@ -50,6 +55,10 @@ export interface ProjectAssignmentRecord {
     item_type_id: number;
     item_name: string;
     item_code: string;
+    cat_no?: string;
+    make?: string;
+    rating?: string;
+    full_description?: string;
     unit: string;
     quantity: number;
   }>;
@@ -68,7 +77,8 @@ export const ProjectAssignmentsPage: React.FC = () => {
   const [filterProjectId, setFilterProjectId] = useState<number | null>(null);
   const [dateRange, setDateRange] = useState<[string, string] | null>(null);
 
-  // Modal states
+  // Modal & Edit states
+  const [editingAssignment, setEditingAssignment] = useState<ProjectAssignmentRecord | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isItemSelectOpen, setIsItemSelectOpen] = useState<boolean>(false);
   const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
@@ -100,13 +110,20 @@ export const ProjectAssignmentsPage: React.FC = () => {
             assigned_to_person: a.assigned_to_person,
             date: a.assignment_date || a.createdAt || new Date().toISOString(),
             notes: a.notes || undefined,
-            items: (a.items || []).map((i) => ({
-              item_type_id: i.item_type_id,
-              item_name: i.item_type?.name || 'Item',
-              item_code: i.item_type?.code || 'ITM',
-              unit: i.item_type?.unit || 'pcs',
-              quantity: i.quantity,
-            })),
+            items: (a.items || []).map((i) => {
+              const catItem = (itemRes.success && itemRes.items) ? itemRes.items.find((c) => c.id === i.item_type_id) : undefined;
+              return {
+                item_type_id: i.item_type_id,
+                item_name: i.item_type?.name || catItem?.name || 'Item',
+                item_code: i.item_type?.code || catItem?.code || 'ITM',
+                cat_no: i.item_type?.cat_no || catItem?.cat_no || undefined,
+                make: i.item_type?.make || catItem?.make || undefined,
+                rating: i.item_type?.rating || catItem?.rating || undefined,
+                full_description: i.item_type?.full_description || i.item_type?.description || catItem?.full_description || catItem?.description || undefined,
+                unit: i.item_type?.unit || catItem?.unit || 'pcs',
+                quantity: i.quantity,
+              };
+            }),
           }))
         );
       }
@@ -122,11 +139,44 @@ export const ProjectAssignmentsPage: React.FC = () => {
   }, []);
 
   const handleOpenCreateModal = () => {
+    setEditingAssignment(null);
     form.resetFields();
     setSelectedItemIds([]);
     setItemQuantities({});
     setIsItemSelectOpen(false);
     setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (record: ProjectAssignmentRecord) => {
+    setEditingAssignment(record);
+    form.setFieldsValue({
+      target_project_id: record.target_project_id,
+      assigned_to_person: record.assigned_to_person,
+      notes: record.notes,
+    });
+    const ids = record.items.map((i) => i.item_type_id);
+    const qMap: Record<number, number> = {};
+    record.items.forEach((i) => {
+      qMap[i.item_type_id] = i.quantity;
+    });
+    setSelectedItemIds(ids);
+    setItemQuantities(qMap);
+    setIsItemSelectOpen(false);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteAssignment = async (id: number) => {
+    try {
+      setLoading(true);
+      const res = await projectAssignmentApi.delete(id);
+      if (res.success) {
+        message.success(res.message || 'Assignment cancelled and stock restored to General Store');
+        loadInitialData();
+      }
+    } catch (err: any) {
+      message.error(err.message || 'Failed to delete assignment');
+      setLoading(false);
+    }
   };
 
   const handleItemSelectChange = (ids: number[]) => {
@@ -142,7 +192,13 @@ export const ProjectAssignmentsPage: React.FC = () => {
     setItemQuantities((prev) => ({ ...prev, [id]: qty }));
   };
 
-  const availableStoreStock = storeStock.filter((inv) => inv.quantity > 0);
+  // Build selectable items list: available warehouse stock PLUS items already in current assignment being edited
+  const selectableItemIds = Array.from(
+    new Set([
+      ...storeStock.filter((inv) => inv.quantity > 0).map((inv) => inv.item_type_id),
+      ...(editingAssignment ? editingAssignment.items.map((i) => i.item_type_id) : []),
+    ])
+  );
 
   const handleFormFinish = async (values: any) => {
     if (selectedItemIds.length === 0) {
@@ -150,14 +206,17 @@ export const ProjectAssignmentsPage: React.FC = () => {
       return;
     }
 
-    // Validate requested quantity against available General Store stock
+    // Validate requested quantity against available stock (considering existing assigned quantity if editing)
     for (const id of selectedItemIds) {
       const invItem = storeStock.find((inv) => inv.item_type_id === id);
+      const catItem = catalogItems.find((c) => c.id === id);
+      const currentAssignedQty = editingAssignment?.items.find((i) => i.item_type_id === id)?.quantity || 0;
+      const maxAvailable = (invItem ? invItem.quantity : 0) + currentAssignedQty;
       const requestedQty = itemQuantities[id] || 1;
-      const maxAvailable = invItem ? invItem.quantity : 0;
+
       if (requestedQty > maxAvailable) {
         message.error(
-          `Cannot assign ${requestedQty} for "${invItem?.item_type?.name || 'Item'}". Available in Store: ${maxAvailable}`
+          `Cannot assign ${requestedQty} for "${invItem?.item_type?.name || catItem?.name || 'Item'}". Available in Store: ${maxAvailable}`
         );
         return;
       }
@@ -171,24 +230,40 @@ export const ProjectAssignmentsPage: React.FC = () => {
         quantity: itemQuantities[id] || 1,
       }));
 
-      // Submit project assignment to backend API
-      const res = await projectAssignmentApi.create({
-        from_project_id: 0,
-        to_project_id: targetProjId,
-        assigned_to_person: values.assigned_to_person.trim(),
-        notes: values.notes ? values.notes.trim() : undefined,
-        items: itemsToAssign,
-      });
+      if (editingAssignment) {
+        const res = await projectAssignmentApi.update(editingAssignment.id, {
+          from_project_id: 0,
+          to_project_id: targetProjId,
+          assigned_to_person: values.assigned_to_person.trim(),
+          notes: values.notes ? values.notes.trim() : undefined,
+          items: itemsToAssign,
+        });
 
-      if (res.success && res.assignment) {
-        message.success(
-          `Successfully assigned ${selectedItemIds.length} item(s) to "${res.assignment.to_project?.name || 'Project'}"!`
-        );
-        setIsModalOpen(false);
-        loadInitialData(); // Refresh assignments list & store stock
+        if (res.success) {
+          message.success(res.message || 'Assignment updated successfully!');
+          setIsModalOpen(false);
+          setEditingAssignment(null);
+          loadInitialData();
+        }
+      } else {
+        const res = await projectAssignmentApi.create({
+          from_project_id: 0,
+          to_project_id: targetProjId,
+          assigned_to_person: values.assigned_to_person.trim(),
+          notes: values.notes ? values.notes.trim() : undefined,
+          items: itemsToAssign,
+        });
+
+        if (res.success && res.assignment) {
+          message.success(
+            `Successfully assigned ${selectedItemIds.length} item(s) to "${res.assignment.to_project?.name || 'Project'}"!`
+          );
+          setIsModalOpen(false);
+          loadInitialData();
+        }
       }
     } catch (err: any) {
-      message.error(err.message || 'Failed to submit material assignment');
+      message.error(err.message || 'Failed to save material assignment');
     } finally {
       setSubmitting(false);
     }
@@ -235,7 +310,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
     {
       title: 'S.No.',
       key: 'sno',
-      width: 80,
+      width: 70,
       align: 'center',
       render: (_, __, index: number) => (
         <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
@@ -301,20 +376,41 @@ export const ProjectAssignmentsPage: React.FC = () => {
       render: (_, record) => (
         <Popover
           content={
-            <div className="space-y-1.5 text-xs font-mono p-1">
+            <div className="space-y-2 text-xs p-1.5 max-w-md">
               {record.items.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between gap-4">
-                  <span className="text-slate-700 dark:text-slate-200">
-                    • {item.item_name} ({item.item_code})
-                  </span>
-                  <Tag color="indigo" className="font-bold border-none">
-                    {item.quantity} {item.unit}
-                  </Tag>
+                <div key={idx} className="border-b border-slate-100 dark:border-slate-800/80 pb-2 last:border-none last:pb-0">
+                  <div className="flex items-center justify-between gap-4 font-mono">
+                    <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">
+                      • {item.item_name} <span className="text-indigo-600 dark:text-indigo-400 font-semibold">({item.item_code})</span>
+                    </span>
+                    <Tag color="indigo" className="font-bold border-none shrink-0">
+                      {item.quantity} {item.unit}
+                    </Tag>
+                  </div>
+                  {(item.cat_no || item.make) && (
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      {item.cat_no && (
+                        <Tag color="emerald" className="font-mono text-[10px] border-none px-1.5 py-0 font-bold">
+                          Cat #: {item.cat_no}
+                        </Tag>
+                      )}
+                      {item.make && (
+                        <Tag color="blue" className="text-[10px] border-none px-1.5 py-0 font-semibold">
+                          {item.make}
+                        </Tag>
+                      )}
+                    </div>
+                  )}
+                  {item.full_description && (
+                    <div className="text-[11px] text-slate-600 dark:text-slate-400 font-mono mt-1 leading-relaxed">
+                      {item.full_description}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           }
-          title="Assigned Material Items Detail"
+          title={<span className="font-bold text-slate-800 dark:text-slate-100 font-['Outfit']">Assigned Material Items Detail</span>}
         >
           <Tag icon={<FileTextOutlined />} color="purple" className="cursor-pointer font-bold py-0.5 px-2.5">
             {record.items.length} Item Line(s) Dispatched
@@ -335,12 +431,40 @@ export const ProjectAssignmentsPage: React.FC = () => {
     {
       title: 'Status',
       key: 'status',
-      width: 140,
-      fixed: 'right',
+      width: 120,
       render: () => (
         <Tag icon={<CheckCircleFilled />} color="success" className="font-bold border-none py-0.5 px-2.5">
           ALLOCATED
         </Tag>
+      ),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 120,
+      fixed: 'right',
+      render: (_, record) => (
+        <Space size="small">
+          <Tooltip title="Edit Assignment">
+            <Button
+              type="text"
+              icon={<EditOutlined className="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400" />}
+              onClick={() => handleOpenEditModal(record)}
+            />
+          </Tooltip>
+          <Popconfirm
+            title="Cancel & Delete Assignment"
+            description="Are you sure you want to delete this assignment? Assigned stock will be returned to General Stock."
+            onConfirm={() => handleDeleteAssignment(record.id)}
+            okText="Yes, Delete"
+            cancelText="Cancel"
+            okButtonProps={{ danger: true }}
+          >
+            <Tooltip title="Delete & Revert Stock">
+              <Button type="text" danger icon={<DeleteOutlined />} />
+            </Tooltip>
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -506,19 +630,30 @@ export const ProjectAssignmentsPage: React.FC = () => {
         </Card>
       </main>
 
-      {/* NEW MATERIAL ASSIGNMENT MODAL */}
+      {/* CREATE / EDIT MATERIAL ASSIGNMENT MODAL */}
       <Modal
         title={
           <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-200 font-bold border-b pb-3">
             <SendOutlined className="text-indigo-600" />
-            <span>Create New Project Material Assignment</span>
+            <span>
+              {editingAssignment
+                ? `Edit Assignment (${editingAssignment.assignment_no})`
+                : 'Create New Project Material Assignment'}
+            </span>
           </div>
         }
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
+        onCancel={() => {
+          setIsModalOpen(false);
+          setEditingAssignment(null);
+        }}
         onOk={() => form.submit()}
         confirmLoading={submitting}
-        okText={`Assign ${selectedItemIds.length} Item${selectedItemIds.length === 1 ? '' : 's'} to Project`}
+        okText={
+          editingAssignment
+            ? 'Save Assignment Changes'
+            : `Assign ${selectedItemIds.length} Item${selectedItemIds.length === 1 ? '' : 's'} to Project`
+        }
         centered
         destroyOnClose
         width={720}
@@ -543,26 +678,26 @@ export const ProjectAssignmentsPage: React.FC = () => {
                   return name.includes(q) || code.includes(q) || parentName.includes(q);
                 }}
               >
-              {projects.map((p) => {
-                const parent = p.parent || projects.find((parentP) => parentP.id === p.parent_id);
-                return (
-                  <Select.Option key={p.id} value={p.id}>
-                    {p.parent_id && parent ? (
-                      <span>
-                        <span className="text-purple-400 font-semibold">📁 {parent.name}</span>
-                        <span className="text-slate-400 mx-1">➔</span>
-                        <span className="font-bold">🔀 {p.name}</span>{' '}
-                        <span className="text-xs font-mono text-indigo-400">({p.code})</span>
-                      </span>
-                    ) : (
-                      <span>
-                        <span className="font-bold">📁 {p.name}</span>{' '}
-                        <span className="text-xs font-mono text-indigo-400">({p.code})</span>
-                      </span>
-                    )}
-                  </Select.Option>
-                );
-              })}
+                {projects.map((p) => {
+                  const parent = p.parent || projects.find((parentP) => parentP.id === p.parent_id);
+                  return (
+                    <Select.Option key={p.id} value={p.id}>
+                      {p.parent_id && parent ? (
+                        <span>
+                          <span className="text-purple-400 font-semibold">📁 {parent.name}</span>
+                          <span className="text-slate-400 mx-1">➔</span>
+                          <span className="font-bold">🔀 {p.name}</span>{' '}
+                          <span className="text-xs font-mono text-indigo-400">({p.code})</span>
+                        </span>
+                      ) : (
+                        <span>
+                          <span className="font-bold">📁 {p.name}</span>{' '}
+                          <span className="text-xs font-mono text-indigo-400">({p.code})</span>
+                        </span>
+                      )}
+                    </Select.Option>
+                  );
+                })}
               </Select>
             </Form.Item>
 
@@ -577,7 +712,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
 
           <div className="flex items-center justify-between gap-3 mb-2">
             <label className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-              Select Material Items from Warehouse Stock (Available &gt; 0):
+              Select Material Items from Warehouse Stock:
             </label>
           </div>
 
@@ -589,16 +724,16 @@ export const ProjectAssignmentsPage: React.FC = () => {
               onSelect={() => setIsItemSelectOpen(false)}
               maxTagCount="responsive"
               placeholder={
-                availableStoreStock.length === 0
+                selectableItemIds.length === 0
                   ? 'No available stock items in General Store...'
-                  : 'Search & select available stock items...'
+                  : 'Search & select stock items...'
               }
               size="large"
               value={selectedItemIds}
               onChange={handleItemSelectChange}
               showSearch
               filterOption={(input, option) => {
-                const inv = availableStoreStock.find((i) => i.item_type_id === option?.value);
+                const inv = storeStock.find((i) => i.item_type_id === option?.value);
                 const catItem = catalogItems.find((c) => c.id === option?.value);
                 if (!inv && !catItem) return false;
 
@@ -622,20 +757,24 @@ export const ProjectAssignmentsPage: React.FC = () => {
                 );
               }}
               className="w-full"
-              disabled={availableStoreStock.length === 0}
+              disabled={selectableItemIds.length === 0}
             >
-              {availableStoreStock.map((inv) => {
-                const catItem = catalogItems.find((c) => c.id === inv.item_type_id);
-                const name = inv.item_type?.name || catItem?.name || 'Item';
-                const code = inv.item_type?.code || catItem?.code || '';
-                const catNo = inv.item_type?.cat_no || catItem?.cat_no;
-                const make = inv.item_type?.make || catItem?.make;
-                const fullDesc = inv.item_type?.full_description || catItem?.full_description;
-                const rating = inv.item_type?.rating || catItem?.rating;
-                const unit = inv.item_type?.unit || catItem?.unit || 'pcs';
+              {selectableItemIds.map((itemTypeId) => {
+                const inv = storeStock.find((i) => i.item_type_id === itemTypeId);
+                const catItem = catalogItems.find((c) => c.id === itemTypeId);
+                const name = inv?.item_type?.name || catItem?.name || 'Item';
+                const code = inv?.item_type?.code || catItem?.code || '';
+                const catNo = inv?.item_type?.cat_no || catItem?.cat_no;
+                const make = inv?.item_type?.make || catItem?.make;
+                const fullDesc = inv?.item_type?.full_description || catItem?.full_description;
+                const rating = inv?.item_type?.rating || catItem?.rating;
+                const unit = inv?.item_type?.unit || catItem?.unit || 'pcs';
+
+                const alreadyAssignedQty = editingAssignment?.items.find((i) => i.item_type_id === itemTypeId)?.quantity || 0;
+                const maxAvailable = (inv ? inv.quantity : 0) + alreadyAssignedQty;
 
                 return (
-                  <Select.Option key={inv.item_type_id} value={inv.item_type_id}>
+                  <Select.Option key={itemTypeId} value={itemTypeId}>
                     <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/50 last:border-none">
                       <div className="flex flex-col gap-0.5 min-w-0 pr-2">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -663,7 +802,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
                         )}
                       </div>
                       <Tag color="cyan" className="font-mono text-xs border-none font-bold shrink-0">
-                        Avail: {inv.quantity.toLocaleString()} {unit}
+                        Avail: {maxAvailable.toLocaleString()} {unit}
                       </Tag>
                     </div>
                   </Select.Option>
@@ -682,7 +821,9 @@ export const ProjectAssignmentsPage: React.FC = () => {
               {selectedItemIds.map((id) => {
                 const invItem = storeStock.find((inv) => inv.item_type_id === id);
                 const catItem = catalogItems.find((c) => c.id === id);
-                const maxAvailable = invItem ? invItem.quantity : 0;
+                const alreadyAssignedQty = editingAssignment?.items.find((i) => i.item_type_id === id)?.quantity || 0;
+                const maxAvailable = (invItem ? invItem.quantity : 0) + alreadyAssignedQty;
+
                 const currentVal = itemQuantities[id] || 1;
                 const isExceeded = currentVal > maxAvailable;
                 const itemName = invItem?.item_type?.name || catItem?.name || 'Item';
@@ -716,7 +857,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
                           )}
                         </div>
                         <div className="text-xs text-slate-600 dark:text-slate-400 font-mono mt-1">
-                          Available in Store:{' '}
+                          Available Stock:{' '}
                           <strong className="text-cyan-600 dark:text-cyan-400 font-bold font-mono">
                             {maxAvailable.toLocaleString()} {unitStr}
                           </strong>
@@ -736,7 +877,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
                     </div>
                     {isExceeded && (
                       <div className="text-[11px] text-rose-500 dark:text-rose-400 mt-2 font-semibold">
-                        ⚠️ Entered quantity exceeds available stock in General Store ({maxAvailable} {unitStr})
+                        ⚠️ Entered quantity exceeds available stock ({maxAvailable} {unitStr})
                       </div>
                     )}
                   </Card>
