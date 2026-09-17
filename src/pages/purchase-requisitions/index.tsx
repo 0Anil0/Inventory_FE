@@ -786,12 +786,17 @@ export const PurchaseRequisitionsPage: React.FC = () => {
               </Col>
               <Col span={12}>
                 <Form.Item name="project_id" label="Target Project">
-                  <Select placeholder="Select Project (or leave for General Stock)" allowClear showSearch filterOption={filterSelectOption}>
-                    {projects.map((p) => (
-                      <Select.Option key={p.id} value={p.id}>
-                        {p.code} - {p.name}
-                      </Select.Option>
-                    ))}
+                  <Select placeholder="Select Parent Project (or leave for General Stock)" allowClear showSearch filterOption={filterSelectOption}>
+                    <Select.Option key={0} value={0}>
+                      General Stock / Central Warehouse
+                    </Select.Option>
+                    {projects
+                      .filter((p) => !p.parent_id)
+                      .map((p) => (
+                        <Select.Option key={p.id} value={p.id}>
+                          {p.code} - {p.name}
+                        </Select.Option>
+                      ))}
                   </Select>
                 </Form.Item>
               </Col>

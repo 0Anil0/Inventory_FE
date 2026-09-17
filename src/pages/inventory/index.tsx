@@ -198,7 +198,7 @@ export const InventoryTrackerPage: React.FC = () => {
 
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
-    const projName = projects.find((p) => p.id === selectedProjectId)?.name || 'Project';
+    const projName = selectedProjectId === -1 ? 'All_Locations' : selectedProjectId === 0 ? 'General_Stock' : projects.find((p) => p.id === selectedProjectId)?.name || 'Project';
     link.setAttribute('href', encodedUri);
     link.setAttribute('download', `${projName}_Stock_Report_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
@@ -429,13 +429,16 @@ export const InventoryTrackerPage: React.FC = () => {
               <Select
                 value={selectedProjectId}
                 onChange={(val) => setSelectedProjectId(val)}
-                className="w-64"
+                className="w-72"
                 size="middle"
                 variant="borderless"
                 loading={loading}
                 showSearch
                 filterOption={filterSelectOption}
               >
+                <Select.Option key={-1} value={-1}>
+                  <span className="font-semibold text-emerald-600">🌐 All Locations (Total Stock)</span>
+                </Select.Option>
                 <Select.Option key={0} value={0}>
                   <span className="font-semibold text-indigo-600">📦 General Stock / Main Store</span>
                 </Select.Option>
