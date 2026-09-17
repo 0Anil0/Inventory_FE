@@ -42,7 +42,7 @@ import { TransferStockModal } from '../../components/inventory/TransferStockModa
 
 export const InventoryTrackerPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<number>(0);
+  const [selectedProjectId, setSelectedProjectId] = useState<number>(-1);
   const [inventoryList, setInventoryList] = useState<ProjectInventory[]>([]);
   const [catalogItemTypes, setCatalogItemTypes] = useState<ItemType[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
