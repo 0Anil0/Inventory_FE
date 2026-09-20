@@ -17,6 +17,7 @@ import type {
   ProjectCostingReport,
   POItemTrackingResponse,
   PurchaseRequisition,
+  InventoryLot,
 } from '../types/inventory';
 
 import type { StorageShelf, StorageRack } from '../types/storage';
@@ -1314,6 +1315,24 @@ export const prApi = {
   delete: async (id: number): Promise<{ success: boolean; message: string }> => {
     const res = await fetch(`${API_BASE_URL}/purchase-requisitions/${id}`, {
       method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+};
+
+// Inventory Lots API Client
+export const inventoryLotApi = {
+  getAvailableLots: async (params?: {
+    project_id?: number;
+    item_type_id?: number;
+  }): Promise<{ success: boolean; lots: InventoryLot[] }> => {
+    const query = new URLSearchParams();
+    if (params?.project_id) query.append('project_id', String(params.project_id));
+    if (params?.item_type_id) query.append('item_type_id', String(params.item_type_id));
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${API_BASE_URL}/inventory/lots${queryString}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(res);

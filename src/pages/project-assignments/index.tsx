@@ -19,6 +19,9 @@ import {
   Popconfirm,
   Space,
   Tooltip,
+  Divider,
+  Alert,
+  Spin,
 } from 'antd';
 const { RangePicker } = DatePicker;
 import type { ColumnsType } from 'antd/es/table';
@@ -36,9 +39,11 @@ import {
   ClusterOutlined,
   EditOutlined,
   DeleteOutlined,
+  DollarOutlined,
+  TagOutlined,
 } from '@ant-design/icons';
-import type { Project, ProjectInventory, ItemType } from '../../types/inventory';
-import { projectApi, inventoryApi, itemTypeApi, projectAssignmentApi } from '../../services/api';
+import type { Project, ProjectInventory, ItemType, InventoryLot } from '../../types/inventory';
+import { projectApi, inventoryApi, itemTypeApi, projectAssignmentApi, inventoryLotApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { filterSelectOption } from '../../utils/select.utils';
 
@@ -53,6 +58,11 @@ export interface ProjectAssignmentRecord {
   notes?: string;
   items: Array<{
     item_type_id: number;
+    lot_id?: number | null;
+    po_id?: number | null;
+    unit_price?: number | null;
+    total_cost?: number | null;
+    purchase_order?: { id: number; po_number: string } | null;
     item_name: string;
     item_code: string;
     cat_no?: string;
@@ -82,8 +92,12 @@ export const ProjectAssignmentsPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isItemSelectOpen, setIsItemSelectOpen] = useState<boolean>(false);
   const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
-  const [itemQuantities, setItemQuantities] = useState<Record<number, number>>({});
+  const [lotQuantities, setLotQuantities] = useState<Record<number, number>>({}); // lot_id -> quantity to assign
+  const [availableLots, setAvailableLots] = useState<InventoryLot[]>([]);
+  const [loadingLots, setLoadingLots] = useState<boolean>(false);
   const [form] = Form.useForm();
+
+  const selectedTargetProjectId = Form.useWatch('target_project_id', form);
 
   // Load projects, General Store stock, catalog items, AND persisted project assignments
   const loadInitialData = async () => {
@@ -91,7 +105,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
     try {
       const [projRes, stockRes, itemRes, assignRes] = await Promise.all([
         projectApi.getAll(),
-        inventoryApi.getByProject(0), // General Store Stock
+        inventoryApi.getByProject(0),
         itemTypeApi.getAll(),
         projectAssignmentApi.getAll(),
       ]);
@@ -108,12 +122,17 @@ export const ProjectAssignmentsPage: React.FC = () => {
             target_project: a.to_project,
             source_location_name: 'General Stock / Main Warehouse',
             assigned_to_person: a.assigned_to_person,
-            date: a.assignment_date || a.createdAt || new Date().toISOString(),
+            date: a.assignment_date || (a as any).createdAt || new Date().toISOString(),
             notes: a.notes || undefined,
             items: (a.items || []).map((i) => {
-              const catItem = (itemRes.success && itemRes.items) ? itemRes.items.find((c) => c.id === i.item_type_id) : undefined;
+              const catItem = itemRes.success && itemRes.items ? itemRes.items.find((c) => c.id === i.item_type_id) : undefined;
               return {
                 item_type_id: i.item_type_id,
+                lot_id: i.lot_id,
+                po_id: i.po_id,
+                unit_price: i.unit_price,
+                total_cost: i.total_cost,
+                purchase_order: i.purchase_order,
                 item_name: i.item_type?.name || catItem?.name || 'Item',
                 item_code: i.item_type?.code || catItem?.code || 'ITM',
                 cat_no: i.item_type?.cat_no || catItem?.cat_no || undefined,
@@ -138,11 +157,36 @@ export const ProjectAssignmentsPage: React.FC = () => {
     loadInitialData();
   }, []);
 
+  // Fetch available stock lots dynamically when target project is selected
+  useEffect(() => {
+    if (selectedTargetProjectId && isModalOpen) {
+      loadLotsForProject(selectedTargetProjectId);
+    } else {
+      setAvailableLots([]);
+    }
+  }, [selectedTargetProjectId, isModalOpen]);
+
+  const loadLotsForProject = async (projId: number) => {
+    setLoadingLots(true);
+    try {
+      const res = await inventoryLotApi.getAvailableLots({ project_id: projId });
+      if (res.success && res.lots) {
+        setAvailableLots(res.lots);
+      }
+    } catch (err: any) {
+      console.error('Failed to load stock lots for project:', err);
+      message.error('Failed to load stock lots for selected project');
+    } finally {
+      setLoadingLots(false);
+    }
+  };
+
   const handleOpenCreateModal = () => {
     setEditingAssignment(null);
     form.resetFields();
     setSelectedItemIds([]);
-    setItemQuantities({});
+    setLotQuantities({});
+    setAvailableLots([]);
     setIsItemSelectOpen(false);
     setIsModalOpen(true);
   };
@@ -154,13 +198,16 @@ export const ProjectAssignmentsPage: React.FC = () => {
       assigned_to_person: record.assigned_to_person,
       notes: record.notes,
     });
-    const ids = record.items.map((i) => i.item_type_id);
-    const qMap: Record<number, number> = {};
+    const idsSet = new Set<number>();
+    const lMap: Record<number, number> = {};
     record.items.forEach((i) => {
-      qMap[i.item_type_id] = i.quantity;
+      idsSet.add(i.item_type_id);
+      if (i.lot_id) {
+        lMap[i.lot_id] = i.quantity;
+      }
     });
-    setSelectedItemIds(ids);
-    setItemQuantities(qMap);
+    setSelectedItemIds(Array.from(idsSet));
+    setLotQuantities(lMap);
     setIsItemSelectOpen(false);
     setIsModalOpen(true);
   };
@@ -170,7 +217,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
       setLoading(true);
       const res = await projectAssignmentApi.delete(id);
       if (res.success) {
-        message.success(res.message || 'Assignment cancelled and stock restored to General Store');
+        message.success(res.message || 'Assignment cancelled and stock restored');
         loadInitialData();
       }
     } catch (err: any) {
@@ -181,54 +228,62 @@ export const ProjectAssignmentsPage: React.FC = () => {
 
   const handleItemSelectChange = (ids: number[]) => {
     setSelectedItemIds(ids);
-    const newMap = { ...itemQuantities };
-    ids.forEach((id) => {
-      if (newMap[id] === undefined) newMap[id] = 1;
-    });
-    setItemQuantities(newMap);
   };
 
-  const updateItemQty = (id: number, qty: number) => {
-    setItemQuantities((prev) => ({ ...prev, [id]: qty }));
+  const updateLotQty = (lotId: number, qty: number) => {
+    setLotQuantities((prev) => ({ ...prev, [lotId]: qty }));
   };
 
-  // Build selectable items list: available warehouse stock PLUS items already in current assignment being edited
+  // Build selectable items list: Only items that have available stock lots for selected target project
   const selectableItemIds = Array.from(
     new Set([
-      ...storeStock.filter((inv) => inv.quantity > 0).map((inv) => inv.item_type_id),
+      ...availableLots.filter((l) => l.available_qty > 0).map((l) => l.item_type_id),
       ...(editingAssignment ? editingAssignment.items.map((i) => i.item_type_id) : []),
     ])
   );
 
   const handleFormFinish = async (values: any) => {
-    if (selectedItemIds.length === 0) {
-      message.error('Please select at least one item to assign to the project');
+    if (!values.target_project_id) {
+      message.error('Please select a Target Project first');
       return;
     }
 
-    // Validate requested quantity against available stock (considering existing assigned quantity if editing)
-    for (const id of selectedItemIds) {
-      const invItem = storeStock.find((inv) => inv.item_type_id === id);
-      const catItem = catalogItems.find((c) => c.id === id);
-      const currentAssignedQty = editingAssignment?.items.find((i) => i.item_type_id === id)?.quantity || 0;
-      const maxAvailable = (invItem ? invItem.quantity : 0) + currentAssignedQty;
-      const requestedQty = itemQuantities[id] || 1;
+    if (selectedItemIds.length === 0) {
+      message.error('Please select at least one material item to assign');
+      return;
+    }
 
-      if (requestedQty > maxAvailable) {
-        message.error(
-          `Cannot assign ${requestedQty} for "${invItem?.item_type?.name || catItem?.name || 'Item'}". Available in Store: ${maxAvailable}`
-        );
-        return;
+    // Collect items to assign across all lots with qty > 0
+    const itemsToAssign: Array<{ item_type_id: number; lot_id: number; quantity: number }> = [];
+
+    for (const itemTypeId of selectedItemIds) {
+      const itemLots = availableLots.filter((l) => l.item_type_id === itemTypeId && l.available_qty > 0);
+      for (const lot of itemLots) {
+        const qty = Number(lotQuantities[lot.id] || 0);
+        if (qty > 0) {
+          if (qty > lot.available_qty) {
+            message.error(
+              `Entered quantity ${qty} exceeds available lot stock (${lot.available_qty}) for PO #${lot.purchase_order?.po_number || lot.id}`
+            );
+            return;
+          }
+          itemsToAssign.push({
+            item_type_id: itemTypeId,
+            lot_id: lot.id,
+            quantity: qty,
+          });
+        }
       }
+    }
+
+    if (itemsToAssign.length === 0) {
+      message.error('Please enter a quantity greater than 0 for at least one PO stock lot');
+      return;
     }
 
     setSubmitting(true);
     try {
       const targetProjId = Number(values.target_project_id);
-      const itemsToAssign = selectedItemIds.map((id) => ({
-        item_type_id: id,
-        quantity: itemQuantities[id] || 1,
-      }));
 
       if (editingAssignment) {
         const res = await projectAssignmentApi.update(editingAssignment.id, {
@@ -240,9 +295,8 @@ export const ProjectAssignmentsPage: React.FC = () => {
         });
 
         if (res.success) {
-          message.success(res.message || 'Assignment updated successfully!');
+          message.success(res.message || 'Assignment updated successfully');
           setIsModalOpen(false);
-          setEditingAssignment(null);
           loadInitialData();
         }
       } else {
@@ -254,179 +308,151 @@ export const ProjectAssignmentsPage: React.FC = () => {
           items: itemsToAssign,
         });
 
-        if (res.success && res.assignment) {
-          message.success(
-            `Successfully assigned ${selectedItemIds.length} item(s) to "${res.assignment.to_project?.name || 'Project'}"!`
-          );
+        if (res.success) {
+          message.success(res.message || 'Assignment created successfully');
           setIsModalOpen(false);
           loadInitialData();
         }
       }
     } catch (err: any) {
-      message.error(err.message || 'Failed to save material assignment');
+      message.error(err.message || 'Failed to save project assignment');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Filtered assignments list
-  const filteredAssignments = assignments.filter((rec) => {
-    const q = searchQuery.toLowerCase();
-    const projName = rec.target_project?.name || '';
-    const projCode = rec.target_project?.code || '';
-
-    const matchesSearch =
-      !q ||
-      rec.assignment_no.toLowerCase().includes(q) ||
-      rec.assigned_to_person.toLowerCase().includes(q) ||
-      projName.toLowerCase().includes(q) ||
-      projCode.toLowerCase().includes(q);
-
-    if (!matchesSearch) return false;
-
-    if (filterProjectId && rec.target_project_id !== filterProjectId) {
-      return false;
+  // Filtered assignments table list
+  const filteredAssignments = assignments.filter((a) => {
+    if (filterProjectId && a.target_project_id !== filterProjectId) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase().trim();
+      const matchNo = a.assignment_no.toLowerCase().includes(q);
+      const matchPerson = a.assigned_to_person.toLowerCase().includes(q);
+      const matchProj = a.target_project?.name?.toLowerCase().includes(q) || a.target_project?.code?.toLowerCase().includes(q);
+      const matchItems = a.items.some(
+        (i) => i.item_name.toLowerCase().includes(q) || i.item_code.toLowerCase().includes(q) || (i.cat_no && i.cat_no.toLowerCase().includes(q))
+      );
+      if (!matchNo && !matchPerson && !matchProj && !matchItems) return false;
     }
-
-    if (dateRange && rec.date) {
-      const recDate = new Date(rec.date).toISOString().slice(0, 10);
-      if (recDate < dateRange[0] || recDate > dateRange[1]) {
-        return false;
-      }
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      const d = new Date(a.date).getTime();
+      const start = new Date(dateRange[0]).getTime();
+      const end = new Date(dateRange[1]).getTime() + 86400000;
+      if (d < start || d > end) return false;
     }
-
     return true;
   });
 
-  // Calculate statistics
   const totalAssignmentsCount = assignments.length;
+  const uniqueProjectsAssigned = new Set(assignments.map((a) => a.target_project_id)).size;
   const totalUnitsDispatched = assignments.reduce(
-    (sum, a) => sum + a.items.reduce((iSum, item) => iSum + item.quantity, 0),
+    (sum, a) => sum + a.items.reduce((iSum, item) => iSum + Number(item.quantity || 0), 0),
     0
   );
-  const uniqueProjectsAssigned = new Set(assignments.map((a) => a.target_project_id)).size;
 
   const columns: ColumnsType<ProjectAssignmentRecord> = [
     {
-      title: 'S.No.',
-      key: 'sno',
-      width: 70,
-      align: 'center',
-      render: (_, __, index: number) => (
-        <span className="font-mono font-bold text-slate-500 dark:text-slate-400">
-          {index + 1}
-        </span>
-      ),
-    },
-    {
-      title: 'Assignment Ref #',
+      title: 'Ref Assignment #',
+      dataIndex: 'assignment_no',
       key: 'assignment_no',
-      width: 170,
-      fixed: 'left',
-      render: (_, record) => (
-        <div>
-          <div className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-sm">
-            {record.assignment_no}
-          </div>
-          <div className="text-xs text-slate-400 font-mono">
-            {new Date(record.date).toLocaleDateString()}
-          </div>
-        </div>
+      width: 160,
+      render: (text) => (
+        <Tag color="indigo" className="font-mono font-bold text-xs px-2 py-0.5 border-none">
+          {text}
+        </Tag>
       ),
     },
     {
-      title: 'Target Project / Sub-Site',
-      key: 'project',
+      title: 'Destination Project / Site',
+      key: 'target_project',
+      width: 220,
       render: (_, record) => {
         const proj = record.target_project;
-        if (!proj) return <span className="text-slate-400">Project #{record.target_project_id}</span>;
-        
-        const parentProj = proj.parent || projects.find((p) => p.id === proj.parent_id);
-        const isSub = !!proj.parent_id || !!parentProj;
+        const parent = proj?.parent || projects.find((p) => p.id === proj?.parent_id);
+
+        if (!proj) {
+          return <span className="text-slate-400 font-mono">Site #{record.target_project_id}</span>;
+        }
 
         return (
-          <div className="space-y-0.5">
-            {isSub && parentProj && (
-              <div className="text-xs font-semibold text-purple-600 dark:text-purple-300 flex items-center gap-1 font-['Outfit']">
-                <FolderOpenOutlined className="text-purple-400" />
-                <span>Parent: <strong className="font-bold underline">{parentProj.name}</strong></span>
-              </div>
+          <div className="flex flex-col gap-0.5">
+            {parent && (
+              <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                <FolderOpenOutlined /> {parent.name} ({parent.code})
+              </span>
             )}
-            <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 text-base font-['Outfit']">
-              {isSub ? (
-                <NodeIndexOutlined className="text-purple-500" />
-              ) : (
-                <FolderOpenOutlined className="text-indigo-500" />
-              )}
-              <span>{proj.name}</span>
-            </div>
-            <div className="flex items-center gap-2 mt-0.5">
-              <Tag color={isSub ? 'purple' : 'blue'} className="font-mono text-[10px] font-bold border-none">
-                {isSub ? 'SUB-PROJECT' : 'MAIN PROJECT'}
+            <span className="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center gap-1">
+              <NodeIndexOutlined className="text-indigo-500" /> {proj.name}
+              <Tag color="purple" className="font-mono text-[10px] ml-1 border-none">
+                {proj.code}
               </Tag>
-              <span className="text-xs font-mono text-indigo-600 dark:text-indigo-400">({proj.code})</span>
-            </div>
+            </span>
           </div>
         );
       },
     },
     {
-      title: 'Assigned Items Summary',
+      title: 'Assigned Items & PO Lot Rates',
       key: 'items',
       render: (_, record) => (
-        <Popover
-          content={
-            <div className="space-y-2 text-xs p-1.5 max-w-md">
-              {record.items.map((item, idx) => (
-                <div key={idx} className="border-b border-slate-100 dark:border-slate-800/80 pb-2 last:border-none last:pb-0">
-                  <div className="flex items-center justify-between gap-4 font-mono">
-                    <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">
-                      • {item.item_name} <span className="text-indigo-600 dark:text-indigo-400 font-semibold">({item.item_code})</span>
-                    </span>
-                    <Tag color="indigo" className="font-bold border-none shrink-0">
-                      {item.quantity} {item.unit}
+        <div className="flex flex-col gap-1.5 py-1">
+          {record.items.map((item, idx) => {
+            const lotRate = item.unit_price ? Number(item.unit_price) : 0;
+            const lineTotal = item.total_cost ? Number(item.total_cost) : (lotRate * item.quantity);
+
+            return (
+              <div
+                key={idx}
+                className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/5 text-xs"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-900 dark:text-slate-100">{item.item_name}</span>
+                  <span className="font-mono text-[11px] text-indigo-600 dark:text-indigo-400">({item.item_code})</span>
+                  {item.cat_no && (
+                    <Tag color="emerald" className="font-mono text-[10px] px-1 py-0 border-none font-semibold">
+                      Cat: {item.cat_no}
                     </Tag>
-                  </div>
-                  {(item.cat_no || item.make) && (
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                      {item.cat_no && (
-                        <Tag color="emerald" className="font-mono text-[10px] border-none px-1.5 py-0 font-bold">
-                          Cat #: {item.cat_no}
-                        </Tag>
-                      )}
-                      {item.make && (
-                        <Tag color="blue" className="text-[10px] border-none px-1.5 py-0 font-semibold">
-                          {item.make}
-                        </Tag>
-                      )}
-                    </div>
                   )}
-                  {item.full_description && (
-                    <div className="text-[11px] text-slate-600 dark:text-slate-400 font-mono mt-1 leading-relaxed">
-                      {item.full_description}
-                    </div>
+                  {item.purchase_order?.po_number && (
+                    <Tag color="purple" className="font-mono text-[10px] px-1 py-0 border-none font-semibold">
+                      {item.purchase_order.po_number}
+                    </Tag>
                   )}
                 </div>
-              ))}
-            </div>
-          }
-          title={<span className="font-bold text-slate-800 dark:text-slate-100 font-['Outfit']">Assigned Material Items Detail</span>}
-        >
-          <Tag icon={<FileTextOutlined />} color="purple" className="cursor-pointer font-bold py-0.5 px-2.5">
-            {record.items.length} Item Line(s) Dispatched
-          </Tag>
-        </Popover>
+
+                <div className="flex items-center gap-2 font-mono font-bold shrink-0">
+                  <span className="text-cyan-600 dark:text-cyan-400">
+                    {item.quantity} {item.unit}
+                  </span>
+                  {lotRate > 0 && (
+                    <span className="text-slate-500 text-[11px]">
+                      @ ₹{lotRate.toLocaleString('en-IN')}/unit = <span className="text-emerald-600 dark:text-emerald-400 font-bold">₹{lineTotal.toLocaleString('en-IN')}</span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       ),
     },
     {
-      title: 'Assigned To (Recipient)',
+      title: 'Recipient (Engineer / Team)',
       dataIndex: 'assigned_to_person',
       key: 'assigned_to_person',
-      render: (person: string) => (
-        <span className="font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-          <UserOutlined className="text-emerald-500" /> {person || 'Site Engineer'}
+      width: 180,
+      render: (text) => (
+        <span className="font-semibold text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5">
+          <UserOutlined className="text-slate-400" /> {text}
         </span>
       ),
+    },
+    {
+      title: 'Dispatch Date',
+      dataIndex: 'date',
+      key: 'date',
+      width: 130,
+      render: (text) => <span className="font-mono text-xs text-slate-500">{new Date(text).toLocaleDateString('en-IN')}</span>,
     },
     {
       title: 'Status',
@@ -454,7 +480,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
           </Tooltip>
           <Popconfirm
             title="Cancel & Delete Assignment"
-            description="Are you sure you want to delete this assignment? Assigned stock will be returned to General Stock."
+            description="Are you sure you want to delete this assignment? Assigned stock will be returned to General Stock lots."
             onConfirm={() => handleDeleteAssignment(record.id)}
             okText="Yes, Delete"
             cancelText="Cancel"
@@ -483,7 +509,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
                 Project Material Assignment & Dispatch Master
               </h1>
               <p className="text-xs app-text-muted mb-0">
-                Allocate warehouse inventory items directly to main projects and sub-project child sites
+                Allocate warehouse inventory items directly to main projects and sub-project child sites by PO stock lot & purchase rate
               </p>
             </div>
           </div>
@@ -630,160 +656,153 @@ export const ProjectAssignmentsPage: React.FC = () => {
         </Card>
       </main>
 
-      {/* CREATE / EDIT MATERIAL ASSIGNMENT MODAL */}
+      {/* Assignment Modal with REQUIRED PROJECT SELECTION FIRST & LOT-BASED PURCHASE RATES */}
       <Modal
         title={
-          <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-200 font-bold border-b pb-3">
-            <SendOutlined className="text-indigo-600" />
-            <span>
-              {editingAssignment
-                ? `Edit Assignment (${editingAssignment.assignment_no})`
-                : 'Create New Project Material Assignment'}
-            </span>
+          <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold font-['Outfit'] text-lg border-b pb-3 border-slate-200 dark:border-white/10">
+            <SendOutlined />
+            <span>{editingAssignment ? `Edit Assignment ${editingAssignment.assignment_no}` : 'New Project Material Assignment & Stock Dispatch'}</span>
           </div>
         }
         open={isModalOpen}
-        onCancel={() => {
-          setIsModalOpen(false);
-          setEditingAssignment(null);
-        }}
+        onCancel={() => setIsModalOpen(false)}
         onOk={() => form.submit()}
         confirmLoading={submitting}
-        okText={
-          editingAssignment
-            ? 'Save Assignment Changes'
-            : `Assign ${selectedItemIds.length} Item${selectedItemIds.length === 1 ? '' : 's'} to Project`
-        }
-        centered
+        okText={editingAssignment ? 'Save Changes' : 'Dispatch & Assign Material'}
+        width={920}
         destroyOnClose
-        width={720}
+        className="top-6"
       >
-        <Form form={form} layout="vertical" onFinish={handleFormFinish} className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Form.Item
-              name="target_project_id"
-              label="Destination Project / Sub-Site"
-              rules={[{ required: true, message: 'Please select target project or site' }]}
-            >
-              <Select
-                showSearch
-                placeholder="Select Target Project or Site"
-                filterOption={(input, option) => {
-                  const proj = projects.find((p) => p.id === option?.value);
-                  if (!proj) return false;
-                  const q = input.toLowerCase().trim();
-                  const name = (proj.name || '').toLowerCase();
-                  const code = (proj.code || '').toLowerCase();
-                  const parentName = (proj.parent?.name || '').toLowerCase();
-                  return name.includes(q) || code.includes(q) || parentName.includes(q);
-                }}
-              >
-                {projects.map((p) => {
-                  const parent = p.parent || projects.find((parentP) => parentP.id === p.parent_id);
-                  return (
-                    <Select.Option key={p.id} value={p.id}>
-                      {p.parent_id && parent ? (
-                        <span>
-                          <span className="text-purple-400 font-semibold">📁 {parent.name}</span>
-                          <span className="text-slate-400 mx-1">➔</span>
-                          <span className="font-bold">🔀 {p.name}</span>{' '}
-                          <span className="text-xs font-mono text-indigo-400">({p.code})</span>
-                        </span>
-                      ) : (
-                        <span>
-                          <span className="font-bold">📁 {p.name}</span>{' '}
-                          <span className="text-xs font-mono text-indigo-400">({p.code})</span>
-                        </span>
-                      )}
-                    </Select.Option>
-                  );
-                })}
-              </Select>
-            </Form.Item>
+        <Form form={form} layout="vertical" onFinish={handleFormFinish} className="mt-4 flex flex-col gap-2">
+          {/* STEP 1: TARGET PROJECT SELECTION (REQUIRED FIRST) */}
+          <div className="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/20 mb-2">
+            <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-2 flex items-center gap-1.5">
+              <NodeIndexOutlined /> Step 1: Select Target Project / Site First (Required)
+            </div>
 
-            <Form.Item
-              name="assigned_to_person"
-              label="Assigned To (Site Engineer / Recipient)"
-              rules={[{ required: true, message: 'Please enter recipient name' }]}
-            >
-              <Input placeholder="e.g. Er. Suresh Sharma / Subcontractor Team" />
-            </Form.Item>
+            <Row gutter={16}>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="target_project_id"
+                  label="Target Destination Project / Sub-site"
+                  rules={[{ required: true, message: 'Please select a Target Project first' }]}
+                  className="mb-0"
+                >
+                  <Select
+                    placeholder="-- Select Target Project First --"
+                    size="large"
+                    showSearch
+                    filterOption={filterSelectOption}
+                    className="w-full"
+                    onChange={() => {
+                      setSelectedItemIds([]);
+                      setLotQuantities({});
+                    }}
+                  >
+                    {projects.map((p) => {
+                      const parent = p.parent || projects.find((parentP) => parentP.id === p.parent_id);
+                      return (
+                        <Select.Option key={p.id} value={p.id}>
+                          {p.parent_id && parent ? (
+                            <span>
+                              <span className="text-purple-400 font-semibold">📁 {parent.name}</span>
+                              <span className="text-slate-400 mx-1">➔</span>
+                              <span className="font-bold">🔀 {p.name}</span>{' '}
+                              <span className="text-xs font-mono text-indigo-400">({p.code})</span>
+                            </span>
+                          ) : (
+                            <span>
+                              <span className="font-bold">📁 {p.name}</span>{' '}
+                              <span className="text-xs font-mono text-indigo-400">({p.code})</span>
+                            </span>
+                          )}
+                        </Select.Option>
+                      );
+                    })}
+                  </Select>
+                </Form.Item>
+              </Col>
+
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="assigned_to_person"
+                  label="Assigned To (Site Engineer / Recipient)"
+                  rules={[{ required: true, message: 'Please enter recipient name' }]}
+                  className="mb-0"
+                >
+                  <Input size="large" placeholder="e.g. Er. Suresh Sharma / Subcontractor Team" />
+                </Form.Item>
+              </Col>
+            </Row>
           </div>
 
-          <div className="flex items-center justify-between gap-3 mb-2">
-            <label className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-              Select Material Items from Warehouse Stock:
+          {/* STEP 2: SELECT MATERIAL ITEMS */}
+          <div className="flex items-center justify-between gap-3 mb-1">
+            <label className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+              <AppstoreOutlined className="text-indigo-500" /> Step 2: Select Material Items Available for Target Project:
             </label>
+            {loadingLots && <Spin size="small" />}
           </div>
 
-          <Form.Item name="selected_item_ids">
-            <Select
-              mode="multiple"
-              open={isItemSelectOpen}
-              onDropdownVisibleChange={(open) => setIsItemSelectOpen(open)}
-              onSelect={() => setIsItemSelectOpen(false)}
-              maxTagCount="responsive"
-              placeholder={
-                selectableItemIds.length === 0
-                  ? 'No available stock items in General Store...'
-                  : 'Search & select stock items...'
-              }
-              size="large"
-              value={selectedItemIds}
-              onChange={handleItemSelectChange}
-              showSearch
-              filterOption={(input, option) => {
-                const inv = storeStock.find((i) => i.item_type_id === option?.value);
-                const catItem = catalogItems.find((c) => c.id === option?.value);
-                if (!inv && !catItem) return false;
+          {!selectedTargetProjectId ? (
+            <Alert
+              message="Please select a Target Project above first"
+              description="Inventory items and PO stock lots will load specifically for the selected project once chosen."
+              type="info"
+              showIcon
+              className="mb-3 rounded-xl"
+            />
+          ) : (
+            <Form.Item name="selected_item_ids" className="mb-2">
+              <Select
+                mode="multiple"
+                open={isItemSelectOpen}
+                onDropdownVisibleChange={(open) => setIsItemSelectOpen(open)}
+                onSelect={() => setIsItemSelectOpen(false)}
+                maxTagCount="responsive"
+                placeholder={
+                  selectableItemIds.length === 0
+                    ? 'No available PO stock lots or General stock for this project...'
+                    : 'Search & select stock items...'
+                }
+                size="large"
+                value={selectedItemIds}
+                onChange={handleItemSelectChange}
+                showSearch
+                filterOption={(input, option) => {
+                  const inv = storeStock.find((i) => i.item_type_id === option?.value);
+                  const catItem = catalogItems.find((c) => c.id === option?.value);
+                  if (!inv && !catItem) return false;
 
-                const q = input.toLowerCase().trim();
-                const name = (inv?.item_type?.name || catItem?.name || '').toLowerCase();
-                const code = (inv?.item_type?.code || catItem?.code || '').toLowerCase();
-                const fullDesc = (inv?.item_type?.full_description || catItem?.full_description || '').toLowerCase();
-                const catNo = (inv?.item_type?.cat_no || catItem?.cat_no || '').toLowerCase();
-                const rating = (inv?.item_type?.rating || catItem?.rating || '').toLowerCase();
-                const make = (inv?.item_type?.make || catItem?.make || '').toLowerCase();
-                const unit = (inv?.item_type?.unit || catItem?.unit || '').toLowerCase();
+                  const q = input.toLowerCase().trim();
+                  const name = (inv?.item_type?.name || catItem?.name || '').toLowerCase();
+                  const code = (inv?.item_type?.code || catItem?.code || '').toLowerCase();
+                  const catNo = (inv?.item_type?.cat_no || catItem?.cat_no || '').toLowerCase();
+                  const make = (inv?.item_type?.make || catItem?.make || '').toLowerCase();
 
-                return (
-                  name.includes(q) ||
-                  code.includes(q) ||
-                  fullDesc.includes(q) ||
-                  catNo.includes(q) ||
-                  rating.includes(q) ||
-                  make.includes(q) ||
-                  unit.includes(q)
-                );
-              }}
-              className="w-full"
-              disabled={selectableItemIds.length === 0}
-            >
-              {selectableItemIds.map((itemTypeId) => {
-                const inv = storeStock.find((i) => i.item_type_id === itemTypeId);
-                const catItem = catalogItems.find((c) => c.id === itemTypeId);
-                const name = inv?.item_type?.name || catItem?.name || 'Item';
-                const code = inv?.item_type?.code || catItem?.code || '';
-                const catNo = inv?.item_type?.cat_no || catItem?.cat_no;
-                const make = inv?.item_type?.make || catItem?.make;
-                const fullDesc = inv?.item_type?.full_description || catItem?.full_description;
-                const rating = inv?.item_type?.rating || catItem?.rating;
-                const unit = inv?.item_type?.unit || catItem?.unit || 'pcs';
+                  return name.includes(q) || code.includes(q) || catNo.includes(q) || make.includes(q);
+                }}
+                className="w-full"
+                disabled={!selectedTargetProjectId || selectableItemIds.length === 0}
+              >
+                {selectableItemIds.map((itemTypeId) => {
+                  const inv = storeStock.find((i) => i.item_type_id === itemTypeId);
+                  const catItem = catalogItems.find((c) => c.id === itemTypeId);
+                  const name = inv?.item_type?.name || catItem?.name || 'Item';
+                  const code = inv?.item_type?.code || catItem?.code || '';
+                  const catNo = inv?.item_type?.cat_no || catItem?.cat_no;
+                  const make = inv?.item_type?.make || catItem?.make;
+                  const unit = inv?.item_type?.unit || catItem?.unit || 'pcs';
 
-                const alreadyAssignedQty = editingAssignment?.items.find((i) => i.item_type_id === itemTypeId)?.quantity || 0;
-                const maxAvailable = (inv ? inv.quantity : 0) + alreadyAssignedQty;
+                  const itemLots = availableLots.filter((l) => l.item_type_id === itemTypeId && l.available_qty > 0);
+                  const totalAvail = itemLots.reduce((sum, l) => sum + Number(l.available_qty || 0), 0);
 
-                return (
-                  <Select.Option key={itemTypeId} value={itemTypeId}>
-                    <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/50 last:border-none">
-                      <div className="flex flex-col gap-0.5 min-w-0 pr-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">
-                            {name}
-                          </span>
-                          <span className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400">
-                            ({code})
-                          </span>
+                  return (
+                    <Select.Option key={itemTypeId} value={itemTypeId}>
+                      <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/50 last:border-none">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">{name}</span>
+                          <span className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400">({code})</span>
                           {catNo && (
                             <Tag color="emerald" className="font-mono text-[11px] border-none px-1.5 py-0 font-semibold">
                               Cat: {catNo}
@@ -795,98 +814,149 @@ export const ProjectAssignmentsPage: React.FC = () => {
                             </Tag>
                           )}
                         </div>
-                        {(fullDesc || rating) && (
-                          <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                            {fullDesc || rating}
-                          </div>
-                        )}
-                      </div>
-                      <Tag color="cyan" className="font-mono text-xs border-none font-bold shrink-0">
-                        Avail: {maxAvailable.toLocaleString()} {unit}
-                      </Tag>
-                    </div>
-                  </Select.Option>
-                );
-              })}
-            </Select>
-          </Form.Item>
 
-          {/* Quantity Input Cards */}
+                        <div className="flex items-center gap-1.5">
+                          <Tag color="purple" className="font-mono text-xs font-bold border-none">
+                            {itemLots.length} Stock Lot(s) Available
+                          </Tag>
+                          <Tag color="indigo" className="font-mono text-xs font-bold border-none py-0.5 px-2">
+                            Total: {totalAvail} {unit}
+                          </Tag>
+                        </div>
+                      </div>
+                    </Select.Option>
+                  );
+                })}
+              </Select>
+            </Form.Item>
+          )}
+
+          {/* STEP 3: STOCK LOTS ASSIGNMENT QUANTITY MULTI-INPUT CARDS */}
           {selectedItemIds.length > 0 && (
-            <div className="mt-4 flex flex-col gap-3 max-h-72 overflow-y-auto pr-1">
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
-                Set Assignment Quantity for Selected Items ({selectedItemIds.length}):
+            <div className="mt-2 flex flex-col gap-3 max-h-80 overflow-y-auto pr-1">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1 flex items-center justify-between">
+                <span>Set Assignment Quantity Per PO Stock Lot ({selectedItemIds.length} items selected):</span>
+                <span className="text-indigo-500 font-semibold">Assign from single or multiple PO lots as needed</span>
               </div>
 
               {selectedItemIds.map((id) => {
                 const invItem = storeStock.find((inv) => inv.item_type_id === id);
                 const catItem = catalogItems.find((c) => c.id === id);
-                const alreadyAssignedQty = editingAssignment?.items.find((i) => i.item_type_id === id)?.quantity || 0;
-                const maxAvailable = (invItem ? invItem.quantity : 0) + alreadyAssignedQty;
-
-                const currentVal = itemQuantities[id] || 1;
-                const isExceeded = currentVal > maxAvailable;
                 const itemName = invItem?.item_type?.name || catItem?.name || 'Item';
                 const itemCode = invItem?.item_type?.code || catItem?.code || '';
                 const catNo = invItem?.item_type?.cat_no || catItem?.cat_no;
                 const unitStr = invItem?.item_type?.unit || catItem?.unit || 'pcs';
 
+                const itemLots = availableLots.filter((l) => l.item_type_id === id && l.available_qty > 0);
+                const totalAssignedForThisItem = itemLots.reduce(
+                  (sum, l) => sum + Number(lotQuantities[l.id] || 0),
+                  0
+                );
+
                 return (
                   <Card
                     key={id}
                     size="small"
-                    className={`bg-slate-50 dark:bg-slate-900/60 border rounded-xl transition-all ${
-                      isExceeded
-                        ? 'border-rose-500/80 bg-rose-50 dark:bg-rose-950/20'
-                        : 'border-slate-200 dark:border-white/10'
-                    }`}
+                    className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-xl transition-all"
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
+                    <div className="flex flex-col gap-3">
+                      {/* Item Info Header */}
+                      <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-white/5 pb-2">
                         <div className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2 flex-wrap">
-                          <span>{itemName}</span>
-                          {itemCode && (
-                            <span className="text-xs font-mono font-semibold text-indigo-600 dark:text-indigo-400">
-                              ({itemCode})
-                            </span>
-                          )}
+                          <Tag color="indigo" className="font-mono text-xs font-bold border-none px-2">
+                            {itemCode}
+                          </Tag>
+                          <span className="text-base">{itemName}</span>
                           {catNo && (
                             <Tag color="emerald" className="font-mono text-[11px] border-none px-1.5 py-0 font-semibold">
                               Cat: {catNo}
                             </Tag>
                           )}
                         </div>
-                        <div className="text-xs text-slate-600 dark:text-slate-400 font-mono mt-1">
-                          Available Stock:{' '}
-                          <strong className="text-cyan-600 dark:text-cyan-400 font-bold font-mono">
-                            {maxAvailable.toLocaleString()} {unitStr}
-                          </strong>
+
+                        <div className="flex items-center gap-2 font-mono text-xs font-bold">
+                          <span className="text-slate-500">Total Quantity Assigned:</span>
+                          <Tag color={totalAssignedForThisItem > 0 ? 'cyan' : 'default'} className="font-mono text-sm px-2.5 py-0.5 font-bold border-none">
+                            {totalAssignedForThisItem} {unitStr}
+                          </Tag>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Quantity to Assign:</span>
-                        <InputNumber
-                          min={1}
-                          max={maxAvailable}
-                          value={currentVal}
-                          onChange={(v) => updateItemQty(id, v || 1)}
-                          status={isExceeded ? 'error' : ''}
-                          className="w-32"
-                        />
+
+                      {/* Available PO Stock Lots with Per-Lot Quantity Inputs */}
+                      <div className="flex flex-col gap-2">
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                          <TagOutlined className="text-purple-500" /> Enter Quantity to Take from Each Stock Lot:
+                        </span>
+
+                        {itemLots.length === 0 ? (
+                          <div className="text-xs text-amber-500 italic p-2 bg-amber-500/10 rounded-lg">
+                            No active PO stock lots available for this project.
+                          </div>
+                        ) : (
+                          itemLots.map((lot) => {
+                            const isTargetProjectLot = lot.project_id && lot.project_id !== 0;
+                            const poNum = lot.purchase_order?.po_number || (lot.lot_number ? `Lot ${lot.lot_number}` : 'Store Batch');
+                            const rate = Number(lot.unit_price || 0);
+                            const currentLotQty = lotQuantities[lot.id] || 0;
+                            const isLotExceeded = currentLotQty > lot.available_qty;
+
+                            return (
+                              <div
+                                key={lot.id}
+                                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-lg border transition-all ${
+                                  currentLotQty > 0
+                                    ? 'bg-purple-500/10 border-purple-500/60 shadow-sm'
+                                    : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-white/10'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  {isTargetProjectLot ? (
+                                    <Tag color="purple" className="font-mono text-xs font-bold border-none px-2 py-0.5">
+                                      Project PO: {poNum}
+                                    </Tag>
+                                  ) : (
+                                    <Tag color="cyan" className="font-mono text-xs font-bold border-none px-2 py-0.5">
+                                      General Stock: {poNum}
+                                    </Tag>
+                                  )}
+                                  {lot.project?.name && (
+                                    <span className="text-xs font-semibold text-purple-600 dark:text-purple-400">
+                                      ({lot.project.name})
+                                    </span>
+                                  )}
+                                  <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                                    Avail: <strong className="text-indigo-600 dark:text-indigo-400">{lot.available_qty} {unitStr}</strong>
+                                  </span>
+                                  <Tag color="emerald" className="font-mono text-xs font-bold border-none py-0.5 px-2">
+                                    Rate: ₹{rate.toLocaleString('en-IN')}/{unitStr}
+                                  </Tag>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Assign from Lot:</span>
+                                  <InputNumber
+                                    min={0}
+                                    max={lot.available_qty}
+                                    value={currentLotQty}
+                                    onChange={(v) => updateLotQty(lot.id, v || 0)}
+                                    status={isLotExceeded ? 'error' : ''}
+                                    className="w-28 font-bold font-mono"
+                                  />
+                                  <span className="text-xs font-mono text-slate-500">{unitStr}</span>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
                       </div>
                     </div>
-                    {isExceeded && (
-                      <div className="text-[11px] text-rose-500 dark:text-rose-400 mt-2 font-semibold">
-                        ⚠️ Entered quantity exceeds available stock ({maxAvailable} {unitStr})
-                      </div>
-                    )}
                   </Card>
                 );
               })}
             </div>
           )}
 
-          <Form.Item name="notes" label="Assignment Remarks / Scope Purpose (Optional)" className="mt-4">
+          <Form.Item name="notes" label="Assignment Remarks / Scope Purpose (Optional)" className="mt-2 mb-0">
             <Input.TextArea placeholder="Enter dispatch notes, truck/vehicle ref, or work scope details..." rows={2} />
           </Form.Item>
         </Form>

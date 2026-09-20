@@ -251,12 +251,36 @@ export interface TermsAndConditions {
   updatedAt?: string;
 }
 
+export interface InventoryLot {
+  id: number;
+  item_type_id: number;
+  item_type?: ItemType;
+  po_id?: number | null;
+  po_item_id?: number | null;
+  purchase_order?: PurchaseOrder;
+  grn_id?: number | null;
+  project_id?: number | null;
+  project?: Project;
+  unit_price: number;
+  received_qty: number;
+  available_qty: number;
+  assigned_qty: number;
+  lot_number?: string | null;
+  createdAt?: string;
+}
+
 export interface ProjectAssignmentItem {
   id: number;
   assignment_id: number;
   item_type_id: number;
+  lot_id?: number | null;
+  po_id?: number | null;
+  unit_price?: number | null;
+  total_cost?: number | null;
   quantity: number;
   item_type?: ItemType;
+  lot?: InventoryLot;
+  purchase_order?: PurchaseOrder;
   createdAt?: string;
 }
 
