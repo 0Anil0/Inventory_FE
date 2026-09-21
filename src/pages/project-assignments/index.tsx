@@ -15,11 +15,9 @@ import {
   Col,
   Statistic,
   message,
-  Popover,
   Popconfirm,
   Space,
   Tooltip,
-  Divider,
   Alert,
   Spin,
 } from 'antd';
@@ -30,7 +28,6 @@ import {
   SearchOutlined,
   ReloadOutlined,
   UserOutlined,
-  FileTextOutlined,
   SendOutlined,
   FolderOpenOutlined,
   NodeIndexOutlined,
@@ -39,7 +36,6 @@ import {
   ClusterOutlined,
   EditOutlined,
   DeleteOutlined,
-  DollarOutlined,
   TagOutlined,
 } from '@ant-design/icons';
 import type { Project, ProjectInventory, ItemType, InventoryLot } from '../../types/inventory';

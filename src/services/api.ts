@@ -433,8 +433,9 @@ export const inventoryApi = {
     to_project_id: number;
     item_type_id: number;
     quantity: number;
+    lot_id?: number;
     notes?: string;
-  }): Promise<{ success: boolean; message: string }> => {
+  }): Promise<{ success: boolean; message: string; transfer_ref?: string }> => {
     const res = await fetch(`${API_BASE_URL}/inventory/transfer`, {
       method: 'POST',
       headers: getAuthHeaders(),
@@ -462,7 +463,9 @@ export const stockMovementApi = {
     limit?: number;
   }): Promise<{ success: boolean; movements: StockMovement[] }> => {
     const query = new URLSearchParams();
-    if (params?.project_id) query.append('project_id', String(params.project_id));
+    if (params?.project_id !== undefined && params?.project_id !== null) {
+      query.append('project_id', String(params.project_id));
+    }
     if (params?.item_type_id) query.append('item_type_id', String(params.item_type_id));
     if (params?.limit) query.append('limit', String(params.limit));
 

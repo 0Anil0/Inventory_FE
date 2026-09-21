@@ -30,6 +30,7 @@ import {
   CodeSandboxOutlined,
   DownloadOutlined,
   HistoryOutlined,
+  SwapOutlined,
 } from '@ant-design/icons';
 import type { Project, ProjectInventory, ItemType } from '../../types/inventory';
 import { projectApi, inventoryApi, itemTypeApi } from '../../services/api';
@@ -147,6 +148,9 @@ export const InventoryTrackerPage: React.FC = () => {
     items: Array<{
       item_type_id: number;
       initial_quantity: number;
+      unit_price?: number;
+      lot_number?: string;
+      min_quantity?: number;
     }>;
   }) => {
     if (selectedProjectId === undefined || selectedProjectId === null) throw new Error('No active project selected');
@@ -156,18 +160,15 @@ export const InventoryTrackerPage: React.FC = () => {
       items: data.items.map((i) => ({
         item_type_id: i.item_type_id,
         quantity: i.initial_quantity,
+        unit_price: i.unit_price,
+        lot_number: i.lot_number,
+        min_quantity: i.min_quantity,
       })),
-      notes: 'Added to project stock catalog',
+      notes: 'Added to project stock catalog & opening lot register',
     });
 
     if (res.success && res.inventoryItems) {
-      setInventoryList((prev) => {
-        const existingMap = new Map(prev.map((item) => [item.item_type_id, item]));
-        res.inventoryItems.forEach((newRecord) => {
-          existingMap.set(newRecord.item_type_id, newRecord);
-        });
-        return Array.from(existingMap.values());
-      });
+      fetchProjectInventory(selectedProjectId);
     } else {
       throw new Error('Failed to add items to project');
     }
@@ -209,9 +210,8 @@ export const InventoryTrackerPage: React.FC = () => {
 
   const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
-  // Available catalog item types (filters items already present in current project)
-  const existingItemTypeIds = new Set(inventoryList.map((i) => i.item_type_id));
-  const availableItemTypes = catalogItemTypes.filter((t) => !existingItemTypeIds.has(t.id));
+  // Available catalog item types from catalog master
+  const availableItemTypes = catalogItemTypes;
 
   const filteredInventory = inventoryList.filter((inv) => {
     const item = inv.item_type;
@@ -459,6 +459,15 @@ export const InventoryTrackerPage: React.FC = () => {
             />
 
             <Button
+              icon={<SwapOutlined />}
+              onClick={() => setIsTransferModalOpen(true)}
+              type="primary"
+              className="bg-indigo-600 hover:bg-indigo-700 font-semibold shadow-md border-none"
+            >
+              Transfer Stock
+            </Button>
+
+            <Button
               icon={<HistoryOutlined />}
               onClick={() => setIsLedgerOpen(true)}
               className="border-indigo-500/40 text-indigo-600 dark:text-indigo-400 font-medium"
@@ -533,6 +542,14 @@ export const InventoryTrackerPage: React.FC = () => {
             </div>
 
             <Space className="justify-between sm:justify-end flex-wrap">
+              <Button
+                icon={<SwapOutlined />}
+                onClick={() => setIsTransferModalOpen(true)}
+                className="border-indigo-500/40 text-indigo-600 dark:text-indigo-400 font-semibold"
+              >
+                Transfer Stock
+              </Button>
+
               <Button icon={<DownloadOutlined />} onClick={exportCSV}>
                 Export CSV Report
               </Button>
