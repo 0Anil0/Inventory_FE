@@ -61,6 +61,9 @@ export const POItemTrackingPage: React.FC = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(undefined);
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [searchText, setSearchText] = useState<string>('');
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(20);
+  const [total, setTotal] = useState<number>(0);
 
   // Dropdown options state
   const [itemsList, setItemsList] = useState<ItemType[]>([]);
@@ -80,7 +83,7 @@ export const POItemTrackingPage: React.FC = () => {
   // Fetch tracking data when filters change
   useEffect(() => {
     fetchTrackingData();
-  }, [selectedItemTypeId, selectedVendorId, selectedProjectId, selectedStatus]);
+  }, [selectedItemTypeId, selectedVendorId, selectedProjectId, selectedStatus, page, pageSize]);
 
   const fetchFilterOptions = async () => {
     try {
@@ -112,10 +115,13 @@ export const POItemTrackingPage: React.FC = () => {
         project_id: selectedProjectId,
         status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
         search: querySearch !== undefined ? querySearch : searchText,
+        page,
+        limit: pageSize,
       });
 
       if (res.success) {
         setRecords(res.items || []);
+        setTotal(res.total || res.summary?.totalRecords || 0);
         setSummary(
           res.summary || {
             totalRecords: 0,
@@ -134,6 +140,7 @@ export const POItemTrackingPage: React.FC = () => {
   };
 
   const handleSearch = () => {
+    setPage(1);
     fetchTrackingData(searchText);
   };
 
@@ -143,6 +150,7 @@ export const POItemTrackingPage: React.FC = () => {
     setSelectedProjectId(undefined);
     setSelectedStatus('ALL');
     setSearchText('');
+    setPage(1);
     fetchTrackingData('');
   };
 
@@ -493,7 +501,10 @@ export const POItemTrackingPage: React.FC = () => {
                 placeholder="Select Item..."
                 className="w-full"
                 value={selectedItemTypeId}
-                onChange={(val) => setSelectedItemTypeId(val)}
+                onChange={(val) => {
+                  setSelectedItemTypeId(val);
+                  setPage(1);
+                }}
                 filterOption={filterSelectOption}
                 options={itemsList.map((item) => ({
                   value: item.id,
@@ -510,7 +521,10 @@ export const POItemTrackingPage: React.FC = () => {
                 placeholder="Select Vendor..."
                 className="w-full"
                 value={selectedVendorId}
-                onChange={(val) => setSelectedVendorId(val)}
+                onChange={(val) => {
+                  setSelectedVendorId(val);
+                  setPage(1);
+                }}
                 filterOption={filterSelectOption}
                 options={vendorsList.map((v) => ({
                   value: v.id,
@@ -527,7 +541,10 @@ export const POItemTrackingPage: React.FC = () => {
                 placeholder="Select Project..."
                 className="w-full"
                 value={selectedProjectId}
-                onChange={(val) => setSelectedProjectId(val)}
+                onChange={(val) => {
+                  setSelectedProjectId(val);
+                  setPage(1);
+                }}
                 filterOption={filterSelectOption}
                 options={projectsList.map((p) => ({
                   value: p.id,
@@ -541,7 +558,10 @@ export const POItemTrackingPage: React.FC = () => {
               <Select
                 className="w-full"
                 value={selectedStatus}
-                onChange={(val) => setSelectedStatus(val)}
+                onChange={(val) => {
+                  setSelectedStatus(val);
+                  setPage(1);
+                }}
                 showSearch
                 filterOption={filterSelectOption}
                 options={[
@@ -598,10 +618,16 @@ export const POItemTrackingPage: React.FC = () => {
               loading={loading}
               scroll={{ x: 1350 }}
               pagination={{
-                defaultPageSize: 20,
+                current: page,
+                pageSize: pageSize,
+                total: total,
                 showSizeChanger: true,
                 pageSizeOptions: ['10', '20', '50', '100'],
-                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} records`,
+                onChange: (newPage, newPageSize) => {
+                  setPage(newPage);
+                  setPageSize(newPageSize);
+                },
+                showTotal: (tot, range) => `${range[0]}-${range[1]} of ${tot} records`,
               }}
               size="middle"
             />

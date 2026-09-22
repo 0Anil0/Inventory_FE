@@ -62,6 +62,11 @@ const GRNPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
 
+  // Pagination states
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [total, setTotal] = useState<number>(0);
+
   // Filter Modal State
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [filterVendorId, setFilterVendorId] = useState<number | null>(null);
@@ -99,22 +104,10 @@ const GRNPage: React.FC = () => {
   const [filterForm] = Form.useForm();
   const [newItemForm] = Form.useForm();
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async (filterParams?: {
-    vendor_id?: number;
-    project_id?: number;
-    po_id?: number;
-    from_date?: string;
-    to_date?: string;
-    search?: string;
-  }) => {
-    setLoading(true);
+  // Load dropdown metadata once
+  const fetchMetadata = async () => {
     try {
-      const [grnRes, poRes, shelfRes, itemRes, vendorRes, projRes, unitRes, makeRes] = await Promise.all([
-        grnApi.getGRNs(filterParams),
+      const [poRes, shelfRes, itemRes, vendorRes, projRes, unitRes, makeRes] = await Promise.all([
         poApi.getAll(),
         storageApi.getAllShelves(),
         itemTypeApi.getAll(),
@@ -123,7 +116,6 @@ const GRNPage: React.FC = () => {
         unitApi.getAll(),
         makeApi.getAll(),
       ]);
-      setGrns(grnRes || []);
       setPos(poRes.purchaseOrders || []);
       setShelves(shelfRes.shelves || []);
       setMasterItems(itemRes.items || []);
@@ -132,11 +124,50 @@ const GRNPage: React.FC = () => {
       setUnits(unitRes.units || []);
       setMakes(makeRes.makes || []);
     } catch (err: any) {
-      message.error(err.message || 'Failed to load GRN data');
+      message.error(err.message || 'Failed to load master metadata');
+    }
+  };
+
+  // Fetch GRNs with server-side search, filters, and pagination
+  const fetchGRNs = async () => {
+    setLoading(true);
+    try {
+      const params: any = {
+        page,
+        limit: pageSize,
+      };
+      if (filterVendorId) params.vendor_id = filterVendorId;
+      if (filterProjectId) params.project_id = filterProjectId;
+      if (filterPoId) params.po_id = filterPoId;
+      if (filterDateRange && filterDateRange[0] && filterDateRange[1]) {
+        params.from_date = filterDateRange[0].format('YYYY-MM-DD');
+        params.to_date = filterDateRange[1].format('YYYY-MM-DD');
+      }
+      if (searchText) params.search = searchText;
+
+      const res = await grnApi.getGRNs(params);
+
+      if (Array.isArray(res)) {
+        setGrns(res);
+        setTotal(res.length);
+      } else if (res && res.grns) {
+        setGrns(res.grns);
+        setTotal(res.total || 0);
+      }
+    } catch (err: any) {
+      message.error(err.message || 'Failed to load GRN records');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchMetadata();
+  }, []);
+
+  useEffect(() => {
+    fetchGRNs();
+  }, [searchText, filterVendorId, filterProjectId, filterPoId, filterDateRange, page, pageSize]);
 
   const handlePoChange = async (poId: number) => {
     try {
@@ -319,7 +350,7 @@ const GRNPage: React.FC = () => {
       setSelectedPo(null);
       setItemInputs({});
       setExtraItems([]);
-      fetchData();
+      fetchGRNs();
     } catch (err: any) {
       message.error(err.message || 'Failed to create GRN');
     } finally {
@@ -348,18 +379,14 @@ const GRNPage: React.FC = () => {
     (filterPoId ? 1 : 0) +
     (filterDateRange ? 1 : 0);
 
+  const handleSearchChange = (val: string) => {
+    setSearchText(val);
+    setPage(1);
+  };
+
   const handleApplyFilters = () => {
     setFilterModalVisible(false);
-    const params: any = {};
-    if (filterVendorId) params.vendor_id = filterVendorId;
-    if (filterProjectId) params.project_id = filterProjectId;
-    if (filterPoId) params.po_id = filterPoId;
-    if (filterDateRange && filterDateRange[0] && filterDateRange[1]) {
-      params.from_date = filterDateRange[0].format('YYYY-MM-DD');
-      params.to_date = filterDateRange[1].format('YYYY-MM-DD');
-    }
-    if (searchText) params.search = searchText;
-    fetchData(params);
+    setPage(1);
   };
 
   const resetFilters = () => {
@@ -367,41 +394,12 @@ const GRNPage: React.FC = () => {
     setFilterProjectId(null);
     setFilterPoId(null);
     setFilterDateRange(null);
+    setSearchText('');
     filterForm.resetFields();
-    fetchData();
+    setPage(1);
   };
 
   const eligiblePOs = pos.filter((po) => po.status === 'APPROVED' || po.status === 'PARTIALLY_RECEIVED');
-
-  const filteredGRNs = grns.filter((g) => {
-    // Search text matching
-    const q = searchText.toLowerCase();
-    const matchesSearch =
-      !q ||
-      g.grn_number?.toLowerCase().includes(q) ||
-      g.purchase_order?.po_number?.toLowerCase().includes(q) ||
-      g.purchase_order?.vendor?.name?.toLowerCase().includes(q) ||
-      g.challan_no?.toLowerCase().includes(q);
-
-    // Vendor filter
-    const matchesVendor = !filterVendorId || g.purchase_order?.vendor_id === filterVendorId;
-
-    // Project filter
-    const matchesProject = !filterProjectId || g.project_id === filterProjectId || g.purchase_order?.project_id === filterProjectId;
-
-    // PO filter
-    const matchesPo = !filterPoId || g.po_id === filterPoId;
-
-    // Date range filter
-    let matchesDate = true;
-    if (filterDateRange && filterDateRange[0] && filterDateRange[1]) {
-      const gDate = dayjs(g.received_date);
-      matchesDate =
-        gDate.isAfter(filterDateRange[0].startOf('day')) && gDate.isBefore(filterDateRange[1].endOf('day'));
-    }
-
-    return matchesSearch && matchesVendor && matchesProject && matchesPo && matchesDate;
-  });
 
   const columns = [
     {
@@ -522,7 +520,7 @@ const GRNPage: React.FC = () => {
                 placeholder="Search GRN No, PO No, Vendor, Challan..."
                 prefix={<SearchOutlined className="text-slate-400" />}
                 value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 allowClear
                 className="w-full"
               />
@@ -544,7 +542,7 @@ const GRNPage: React.FC = () => {
             </Col>
             <Col>
               <Text type="secondary">
-                Total GRNs: <strong className="text-slate-900">{filteredGRNs.length}</strong>
+                Total GRNs: <strong className="text-slate-900">{total}</strong>
               </Text>
             </Col>
           </Row>
@@ -581,11 +579,22 @@ const GRNPage: React.FC = () => {
         <Card className="shadow-sm border-slate-200" bodyStyle={{ padding: '0px' }}>
           <Table
             columns={columns}
-            dataSource={filteredGRNs}
+            dataSource={grns}
             rowKey="id"
             loading={loading}
             scroll={{ x: 1000 }}
-            pagination={{ pageSize: 10 }}
+            pagination={{
+              current: page,
+              pageSize: pageSize,
+              total: total,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '15', '25', '50', '100'],
+              onChange: (newPage, newPageSize) => {
+                setPage(newPage);
+                setPageSize(newPageSize);
+              },
+              showTotal: (tot, range) => `${range[0]}-${range[1]} of ${tot} GRNs`,
+            }}
           />
         </Card>
       </main>

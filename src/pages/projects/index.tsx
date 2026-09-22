@@ -57,13 +57,34 @@ export const ProjectsPage: React.FC = () => {
   const [form] = Form.useForm();
   const projectTypeWatch = Form.useWatch('project_category', form);
 
-  // Fetch all projects on mount
-  const fetchProjects = async () => {
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(15);
+  const [totalRecords, setTotalRecords] = useState<number>(0);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [mainCount, setMainCount] = useState<number>(0);
+  const [subCount, setSubCount] = useState<number>(0);
+
+  // Fetch all projects from backend with search, category, and pagination
+  const fetchProjects = async (
+    q: string = searchQuery,
+    cat: 'ALL' | 'MAIN' | 'SUB' = typeFilter,
+    page: number = currentPage,
+    size: number = pageSize
+  ) => {
     setLoading(true);
     try {
-      const res = await projectApi.getAll();
+      const res = await projectApi.getAll({
+        search: q,
+        category: cat,
+        page,
+        limit: size,
+      });
       if (res.success && res.projects) {
         setProjects(res.projects);
+        if (res.total !== undefined) setTotalRecords(res.total);
+        if (res.totalCount !== undefined) setTotalCount(res.totalCount);
+        if (res.mainCount !== undefined) setMainCount(res.mainCount);
+        if (res.subCount !== undefined) setSubCount(res.subCount);
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to load projects list');
@@ -73,8 +94,9 @@ export const ProjectsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
+    fetchProjects(searchQuery, typeFilter, 1, pageSize);
+    setCurrentPage(1);
+  }, [searchQuery, typeFilter]);
 
   // Open modal for Create / Edit
   const handleOpenCreateModal = (parentId?: number) => {
@@ -162,24 +184,11 @@ export const ProjectsPage: React.FC = () => {
 
   // Build Hierarchical Tree Data Structure for Table & Tree View
   const buildTreeData = (allProjects: Project[]): Project[] => {
-    const q = searchQuery.toLowerCase();
-    const filtered = allProjects.filter((p) => {
-      const matchesSearch =
-        p.name.toLowerCase().includes(q) ||
-        p.code.toLowerCase().includes(q) ||
-        (p.location && p.location.toLowerCase().includes(q));
-
-      if (!matchesSearch) return false;
-      if (typeFilter === 'MAIN') return !p.parent_id;
-      if (typeFilter === 'SUB') return !!p.parent_id;
-      return true;
-    });
-
     if (typeFilter === 'SUB') {
-      return filtered.map((p) => ({ ...p, children: undefined }));
+      return allProjects.map((p) => ({ ...p, children: undefined }));
     }
 
-    const mainNodes = filtered.filter((p) => !p.parent_id);
+    const mainNodes = allProjects.filter((p) => !p.parent_id);
     const subNodes = allProjects.filter((p) => !!p.parent_id);
 
     return mainNodes.map((main) => {
@@ -194,9 +203,9 @@ export const ProjectsPage: React.FC = () => {
   const treeTableData: Project[] = buildTreeData(projects);
 
   // Calculate Stats
-  const totalProjectsCount = projects.length;
-  const mainProjectsCount = projects.filter((p) => !p.parent_id).length;
-  const subProjectsCount = projects.filter((p) => !!p.parent_id).length;
+  const totalProjectsCount = totalCount || projects.length;
+  const mainProjectsCount = mainCount || projects.filter((p) => !p.parent_id).length;
+  const subProjectsCount = subCount || projects.filter((p) => !!p.parent_id).length;
 
   const columns: ColumnsType<Project> = [
     {
@@ -559,15 +568,22 @@ export const ProjectsPage: React.FC = () => {
               dataSource={treeTableData}
               rowKey="id"
               loading={loading}
-              scroll={{ x: 1100 }}
+              scroll={{ x: 1320 }}
               defaultExpandAllRows={true}
               expandable={{
                 defaultExpandAllRows: true,
                 indentSize: 24,
               }}
               pagination={{
-                pageSize: 15,
+                current: currentPage,
+                pageSize: pageSize,
+                total: totalRecords,
                 showSizeChanger: true,
+                onChange: (page, size) => {
+                  setCurrentPage(page);
+                  setPageSize(size);
+                  fetchProjects(searchQuery, typeFilter, page, size);
+                },
                 showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} projects`,
               }}
             />

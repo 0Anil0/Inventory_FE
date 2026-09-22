@@ -59,6 +59,9 @@ export const ProjectCostingPage: React.FC = () => {
   // Filters
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [totalLedger, setTotalLedger] = useState<number>(0);
 
   // Modal for Print Certificate
   const [isPrintModalOpen, setIsPrintModalOpen] = useState<boolean>(false);
@@ -78,18 +81,23 @@ export const ProjectCostingPage: React.FC = () => {
   };
 
   // Fetch Report Data
-  const fetchReport = async (overrideParams?: { projectId?: number; search?: string }) => {
+  const fetchReport = async (overrideParams?: { projectId?: number; search?: string; page?: number; limit?: number }) => {
     setLoading(true);
     try {
       const pId = overrideParams && 'projectId' in overrideParams ? overrideParams.projectId : selectedProjectId;
       const sQuery = overrideParams && 'search' in overrideParams ? overrideParams.search : searchQuery;
+      const curPage = overrideParams && 'page' in overrideParams ? overrideParams.page : page;
+      const curLimit = overrideParams && 'limit' in overrideParams ? overrideParams.limit : pageSize;
 
       const res = await reportApi.getProjectFinancialCosting({
         project_id: pId,
         search: sQuery,
+        page: curPage,
+        limit: curLimit,
       });
       if (res.success && res.report) {
         setReportData(res.report);
+        setTotalLedger(res.report.total_ledger || res.report.itemized_ledger?.length || 0);
       } else {
         message.error('Failed to load project financial costing data');
       }
@@ -110,16 +118,18 @@ export const ProjectCostingPage: React.FC = () => {
       fetchReport();
     }, 300);
     return () => clearTimeout(timer);
-  }, [selectedProjectId, searchQuery]);
+  }, [selectedProjectId, searchQuery, page, pageSize]);
 
   const handleSearch = () => {
-    fetchReport();
+    setPage(1);
+    fetchReport({ page: 1 });
   };
 
   const handleReset = () => {
     setSelectedProjectId(undefined);
     setSearchQuery('');
-    fetchReport({ projectId: undefined, search: '' });
+    setPage(1);
+    fetchReport({ projectId: undefined, search: '', page: 1 });
   };
 
   // Export to CSV
@@ -533,7 +543,10 @@ export const ProjectCostingPage: React.FC = () => {
                 placeholder="All Projects (Overall Investment)"
                 allowClear
                 value={selectedProjectId}
-                onChange={(val) => setSelectedProjectId(val)}
+                onChange={(val) => {
+                  setSelectedProjectId(val);
+                  setPage(1);
+                }}
                 size="large"
                 showSearch
                 filterOption={filterSelectOption}
@@ -552,7 +565,10 @@ export const ProjectCostingPage: React.FC = () => {
               <Input
                 placeholder="Search by Item Code, Name, Make, Cat No, or Sub-Project..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
                 onPressEnter={handleSearch}
                 allowClear
                 size="large"
@@ -732,7 +748,18 @@ export const ProjectCostingPage: React.FC = () => {
             dataSource={reportData?.itemized_ledger || []}
             rowKey="id"
             loading={loading}
-            pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `Total ${total} Line Items` }}
+            pagination={{
+              current: page,
+              pageSize: pageSize,
+              total: totalLedger,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '15', '25', '50', '100'],
+              onChange: (newPage, newPageSize) => {
+                setPage(newPage);
+                setPageSize(newPageSize);
+              },
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} Line Items`,
+            }}
             locale={{ emptyText: 'No assigned item cost records found' }}
           />
         </Card>

@@ -50,6 +50,12 @@ export const InventoryTrackerPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterMode, setFilterMode] = useState<'ALL' | 'LOW_STOCK'>('ALL');
   const [dateRange, setDateRange] = useState<[string, string] | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(15);
+  const [totalRecords, setTotalRecords] = useState<number>(0);
+  const [totalStockUnits, setTotalStockUnits] = useState<number>(0);
+  const [outOfStockCount, setOutOfStockCount] = useState<number>(0);
+  const [lowStockCount, setLowStockCount] = useState<number>(0);
 
   // Modals & Drawer states
   const [isQuantityModalOpen, setIsQuantityModalOpen] = useState<boolean>(false);
@@ -85,13 +91,31 @@ export const InventoryTrackerPage: React.FC = () => {
     initData();
   }, []);
 
-  // Fetch project inventory whenever selectedProjectId changes
-  const fetchProjectInventory = async (projectId: number) => {
+  // Server-side fetch project inventory with search, filterMode, dateRange, and pagination
+  const fetchProjectInventory = async (
+    projectId: number = selectedProjectId,
+    page: number = currentPage,
+    size: number = pageSize,
+    q: string = searchQuery,
+    mode: 'ALL' | 'LOW_STOCK' = filterMode,
+    dates: [string, string] | null = dateRange
+  ) => {
     setLoading(true);
     try {
-      const res = await inventoryApi.getByProject(projectId);
+      const res = await inventoryApi.getByProject(projectId, {
+        search: q,
+        filterMode: mode,
+        startDate: dates ? dates[0] : undefined,
+        endDate: dates ? dates[1] : undefined,
+        page,
+        limit: size,
+      });
       if (res.success && res.inventory) {
         setInventoryList(res.inventory);
+        if (res.total !== undefined) setTotalRecords(res.total);
+        if (res.totalStockUnits !== undefined) setTotalStockUnits(res.totalStockUnits);
+        if (res.outOfStockCount !== undefined) setOutOfStockCount(res.outOfStockCount);
+        if (res.lowStockCount !== undefined) setLowStockCount(res.lowStockCount);
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to fetch project stock quantity');
@@ -101,8 +125,9 @@ export const InventoryTrackerPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchProjectInventory(selectedProjectId);
-  }, [selectedProjectId]);
+    fetchProjectInventory(selectedProjectId, 1, pageSize, searchQuery, filterMode, dateRange);
+    setCurrentPage(1);
+  }, [selectedProjectId, searchQuery, filterMode, dateRange]);
 
   const handleOpenQuantityModal = (item: ProjectInventory) => {
     setSelectedItemForQty(item);
@@ -125,20 +150,7 @@ export const InventoryTrackerPage: React.FC = () => {
       notes: data.notes,
     });
     if (res.success && res.inventoryItem) {
-      setInventoryList((prev) => {
-        const index = prev.findIndex((i) => i.item_type_id === data.item_type_id);
-        if (index >= 0) {
-          const updated = [...prev];
-          updated[index] = {
-            ...prev[index],
-            ...res.inventoryItem,
-            shelf: res.inventoryItem.shelf || prev[index].shelf,
-            rack: res.inventoryItem.rack || prev[index].rack,
-          };
-          return updated;
-        }
-        return [...prev, res.inventoryItem];
-      });
+      fetchProjectInventory();
     } else {
       throw new Error('Failed to update stock quantity');
     }
@@ -180,7 +192,7 @@ export const InventoryTrackerPage: React.FC = () => {
       return;
     }
     const headers = ['Item Code', 'Item Name', 'Current Quantity', 'Unit', 'Min Threshold', 'Status'];
-    const rows = filteredInventory.map((i) => [
+    const rows = inventoryList.map((i) => [
       `"${i.item_type?.code || ''}"`,
       `"${i.item_type?.name || ''}"`,
       i.quantity,
@@ -212,54 +224,6 @@ export const InventoryTrackerPage: React.FC = () => {
 
   // Available catalog item types from catalog master
   const availableItemTypes = catalogItemTypes;
-
-  const filteredInventory = inventoryList.filter((inv) => {
-    const item = inv.item_type;
-    if (!item) return false;
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-
-    const shelfName = (inv.shelf?.name || '').toLowerCase();
-    const shelfCode = (inv.shelf?.code || '').toLowerCase();
-    const rackName = (inv.rack?.name || '').toLowerCase();
-    const rackCode = (inv.rack?.rack_code || '').toLowerCase();
-    const locationText = `${shelfName} ${shelfCode} ${rackName} ${rackCode}`;
-
-    const matchesSearch =
-      (item.name || '').toLowerCase().includes(q) ||
-      (item.code || '').toLowerCase().includes(q) ||
-      (item.cat_no || '').toLowerCase().includes(q) ||
-      (item.make || '').toLowerCase().includes(q) ||
-      (item.rating || '').toLowerCase().includes(q) ||
-      (item.full_description || '').toLowerCase().includes(q) ||
-      (item.description || '').toLowerCase().includes(q) ||
-      (item.unit || '').toLowerCase().includes(q) ||
-      locationText.includes(q) ||
-      inv.quantity.toString().includes(q);
-
-    if (!matchesSearch) return false;
-
-    if (filterMode === 'LOW_STOCK') {
-      const isLow = inv.quantity <= (inv.min_quantity || 10);
-      if (!isLow) return false;
-    }
-
-    if (dateRange && (inv as any).updatedAt) {
-      const itemDate = new Date((inv as any).updatedAt).toISOString().slice(0, 10);
-      if (itemDate < dateRange[0] || itemDate > dateRange[1]) {
-        return false;
-      }
-    }
-
-    return true;
-  });
-
-  // Calculate statistics
-  const totalStockUnits = inventoryList.reduce((sum, item) => sum + item.quantity, 0);
-  const outOfStockCount = inventoryList.filter((item) => item.quantity === 0).length;
-  const lowStockCount = inventoryList.filter(
-    (item) => item.quantity > 0 && item.quantity <= (item.min_quantity || 10)
-  ).length;
 
   const getStockStatusTag = (qty: number, minQty: number = 10) => {
     if (qty === 0) {
@@ -529,16 +493,11 @@ export const InventoryTrackerPage: React.FC = () => {
           {/* Total Records Counter Header & Action Bar */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-200 dark:border-white/10">
             <div className="flex items-center gap-3">
-              <Badge count={filteredInventory.length} overflowCount={999} color="#6366f1">
+              <Badge count={totalRecords} overflowCount={9999} color="#6366f1">
                 <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
-                  Total Records: {filteredInventory.length} Items
+                  Total Records: {totalRecords} Items
                 </Tag>
               </Badge>
-              {filteredInventory.length !== inventoryList.length && (
-                <span className="text-xs text-slate-500 font-medium">
-                  (Filtered from {inventoryList.length} total items)
-                </span>
-              )}
             </div>
 
             <Space className="justify-between sm:justify-end flex-wrap">
@@ -613,13 +572,20 @@ export const InventoryTrackerPage: React.FC = () => {
 
           <Table
             columns={columns}
-            dataSource={filteredInventory}
+            dataSource={inventoryList}
             rowKey="id"
             loading={loading}
             scroll={{ x: 1000 }}
             pagination={{
-              pageSize: 15,
+              current: currentPage,
+              pageSize: pageSize,
+              total: totalRecords,
               showSizeChanger: true,
+              onChange: (page, size) => {
+                setCurrentPage(page);
+                setPageSize(size);
+                fetchProjectInventory(selectedProjectId, page, size, searchQuery, filterMode, dateRange);
+              },
               showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} stock items`,
             }}
           />

@@ -34,15 +34,22 @@ export const ApproverConfigPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editingApprover, setEditingApprover] = useState<POApprover | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [total, setTotal] = useState<number>(0);
 
   const [form] = Form.useForm();
 
   const fetchApprovers = async () => {
     setLoading(true);
     try {
-      const res = await poApproverApi.getAll();
+      const res = await poApproverApi.getAll({
+        page,
+        limit: pageSize,
+      });
       if (res.success && res.approvers) {
         setApprovers(res.approvers);
+        setTotal(res.total || 0);
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to fetch PO approvers');
@@ -63,9 +70,12 @@ export const ApproverConfigPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchApprovers();
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    fetchApprovers();
+  }, [page, pageSize]);
 
   useEffect(() => {
     if (isModalOpen) {
@@ -138,7 +148,7 @@ export const ApproverConfigPage: React.FC = () => {
       key: 'sno',
       width: 70,
       align: 'center',
-      render: (_, __, index) => <span className="font-mono font-bold text-slate-500">{index + 1}</span>,
+      render: (_, __, index) => <span className="font-mono font-bold text-slate-500">{(page - 1) * pageSize + index + 1}</span>,
     },
     {
       title: 'Approver User',
@@ -262,7 +272,18 @@ export const ApproverConfigPage: React.FC = () => {
             dataSource={approvers}
             rowKey="id"
             loading={loading}
-            pagination={{ pageSize: 10, showSizeChanger: true }}
+            pagination={{
+              current: page,
+              pageSize: pageSize,
+              total: total,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '15', '25', '50', '100'],
+              onChange: (newPage, newPageSize) => {
+                setPage(newPage);
+                setPageSize(newPageSize);
+              },
+              showTotal: (tot, range) => `${range[0]}-${range[1]} of ${tot} approvers`,
+            }}
             className="rounded-lg overflow-hidden"
           />
         </Card>

@@ -333,8 +333,27 @@ export const itemTypeApi = {
 
 // Project API Client
 export const projectApi = {
-  getAll: async (): Promise<{ success: boolean; projects: Project[] }> => {
-    const res = await fetch(`${API_BASE_URL}/projects`, {
+  getAll: async (params?: {
+    search?: string;
+    category?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    success: boolean;
+    projects: Project[];
+    total?: number;
+    totalCount?: number;
+    mainCount?: number;
+    subCount?: number;
+  }> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.append('search', params.search);
+    if (params?.category) query.append('category', params.category);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${API_BASE_URL}/projects${queryString}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(res);
@@ -386,9 +405,33 @@ export const inventoryApi = {
   },
 
   getByProject: async (
-    projectId: number
-  ): Promise<{ success: boolean; inventory: ProjectInventory[] }> => {
-    const res = await fetch(`${API_BASE_URL}/inventory/project/${projectId}`, {
+    projectId: number,
+    params?: {
+      search?: string;
+      filterMode?: string;
+      startDate?: string;
+      endDate?: string;
+      page?: number;
+      limit?: number;
+    }
+  ): Promise<{
+    success: boolean;
+    inventory: ProjectInventory[];
+    total?: number;
+    totalStockUnits?: number;
+    outOfStockCount?: number;
+    lowStockCount?: number;
+  }> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.append('search', params.search);
+    if (params?.filterMode) query.append('filterMode', params.filterMode);
+    if (params?.startDate) query.append('startDate', params.startDate);
+    if (params?.endDate) query.append('endDate', params.endDate);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+
+    const queryString = query.toString() ? `?${query.toString()}` : '';
+    const res = await fetch(`${API_BASE_URL}/inventory/project/${projectId}${queryString}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(res);
@@ -554,12 +597,16 @@ export const poApi = {
     vendor_id?: number;
     search?: string;
     status?: string;
-  }): Promise<{ success: boolean; purchaseOrders: PurchaseOrder[] }> => {
+    page?: number;
+    limit?: number;
+  }): Promise<{ success: boolean; purchaseOrders: PurchaseOrder[]; total?: number; page?: number; limit?: number; totalPages?: number }> => {
     const query = new URLSearchParams();
     if (params?.project_id) query.append('project_id', String(params.project_id));
     if (params?.vendor_id) query.append('vendor_id', String(params.vendor_id));
     if (params?.search) query.append('search', params.search);
     if (params?.status) query.append('status', params.status);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
 
     const res = await fetch(`${API_BASE_URL}/purchase-orders?${query.toString()}`, {
       headers: getAuthHeaders(),
@@ -667,6 +714,8 @@ export const poApi = {
     project_id?: number;
     status?: string;
     search?: string;
+    page?: number;
+    limit?: number;
   }): Promise<POItemTrackingResponse> => {
     const query = new URLSearchParams();
     if (params?.item_type_id) query.append('item_type_id', String(params.item_type_id));
@@ -674,6 +723,8 @@ export const poApi = {
     if (params?.project_id) query.append('project_id', String(params.project_id));
     if (params?.status) query.append('status', params.status);
     if (params?.search) query.append('search', params.search);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
 
     const res = await fetch(`${API_BASE_URL}/purchase-orders/item-tracking?${query.toString()}`, {
       headers: getAuthHeaders(),
@@ -684,8 +735,17 @@ export const poApi = {
 
 // PO Approver API Client
 export const poApproverApi = {
-  getAll: async (): Promise<{ success: boolean; approvers: POApprover[] }> => {
-    const res = await fetch(`${API_BASE_URL}/po-approvers`, {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+  }): Promise<{ success: boolean; approvers: POApprover[]; total?: number; page?: number; limit?: number; totalPages?: number }> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    if (params?.search) query.append('search', params.search);
+
+    const res = await fetch(`${API_BASE_URL}/po-approvers?${query.toString()}`, {
       headers: getAuthHeaders(),
     });
     return handleResponse(res);
@@ -827,7 +887,7 @@ export const unitApi = {
 
 // Reports API Client
 export const reportApi = {
-  getStockSummary: async (params?: any): Promise<{ success: boolean; reports: any[] }> => {
+  getStockSummary: async (params?: any): Promise<{ success: boolean; reports: any[]; total?: number; page?: number; limit?: number; totalPages?: number }> => {
     const query = new URLSearchParams(params || {}).toString();
     const res = await fetch(`${API_BASE_URL}/reports/stock-summary?${query}`, {
       headers: getAuthHeaders(),
@@ -835,7 +895,7 @@ export const reportApi = {
     return handleResponse(res);
   },
 
-  getPurchaseOrders: async (params?: any): Promise<{ success: boolean; reports: any[] }> => {
+  getPurchaseOrders: async (params?: any): Promise<{ success: boolean; reports: any[]; total?: number; page?: number; limit?: number; totalPages?: number }> => {
     const query = new URLSearchParams(params || {}).toString();
     const res = await fetch(`${API_BASE_URL}/reports/purchase-orders?${query}`, {
       headers: getAuthHeaders(),
@@ -859,7 +919,7 @@ export const reportApi = {
     return handleResponse(res);
   },
 
-  getAuditLedger: async (params?: any): Promise<{ success: boolean; reports: any[] }> => {
+  getAuditLedger: async (params?: any): Promise<{ success: boolean; reports: any[]; total?: number; page?: number; limit?: number; totalPages?: number }> => {
     const query = new URLSearchParams(params || {}).toString();
     const res = await fetch(`${API_BASE_URL}/reports/audit-ledger?${query}`, {
       headers: getAuthHeaders(),
@@ -871,6 +931,8 @@ export const reportApi = {
     project_id?: number;
     search?: string;
     health?: string;
+    page?: number;
+    limit?: number;
   }): Promise<{
     success: boolean;
     report: {
@@ -911,12 +973,18 @@ export const reportApi = {
         }>;
         health_status: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK';
       }>;
+      total?: number;
+      page?: number;
+      limit?: number;
+      totalPages?: number;
     };
   }> => {
     const query = new URLSearchParams();
     if (params?.project_id) query.append('project_id', String(params.project_id));
     if (params?.search) query.append('search', params.search);
     if (params?.health) query.append('health', params.health);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
 
     const res = await fetch(`${API_BASE_URL}/reports/procurement-distribution?${query.toString()}`, {
       headers: getAuthHeaders(),
@@ -927,10 +995,14 @@ export const reportApi = {
   getProjectFinancialCosting: async (params?: {
     project_id?: number;
     search?: string;
-  }): Promise<{ success: boolean; report: ProjectCostingReport }> => {
+    page?: number;
+    limit?: number;
+  }): Promise<{ success: boolean; report: ProjectCostingReport & { total_ledger?: number; page?: number; limit?: number; totalPages?: number } }> => {
     const query = new URLSearchParams();
     if (params?.project_id) query.append('project_id', String(params.project_id));
     if (params?.search) query.append('search', params.search);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
 
     const queryString = query.toString() ? `?${query.toString()}` : '';
     const res = await fetch(`${API_BASE_URL}/reports/project-costing${queryString}`, {
@@ -1113,7 +1185,9 @@ export const grnApi = {
     from_date?: string;
     to_date?: string;
     search?: string;
-  }): Promise<any[]> => {
+    page?: number;
+    limit?: number;
+  }): Promise<{ success?: boolean; grns: any[]; total?: number } | any[]> => {
     const query = new URLSearchParams();
     if (params?.vendor_id) query.append('vendor_id', String(params.vendor_id));
     if (params?.project_id) query.append('project_id', String(params.project_id));
@@ -1121,6 +1195,8 @@ export const grnApi = {
     if (params?.from_date) query.append('from_date', params.from_date);
     if (params?.to_date) query.append('to_date', params.to_date);
     if (params?.search) query.append('search', params.search);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
 
     const queryString = query.toString() ? `?${query.toString()}` : '';
     const res = await fetch(`${API_BASE_URL}/grn${queryString}`, {
@@ -1148,9 +1224,28 @@ export const grnApi = {
 
 // Project Material Assignment API Client
 export const projectAssignmentApi = {
-  getAll: async (params?: { to_project_id?: number }): Promise<{ success: boolean; assignments: ProjectAssignment[] }> => {
+  getAll: async (params?: {
+    search?: string;
+    to_project_id?: number;
+    from_date?: string;
+    to_date?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    success: boolean;
+    assignments: ProjectAssignment[];
+    total?: number;
+    totalAssignmentsCount?: number;
+    uniqueProjectsAssigned?: number;
+    totalUnitsDispatched?: number;
+  }> => {
     const query = new URLSearchParams();
+    if (params?.search) query.append('search', params.search);
     if (params?.to_project_id) query.append('to_project_id', String(params.to_project_id));
+    if (params?.from_date) query.append('from_date', params.from_date);
+    if (params?.to_date) query.append('to_date', params.to_date);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
 
     const queryString = query.toString() ? `?${query.toString()}` : '';
     const res = await fetch(`${API_BASE_URL}/project-assignments${queryString}`, {
@@ -1221,12 +1316,26 @@ export const prApi = {
     status?: string;
     priority?: string;
     search?: string;
-  }): Promise<{ success: boolean; count: number; items: PurchaseRequisition[] }> => {
+    page?: number;
+    limit?: number;
+  }): Promise<{
+    success: boolean;
+    count: number;
+    total?: number;
+    pendingCount?: number;
+    approvedCount?: number;
+    convertedCount?: number;
+    items: PurchaseRequisition[];
+  }> => {
     const query = new URLSearchParams();
-    if (params?.project_id) query.append('project_id', String(params.project_id));
+    if (params?.project_id !== undefined && params?.project_id !== null) {
+      query.append('project_id', String(params.project_id));
+    }
     if (params?.status) query.append('status', params.status);
     if (params?.priority) query.append('priority', params.priority);
     if (params?.search) query.append('search', params.search);
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
 
     const queryString = query.toString() ? `?${query.toString()}` : '';
     const res = await fetch(`${API_BASE_URL}/purchase-requisitions${queryString}`, {

@@ -265,6 +265,9 @@ export const PurchaseOrdersPage: React.FC = () => {
   const [downloadingPDF, setDownloadingPDF] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(15);
+  const [total, setTotal] = useState<number>(0);
 
   // Master Data State for Create Modal
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -407,9 +410,12 @@ export const PurchaseOrdersPage: React.FC = () => {
       const res = await poApi.getAll({
         search: searchQuery || undefined,
         status: statusFilter !== 'ALL' ? statusFilter : undefined,
+        page,
+        limit: pageSize,
       });
       if (res.success && res.purchaseOrders) {
         setPurchaseOrders(res.purchaseOrders);
+        setTotal(res.total || 0);
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to fetch Purchase Orders');
@@ -446,13 +452,12 @@ export const PurchaseOrdersPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchPurchaseOrders();
     fetchMasters();
   }, []);
 
   useEffect(() => {
     fetchPurchaseOrders();
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, page, pageSize]);
 
   // Open Document Preview Modal
   const handleOpenPreview = (po: PurchaseOrder) => {
@@ -993,15 +998,21 @@ export const PurchaseOrdersPage: React.FC = () => {
             <div className="flex items-center gap-3 w-full sm:w-auto flex-1">
               <Input
                 placeholder="Search PO Number, Vendor Name, or Project Code..."
-                prefix={<SearchOutlined className="text-gray-400" />}
+                prefix={<SearchOutlined className="text-slate-400" />}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
                 allowClear
                 className="max-w-md"
               />
               <Select
                 value={statusFilter}
-                onChange={(val) => setStatusFilter(val)}
+                onChange={(val) => {
+                  setStatusFilter(val);
+                  setPage(1);
+                }}
                 className="w-40"
                 showSearch
                 filterOption={filterSelectOption}
@@ -1015,9 +1026,9 @@ export const PurchaseOrdersPage: React.FC = () => {
               />
             </div>
 
-            <Badge count={purchaseOrders.length} overflowCount={999} color="#6366f1">
+            <Badge count={total} overflowCount={9999} color="#6366f1">
               <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
-                Total POs: {purchaseOrders.length} Records
+                Total POs: {total} Records
               </Tag>
             </Badge>
           </div>
@@ -1034,8 +1045,16 @@ export const PurchaseOrdersPage: React.FC = () => {
                 y: isDesktop ? 'calc(100vh - 485px)' : undefined,
               }}
               pagination={{
-                pageSize: 15,
+                current: page,
+                pageSize: pageSize,
+                total: total,
                 showSizeChanger: true,
+                pageSizeOptions: ['10', '15', '25', '50', '100'],
+                onChange: (newPage, newPageSize) => {
+                  setPage(newPage);
+                  setPageSize(newPageSize);
+                },
+                showTotal: (tot, range) => `${range[0]}-${range[1]} of ${tot} POs`,
               }}
             />
           </div>

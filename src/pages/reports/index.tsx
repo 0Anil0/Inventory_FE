@@ -92,6 +92,9 @@ export const ReportsPage: React.FC = () => {
   const [healthFilter, setHealthFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [dateRange, setDateRange] = useState<[string, string] | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(15);
+  const [totalItems, setTotalItems] = useState<number>(0);
 
   const fetchInitialData = async () => {
     try {
@@ -105,7 +108,10 @@ export const ReportsPage: React.FC = () => {
   const fetchReportData = async () => {
     setLoading(true);
     try {
-      const params: any = {};
+      const params: any = {
+        page,
+        limit: pageSize,
+      };
       if (selectedProjectId) params.project_id = selectedProjectId;
       if (healthFilter !== 'ALL') params.health = healthFilter;
       if (searchQuery) params.search = searchQuery;
@@ -119,6 +125,7 @@ export const ReportsPage: React.FC = () => {
         if (res.success && res.report) {
           setProcurementData(res.report.items || []);
           setProcurementSummary(res.report.summary || null);
+          setTotalItems(res.report.total || res.report.summary?.total_items || 0);
         }
       } else {
         let res: any;
@@ -136,8 +143,10 @@ export const ReportsPage: React.FC = () => {
             res = await reportApi.getStockSummary(params);
         }
 
-        if (res.success && res.reports) {
-          setOtherReportData(res.reports);
+        if (res.success) {
+          const items = Array.isArray(res.reports) ? res.reports : (res.reports?.items || []);
+          setOtherReportData(items);
+          setTotalItems(res.total || res.reports?.total || items.length);
         }
       }
     } catch (err: any) {
@@ -152,11 +161,15 @@ export const ReportsPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    setPage(1);
+  }, [reportType, selectedProjectId, healthFilter, dateRange, searchQuery]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       fetchReportData();
     }, 300);
     return () => clearTimeout(timer);
-  }, [reportType, selectedProjectId, healthFilter, dateRange, searchQuery]);
+  }, [reportType, selectedProjectId, healthFilter, dateRange, searchQuery, page, pageSize]);
 
   // Export CSV Helper
   const handleExportCSV = () => {
@@ -859,9 +872,9 @@ export const ReportsPage: React.FC = () => {
           {/* Total Records Counter Header */}
           <div className="flex items-center justify-between gap-3 mb-3 pb-2 border-b border-slate-200 dark:border-white/10 shrink-0 print:hidden">
             <div className="flex items-center gap-2">
-              <Badge count={reportType === 'procurement-distribution' ? filteredProcurementData.length : filteredOtherReportData.length} overflowCount={999} color="#6366f1">
+              <Badge count={totalItems} overflowCount={9999} color="#6366f1">
                 <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
-                  Total Items: {reportType === 'procurement-distribution' ? filteredProcurementData.length : filteredOtherReportData.length} Entries
+                  Total Items: {totalItems} Entries
                 </Tag>
               </Badge>
             </div>
@@ -939,11 +952,22 @@ export const ReportsPage: React.FC = () => {
                   ? poColumns
                   : auditColumns
               }
-              dataSource={reportType === 'procurement-distribution' ? filteredProcurementData : filteredOtherReportData}
+              dataSource={reportType === 'procurement-distribution' ? procurementData : otherReportData}
               rowKey="id"
               loading={loading}
               scroll={{ x: 800 }}
-              pagination={{ pageSize: 15, showSizeChanger: true }}
+              pagination={{
+                current: page,
+                pageSize: pageSize,
+                total: totalItems,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '15', '25', '50', '100'],
+                onChange: (newPage, newPageSize) => {
+                  setPage(newPage);
+                  setPageSize(newPageSize);
+                },
+                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} Entries`,
+              }}
               size="small"
             />
           </div>

@@ -56,11 +56,19 @@ export const PurchaseRequisitionsPage: React.FC = () => {
   const [terms, setTerms] = useState<TermsAndConditions[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Filters
+  // Filters & Pagination
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedProject, setSelectedProject] = useState<number | undefined>(undefined);
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedPriority, setSelectedPriority] = useState<string>('ALL');
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(15);
+  const [total, setTotal] = useState<number>(0);
+
+  // Summary Metrics States
+  const [pendingCount, setPendingCount] = useState<number>(0);
+  const [approvedCount, setApprovedCount] = useState<number>(0);
+  const [convertedCount, setConvertedCount] = useState<number>(0);
 
   // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
@@ -136,10 +144,16 @@ export const PurchaseRequisitionsPage: React.FC = () => {
         project_id: selectedProject,
         status: selectedStatus,
         priority: selectedPriority,
-        search: searchQuery,
+        search: searchQuery || undefined,
+        page,
+        limit: pageSize,
       });
       if (res.success) {
         setPrList(res.items || []);
+        setTotal(res.total || res.count || 0);
+        if (res.pendingCount !== undefined) setPendingCount(res.pendingCount);
+        if (res.approvedCount !== undefined) setApprovedCount(res.approvedCount);
+        if (res.convertedCount !== undefined) setConvertedCount(res.convertedCount);
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to fetch Purchase Requisitions');
@@ -167,17 +181,39 @@ export const PurchaseRequisitionsPage: React.FC = () => {
 
   useEffect(() => {
     fetchPRs();
-  }, [selectedProject, selectedStatus, selectedPriority]);
+  }, [selectedProject, selectedStatus, selectedPriority, searchQuery, page, pageSize]);
 
   useEffect(() => {
     fetchDropdownData();
   }, []);
 
-  // Summary Metrics
-  const totalPRs = prList.length;
-  const pendingCount = prList.filter((p) => p.status === 'PENDING_APPROVAL').length;
-  const approvedCount = prList.filter((p) => p.status === 'APPROVED' || p.status === 'PARTIALLY_APPROVED').length;
-  const convertedCount = prList.filter((p) => p.status === 'PO_CREATED').length;
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setPage(1);
+  };
+
+  const handleProjectChange = (val: number | undefined) => {
+    setSelectedProject(val);
+    setPage(1);
+  };
+
+  const handleStatusChange = (val: string) => {
+    setSelectedStatus(val);
+    setPage(1);
+  };
+
+  const handlePriorityChange = (val: string) => {
+    setSelectedPriority(val);
+    setPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedProject(undefined);
+    setSelectedStatus('ALL');
+    setSelectedPriority('ALL');
+    setPage(1);
+  };
 
   // Handlers for Creating PR
   const handleAddItemToCreate = () => {
@@ -631,7 +667,7 @@ export const PurchaseRequisitionsPage: React.FC = () => {
             <Card className="shadow-sm border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900" bodyStyle={{ padding: '12px 16px' }}>
               <Statistic
                 title={<span className="text-xs text-slate-500 font-medium">Total PRs Raised</span>}
-                value={totalPRs}
+                value={total}
                 prefix={<FileTextOutlined className="text-indigo-500 mr-1.5" />}
                 valueStyle={{ fontSize: '1.4rem', fontWeight: 700 }}
               />
@@ -677,15 +713,14 @@ export const PurchaseRequisitionsPage: React.FC = () => {
                 placeholder="Search PR Number or Notes..."
                 prefix={<SearchOutlined className="text-slate-400" />}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onPressEnter={fetchPRs}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 allowClear
                 className="w-full sm:w-64"
               />
               <Select
                 placeholder="Select Project"
                 value={selectedProject}
-                onChange={(val) => setSelectedProject(val)}
+                onChange={handleProjectChange}
                 allowClear
                 className="w-full sm:w-56"
                 showSearch
@@ -700,7 +735,7 @@ export const PurchaseRequisitionsPage: React.FC = () => {
 
               <Select
                 value={selectedStatus}
-                onChange={(val) => setSelectedStatus(val)}
+                onChange={handleStatusChange}
                 className="w-40"
                 showSearch
                 filterOption={filterSelectOption}
@@ -715,7 +750,7 @@ export const PurchaseRequisitionsPage: React.FC = () => {
 
               <Select
                 value={selectedPriority}
-                onChange={(val) => setSelectedPriority(val)}
+                onChange={handlePriorityChange}
                 className="w-36"
                 showSearch
                 filterOption={filterSelectOption}
@@ -728,15 +763,7 @@ export const PurchaseRequisitionsPage: React.FC = () => {
               </Select>
             </div>
 
-            <Button
-              icon={<ClearOutlined />}
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedProject(undefined);
-                setSelectedStatus('ALL');
-                setSelectedPriority('ALL');
-              }}
-            >
+            <Button icon={<ClearOutlined />} onClick={handleResetFilters}>
               Reset Filters
             </Button>
           </div>
@@ -755,9 +782,16 @@ export const PurchaseRequisitionsPage: React.FC = () => {
                 y: isDesktop ? 'calc(100vh - 490px)' : undefined,
               }}
               pagination={{
-                pageSize: 15,
+                current: page,
+                pageSize: pageSize,
+                total: total,
                 showSizeChanger: true,
-                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} PRs`,
+                pageSizeOptions: ['10', '15', '25', '50', '100'],
+                onChange: (newPage, newPageSize) => {
+                  setPage(newPage);
+                  setPageSize(newPageSize);
+                },
+                showTotal: (tot, range) => `${range[0]}-${range[1]} of ${tot} PRs`,
               }}
             />
           </div>

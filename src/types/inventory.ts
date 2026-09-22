@@ -404,6 +404,10 @@ export interface POItemTrackingResponse {
     totalSpend: number;
   };
   items: POItemTrackRecord[];
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
 }
 
 export type PRStatus =

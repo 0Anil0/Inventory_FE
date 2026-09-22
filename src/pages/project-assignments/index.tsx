@@ -78,10 +78,18 @@ export const ProjectAssignmentsPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  // Filter states
+  // Filter & Pagination states
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterProjectId, setFilterProjectId] = useState<number | null>(null);
   const [dateRange, setDateRange] = useState<[string, string] | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(15);
+  const [total, setTotal] = useState<number>(0);
+
+  // Aggregated summary statistics
+  const [totalAssignmentsCount, setTotalAssignmentsCount] = useState<number>(0);
+  const [uniqueProjectsAssigned, setUniqueProjectsAssigned] = useState<number>(0);
+  const [totalUnitsDispatched, setTotalUnitsDispatched] = useState<number>(0);
 
   // Modal & Edit states
   const [editingAssignment, setEditingAssignment] = useState<ProjectAssignmentRecord | null>(null);
@@ -95,55 +103,72 @@ export const ProjectAssignmentsPage: React.FC = () => {
 
   const selectedTargetProjectId = Form.useWatch('target_project_id', form);
 
-  // Load projects, General Store stock, catalog items, AND persisted project assignments
+  // Load dropdown metadata (Projects, General Store stock, catalog items)
   const loadInitialData = async () => {
-    setLoading(true);
     try {
-      const [projRes, stockRes, itemRes, assignRes] = await Promise.all([
+      const [projRes, stockRes, itemRes] = await Promise.all([
         projectApi.getAll(),
         inventoryApi.getByProject(0),
         itemTypeApi.getAll(),
-        projectAssignmentApi.getAll(),
       ]);
 
       if (projRes.success && projRes.projects) setProjects(projRes.projects);
       if (stockRes.success && stockRes.inventory) setStoreStock(stockRes.inventory);
       if (itemRes.success && itemRes.items) setCatalogItems(itemRes.items);
-      if (assignRes.success && assignRes.assignments) {
+    } catch (err: any) {
+      message.error(err.message || 'Failed to load assignment metadata');
+    }
+  };
+
+  // Fetch server-side assignments based on current search, filters, and page
+  const fetchAssignments = async () => {
+    setLoading(true);
+    try {
+      const res = await projectAssignmentApi.getAll({
+        search: searchQuery || undefined,
+        to_project_id: filterProjectId || undefined,
+        from_date: dateRange ? dateRange[0] : undefined,
+        to_date: dateRange ? dateRange[1] : undefined,
+        page,
+        limit: pageSize,
+      });
+
+      if (res.success && res.assignments) {
         setAssignments(
-          assignRes.assignments.map((a) => ({
+          res.assignments.map((a: any) => ({
             id: a.id,
             assignment_no: a.assignment_no,
             target_project_id: a.to_project_id,
             target_project: a.to_project,
             source_location_name: 'General Stock / Main Warehouse',
             assigned_to_person: a.assigned_to_person,
-            date: a.assignment_date || (a as any).createdAt || new Date().toISOString(),
+            date: a.assignment_date || a.createdAt || new Date().toISOString(),
             notes: a.notes || undefined,
-            items: (a.items || []).map((i) => {
-              const catItem = itemRes.success && itemRes.items ? itemRes.items.find((c) => c.id === i.item_type_id) : undefined;
-              return {
-                item_type_id: i.item_type_id,
-                lot_id: i.lot_id,
-                po_id: i.po_id,
-                unit_price: i.unit_price,
-                total_cost: i.total_cost,
-                purchase_order: i.purchase_order,
-                item_name: i.item_type?.name || catItem?.name || 'Item',
-                item_code: i.item_type?.code || catItem?.code || 'ITM',
-                cat_no: i.item_type?.cat_no || catItem?.cat_no || undefined,
-                make: i.item_type?.make || catItem?.make || undefined,
-                rating: i.item_type?.rating || catItem?.rating || undefined,
-                full_description: i.item_type?.full_description || i.item_type?.description || catItem?.full_description || catItem?.description || undefined,
-                unit: i.item_type?.unit || catItem?.unit || 'pcs',
-                quantity: i.quantity,
-              };
-            }),
+            items: (a.items || []).map((i: any) => ({
+              item_type_id: i.item_type_id,
+              lot_id: i.lot_id,
+              po_id: i.po_id,
+              unit_price: i.unit_price,
+              total_cost: i.total_cost,
+              purchase_order: i.purchase_order,
+              item_name: i.item_type?.name || 'Item',
+              item_code: i.item_type?.code || 'ITM',
+              cat_no: i.item_type?.cat_no || undefined,
+              make: i.item_type?.make || undefined,
+              rating: i.item_type?.rating || undefined,
+              full_description: i.item_type?.full_description || i.item_type?.description || undefined,
+              unit: i.item_type?.unit || 'pcs',
+              quantity: i.quantity,
+            })),
           }))
         );
+        setTotal(res.total || 0);
+        if (res.totalAssignmentsCount !== undefined) setTotalAssignmentsCount(res.totalAssignmentsCount);
+        if (res.uniqueProjectsAssigned !== undefined) setUniqueProjectsAssigned(res.uniqueProjectsAssigned);
+        if (res.totalUnitsDispatched !== undefined) setTotalUnitsDispatched(res.totalUnitsDispatched);
       }
     } catch (err: any) {
-      message.error(err.message || 'Failed to load assignment data');
+      message.error(err.message || 'Failed to load project assignment records');
     } finally {
       setLoading(false);
     }
@@ -152,6 +177,10 @@ export const ProjectAssignmentsPage: React.FC = () => {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  useEffect(() => {
+    fetchAssignments();
+  }, [searchQuery, filterProjectId, dateRange, page, pageSize]);
 
   // Fetch available stock lots dynamically when target project is selected
   useEffect(() => {
@@ -214,7 +243,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
       const res = await projectAssignmentApi.delete(id);
       if (res.success) {
         message.success(res.message || 'Assignment cancelled and stock restored');
-        loadInitialData();
+        fetchAssignments();
       }
     } catch (err: any) {
       message.error(err.message || 'Failed to delete assignment');
@@ -293,7 +322,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
         if (res.success) {
           message.success(res.message || 'Assignment updated successfully');
           setIsModalOpen(false);
-          loadInitialData();
+          fetchAssignments();
         }
       } else {
         const res = await projectAssignmentApi.create({
@@ -307,7 +336,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
         if (res.success) {
           message.success(res.message || 'Assignment created successfully');
           setIsModalOpen(false);
-          loadInitialData();
+          fetchAssignments();
         }
       }
     } catch (err: any) {
@@ -317,34 +346,31 @@ export const ProjectAssignmentsPage: React.FC = () => {
     }
   };
 
-  // Filtered assignments table list
-  const filteredAssignments = assignments.filter((a) => {
-    if (filterProjectId && a.target_project_id !== filterProjectId) return false;
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase().trim();
-      const matchNo = a.assignment_no.toLowerCase().includes(q);
-      const matchPerson = a.assigned_to_person.toLowerCase().includes(q);
-      const matchProj = a.target_project?.name?.toLowerCase().includes(q) || a.target_project?.code?.toLowerCase().includes(q);
-      const matchItems = a.items.some(
-        (i) => i.item_name.toLowerCase().includes(q) || i.item_code.toLowerCase().includes(q) || (i.cat_no && i.cat_no.toLowerCase().includes(q))
-      );
-      if (!matchNo && !matchPerson && !matchProj && !matchItems) return false;
-    }
-    if (dateRange && dateRange[0] && dateRange[1]) {
-      const d = new Date(a.date).getTime();
-      const start = new Date(dateRange[0]).getTime();
-      const end = new Date(dateRange[1]).getTime() + 86400000;
-      if (d < start || d > end) return false;
-    }
-    return true;
-  });
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setPage(1);
+  };
 
-  const totalAssignmentsCount = assignments.length;
-  const uniqueProjectsAssigned = new Set(assignments.map((a) => a.target_project_id)).size;
-  const totalUnitsDispatched = assignments.reduce(
-    (sum, a) => sum + a.items.reduce((iSum, item) => iSum + Number(item.quantity || 0), 0),
-    0
-  );
+  const handleFilterProjectChange = (val: number | null) => {
+    setFilterProjectId(val);
+    setPage(1);
+  };
+
+  const handleDateRangeChange = (dates: any) => {
+    if (dates && dates[0] && dates[1]) {
+      setDateRange([dates[0].format('YYYY-MM-DD'), dates[1].format('YYYY-MM-DD')]);
+    } else {
+      setDateRange(null);
+    }
+    setPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setFilterProjectId(null);
+    setDateRange(null);
+    setPage(1);
+  };
 
   const columns: ColumnsType<ProjectAssignmentRecord> = [
     {
@@ -361,7 +387,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
     {
       title: 'Destination Project / Site',
       key: 'target_project',
-      width: 220,
+      width: 230,
       render: (_, record) => {
         const proj = record.target_project;
         const parent = proj?.parent || projects.find((p) => p.id === proj?.parent_id);
@@ -390,6 +416,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
     {
       title: 'Assigned Items & PO Lot Rates',
       key: 'items',
+      width: 360,
       render: (_, record) => (
         <div className="flex flex-col gap-1.5 py-1">
           {record.items.map((item, idx) => {
@@ -436,7 +463,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
       title: 'Recipient (Engineer / Team)',
       dataIndex: 'assigned_to_person',
       key: 'assigned_to_person',
-      width: 180,
+      width: 200,
       render: (text) => (
         <span className="font-semibold text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5">
           <UserOutlined className="text-slate-400" /> {text}
@@ -463,7 +490,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 120,
+      width: 110,
       fixed: 'right',
       render: (_, record) => (
         <Space size="small">
@@ -511,7 +538,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button icon={<ReloadOutlined />} onClick={loadInitialData} loading={loading}>
+            <Button icon={<ReloadOutlined />} onClick={fetchAssignments} loading={loading}>
               Refresh
             </Button>
             <Button
@@ -567,9 +594,9 @@ export const ProjectAssignmentsPage: React.FC = () => {
           {/* Toolbar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200 dark:border-white/10">
             <div className="flex items-center gap-3">
-              <Badge count={filteredAssignments.length} overflowCount={999} color="#6366f1">
+              <Badge count={total} overflowCount={9999} color="#6366f1">
                 <Tag color="purple" className="text-sm px-3 py-1 font-bold font-['Outfit'] border-none">
-                  Total Assignment Records: {filteredAssignments.length}
+                  Total Assignment Records: {total}
                 </Tag>
               </Badge>
             </div>
@@ -581,7 +608,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
               placeholder="Search by Ref #, project, or person..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               allowClear
               className="w-full"
             />
@@ -589,7 +616,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
             <Select
               placeholder="Filter by Target Project / Site"
               value={filterProjectId}
-              onChange={setFilterProjectId}
+              onChange={handleFilterProjectChange}
               allowClear
               className="w-full"
               showSearch
@@ -613,40 +640,30 @@ export const ProjectAssignmentsPage: React.FC = () => {
               })}
             </Select>
 
-            <RangePicker
-              onChange={(dates) => {
-                if (dates && dates[0] && dates[1]) {
-                  setDateRange([dates[0].format('YYYY-MM-DD'), dates[1].format('YYYY-MM-DD')]);
-                } else {
-                  setDateRange(null);
-                }
-              }}
-              className="w-full"
-            />
+            <RangePicker onChange={handleDateRangeChange} className="w-full" />
 
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                setSearchQuery('');
-                setFilterProjectId(null);
-                setDateRange(null);
-              }}
-              className="w-full"
-            >
+            <Button icon={<ReloadOutlined />} onClick={handleResetFilters} className="w-full">
               Reset Filters
             </Button>
           </div>
 
           <Table<ProjectAssignmentRecord>
             columns={columns}
-            dataSource={filteredAssignments}
+            dataSource={assignments}
             rowKey="id"
             loading={loading}
-            scroll={{ x: 1000 }}
+            scroll={{ x: 1310 }}
             pagination={{
-              pageSize: 15,
+              current: page,
+              pageSize: pageSize,
+              total: total,
               showSizeChanger: true,
-              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} assignments`,
+              pageSizeOptions: ['10', '15', '25', '50', '100'],
+              onChange: (newPage, newPageSize) => {
+                setPage(newPage);
+                setPageSize(newPageSize);
+              },
+              showTotal: (tot, range) => `${range[0]}-${range[1]} of ${tot} assignments`,
             }}
           />
         </Card>
