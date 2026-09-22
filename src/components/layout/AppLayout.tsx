@@ -53,24 +53,66 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     localStorage.setItem('sidebar_collapsed', JSON.stringify(val));
   };
 
-  // Persisted Submenu Open Keys State
-  const allSubMenuKeys = ['sub-masters', 'sub-projects-inventory', 'sub-procurement', 'sub-analytics', 'sub-admin'];
+  // Persisted Submenu Open Keys State (Accordion mode: only one parent open at a time)
+  const rootSubMenuKeys = ['sub-masters', 'sub-projects-inventory', 'sub-procurement', 'sub-analytics', 'sub-admin'];
+
+  const getSubmenuKeyForPath = (path: string): string => {
+    if (['/item-types', '/makes', '/units', '/vendors', '/storage-locations'].includes(path)) {
+      return 'sub-masters';
+    }
+    if (['/projects', '/project-assignments', '/inventory', '/grn'].includes(path)) {
+      return 'sub-projects-inventory';
+    }
+    if (['/purchase-requisitions', '/purchase-orders', '/po-item-tracking', '/approver-config', '/terms-and-conditions'].includes(path)) {
+      return 'sub-procurement';
+    }
+    if (['/project-costing', '/reports'].includes(path)) {
+      return 'sub-analytics';
+    }
+    if (['/users'].includes(path)) {
+      return 'sub-admin';
+    }
+    return '';
+  };
 
   const [openKeys, setOpenKeys] = useState<string[]>(() => {
     const saved = localStorage.getItem('sidebar_open_keys');
     if (saved !== null) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const validKey = parsed.find((k: string) => rootSubMenuKeys.includes(k)) || parsed[0];
+          return validKey ? [validKey] : [];
+        }
       } catch (e) {
-        return allSubMenuKeys;
+        // fallback
       }
     }
-    return allSubMenuKeys;
+    const currentSubKey = getSubmenuKeyForPath(location.pathname);
+    return currentSubKey ? [currentSubKey] : ['sub-masters'];
   });
 
+  // Keep active submenu open when location changes
+  React.useEffect(() => {
+    const currentSubKey = getSubmenuKeyForPath(location.pathname);
+    if (currentSubKey && !openKeys.includes(currentSubKey)) {
+      setOpenKeys([currentSubKey]);
+      localStorage.setItem('sidebar_open_keys', JSON.stringify([currentSubKey]));
+    }
+  }, [location.pathname]);
+
   const handleOpenChange = (keys: string[]) => {
-    setOpenKeys(keys);
-    localStorage.setItem('sidebar_open_keys', JSON.stringify(keys));
+    const latestOpenKey = keys.find((key) => !openKeys.includes(key));
+    let nextOpenKeys: string[] = [];
+    if (latestOpenKey && rootSubMenuKeys.includes(latestOpenKey)) {
+      nextOpenKeys = [latestOpenKey];
+    } else if (latestOpenKey) {
+      nextOpenKeys = keys;
+    } else {
+      nextOpenKeys = [];
+    }
+    setOpenKeys(nextOpenKeys);
+    localStorage.setItem('sidebar_open_keys', JSON.stringify(nextOpenKeys));
   };
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState<boolean>(false);
