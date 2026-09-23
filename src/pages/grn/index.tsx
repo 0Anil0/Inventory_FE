@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import {
   Table,
   Button,
@@ -21,6 +23,7 @@ import {
 import {
   PlusOutlined,
   PrinterOutlined,
+  DownloadOutlined,
   SearchOutlined,
   DatabaseOutlined,
   CheckOutlined,
@@ -99,6 +102,107 @@ const GRNPage: React.FC = () => {
   // View / Print Modal State
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedGrn, setSelectedGrn] = useState<GoodsReceiptNote | null>(null);
+  const [downloadingPDF, setDownloadingPDF] = useState<boolean>(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  // Helper to split GRN line items cleanly across A4 pages (matches PO concept)
+  const getGrnPagesData = (grn: GoodsReceiptNote) => {
+    const items = grn.items || [];
+    if (items.length === 0) {
+      return [{ tableItems: [], showSignature: true }];
+    }
+
+    const pages = [];
+    const firstPageLimit = 5;
+    const subPageLimit = 10;
+
+    const page1Items = items.slice(0, firstPageLimit);
+    const remainingItems = items.slice(firstPageLimit);
+
+    const totalPages = Math.ceil(remainingItems.length / subPageLimit) + 1;
+
+    pages.push({
+      tableItems: page1Items,
+      showSignature: totalPages === 1,
+    });
+
+    for (let i = 0; i < remainingItems.length; i += subPageLimit) {
+      const chunk = remainingItems.slice(i, i + subPageLimit);
+      const isLastPage = i + subPageLimit >= remainingItems.length;
+      pages.push({
+        tableItems: chunk,
+        showSignature: isLastPage,
+      });
+    }
+
+    return pages;
+  };
+
+  // Clean Per-Page A4 PDF Download Handler (Matches PO concept)
+  const handleDownloadPDF = async () => {
+    const container = printRef.current;
+    if (!container || !selectedGrn) return;
+
+    setDownloadingPDF(true);
+    const grnNo = selectedGrn.grn_number ? selectedGrn.grn_number.replace(/[/\\?%*:|"<>]/g, '_') : 'Document';
+
+    try {
+      const pageNodes = Array.from(
+        container.querySelectorAll<HTMLElement>('.grn-pdf-page')
+      );
+
+      if (pageNodes.length === 0) return;
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidthMm = pdf.internal.pageSize.getWidth();   // 210mm
+      const pdfHeightMm = pdf.internal.pageSize.getHeight(); // 297mm
+      const marginMm = 8;
+      const printableWidthMm = pdfWidthMm - marginMm * 2;   // 194mm
+      const printableHeightMm = pdfHeightMm - marginMm * 2; // 281mm
+
+      for (let i = 0; i < pageNodes.length; i++) {
+        const pageNode = pageNodes[i];
+
+        const canvas = await html2canvas(pageNode, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          onclone: (clonedDoc) => {
+            Array.from(clonedDoc.querySelectorAll('style')).forEach((styleTag) => {
+              if (styleTag.innerHTML && styleTag.innerHTML.includes('oklch')) {
+                styleTag.innerHTML = styleTag.innerHTML.replace(/oklch\([^)]+\)/g, '#1e293b');
+              }
+            });
+          },
+        });
+
+        const sliceData = canvas.toDataURL('image/png');
+        const sliceHeightMm = (canvas.height * printableWidthMm) / canvas.width;
+        const actualHeightMm = Math.min(sliceHeightMm, printableHeightMm);
+
+        if (i > 0) {
+          pdf.addPage();
+        }
+
+        pdf.addImage(sliceData, 'PNG', marginMm, marginMm, printableWidthMm, actualHeightMm);
+      }
+
+      pdf.save(`GRN_${grnNo}.pdf`);
+      message.success(`GRN Slip PDF GRN_${grnNo}.pdf saved to your Downloads folder!`);
+    } catch (err: any) {
+      console.error('PDF Download Error:', err);
+      message.error('Failed to download PDF: ' + (err?.message || 'Rendering error'));
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
 
   const [form] = Form.useForm();
   const [filterForm] = Form.useForm();
@@ -1129,131 +1233,217 @@ const GRNPage: React.FC = () => {
         open={viewModalVisible}
         onCancel={() => setViewModalVisible(false)}
         centered
-        width={850}
+        width={950}
         styles={{
-          body: { maxHeight: '75vh', overflowY: 'auto', paddingRight: '8px' },
+          body: { maxHeight: '80vh', overflowY: 'auto', paddingRight: '8px' },
         }}
         footer={[
           <Button key="close" size="large" onClick={() => setViewModalVisible(false)}>
             Close
           </Button>,
           <Button
-            key="print"
+            key="download"
             type="primary"
             size="large"
-            icon={<PrinterOutlined />}
+            icon={<DownloadOutlined />}
+            loading={downloadingPDF}
             style={{ backgroundColor: '#1e1b4b', borderColor: '#1e1b4b' }}
-            onClick={() => window.print()}
+            onClick={handleDownloadPDF}
           >
-            Print GRN Slip
+            Download GRN Slip PDF
           </Button>,
         ]}
       >
-        {selectedGrn && (
-          <div className="p-4 bg-white font-sans text-slate-900" id="grn-print-area">
-            {/* Header Block */}
-            <div className="border-b-2 border-slate-900 pb-3 mb-4 text-center">
-              <h2 className="text-xl font-extrabold uppercase text-slate-900 mb-1 tracking-tight">
-                EFFICIENT ELECTRICAL ENERGY AND AUTOMATION PRIVATE LIMITED
-              </h2>
-              <p className="text-xs text-slate-700 mb-0.5 font-medium">
-                ROAD NO. 3 H-185 IID CENTER RIICO INDUSTRIAL AREA KALADWAS UDAIPUR 313003
-              </p>
-              <p className="text-xs text-slate-700 font-medium">
-                Email: purchase@efficientelectrical.in, efficient.eeea@gmail.com | Cell: 9694645256, 8209545801
-              </p>
-              <div className="font-bold text-sm font-mono text-slate-900 mt-1">
-                GST NO.: 08AAHCE7406Q1Z2
-              </div>
-            </div>
+        {selectedGrn && (() => {
+          const pagesData = getGrnPagesData(selectedGrn);
+          return (
+            <div className="bg-slate-100 p-4 rounded-lg space-y-6">
+              <style>{`
+                @media print {
+                  body * {
+                    visibility: hidden;
+                  }
+                  .grn-print-modal, .grn-print-modal * {
+                    visibility: visible;
+                  }
+                  .grn-print-modal {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                  }
+                  .ant-modal-close, .ant-modal-header {
+                    display: none !important;
+                  }
+                }
+              `}</style>
 
-            {/* GRN Banner */}
-            <div className="bg-slate-900 text-white font-bold text-center py-1.5 text-base uppercase tracking-widest mb-4">
-              GOODS RECEIPT NOTE (GRN)
-            </div>
+              {/* Master print container wrapper */}
+              <div ref={printRef} className="space-y-6">
+                {pagesData.map((pageData, pageIdx) => (
+                  <div key={pageIdx} className="space-y-2">
+                    {/* Page Break / Indicator Badge */}
+                    <div className="flex items-center gap-4 my-2 print:hidden">
+                      <div className="flex-1 border-t border-dashed border-slate-300"></div>
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500 px-3 py-1 bg-white border border-slate-300 rounded-full shadow-xs">
+                        Page {pageIdx + 1} of {pagesData.length}
+                      </span>
+                      <div className="flex-1 border-t border-dashed border-slate-300"></div>
+                    </div>
 
-            {/* GRN Meta Info Grid */}
-            <div className="grid grid-cols-2 gap-4 border border-slate-900 p-3 mb-4 text-xs bg-slate-50">
-              <div className="space-y-1 border-r border-slate-300 pr-3">
-                <div><span className="font-bold text-slate-900">GRN No:</span> <span className="font-mono font-bold text-indigo-900">{selectedGrn.grn_number}</span></div>
-                <div><span className="font-semibold text-slate-700">Receipt Date:</span> {dayjs(selectedGrn.received_date).format('DD/MM/YYYY')}</div>
-                <div><span className="font-semibold text-slate-700">Supplier / Vendor:</span> {selectedGrn.purchase_order?.vendor?.name}</div>
-                <div><span className="font-semibold text-slate-700">Project / Site:</span> {selectedGrn.project?.name || selectedGrn.purchase_order?.project?.name || 'General Stock'}</div>
-              </div>
-              <div className="space-y-1 pl-2">
-                <div><span className="font-bold text-slate-900">PO Ref No:</span> <span className="font-mono font-bold text-indigo-900">{selectedGrn.purchase_order?.po_number}</span></div>
-                <div><span className="font-semibold text-slate-700">Invoice / Challan No:</span> {selectedGrn.challan_no || 'N/A'}</div>
-                <div><span className="font-semibold text-slate-700">Vehicle No:</span> {selectedGrn.vehicle_no || 'N/A'}</div>
-                <div><span className="font-semibold text-slate-700">Received By:</span> {selectedGrn.received_by_user?.username || 'Admin'}</div>
-              </div>
-            </div>
+                    {/* Printable A4 Page Frame */}
+                    <div
+                      className="grn-pdf-page bg-white p-7 rounded-lg shadow-sm border border-slate-200"
+                      style={{ backgroundColor: '#ffffff', color: '#0f172a', fontFamily: 'sans-serif' }}
+                    >
+                      {/* PAGE 1 HEADER */}
+                      {pageIdx === 0 ? (
+                        <>
+                          {/* Document Top Header with Logo */}
+                          <div style={{ borderBottom: '2.5px solid #0f172a', paddingBottom: '14px', marginBottom: '14px' }}>
+                            <div className="grid grid-cols-[100px_1fr_100px] items-center gap-3">
+                              <div style={{ width: '100px', height: '100px', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '6px' }} className="shrink-0 flex items-center justify-center">
+                                <img src="/logo.png" alt="Company Logo" className="max-h-full max-w-full object-contain" />
+                              </div>
+                              <div className="text-center">
+                                <h1 style={{ color: '#0f172a', fontFamily: 'sans-serif', fontSize: '20px', lineHeight: '1.25' }} className="font-extrabold uppercase tracking-wide mb-1.5">
+                                  EFFICIENT ELECTRICAL ENERGY AND AUTOMATION PRIVATE LIMITED
+                                </h1>
+                                <p style={{ color: '#334155', fontSize: '12.5px', lineHeight: '1.4' }} className="mb-0.5 font-medium">
+                                  ROAD NO. 3 H-185 IID CENTER RIICO INDUSTRIAL AREA KALADWAS UDAIPUR 313003
+                                </p>
+                                <p style={{ color: '#334155', fontSize: '12.5px', lineHeight: '1.4' }} className="mb-0.5 font-medium">
+                                  Email: purchase@efficientelectrical.in, efficient.eeea@gmail.com | Cell: 9694645256, 8209545801
+                                </p>
+                                <p style={{ color: '#0f172a', fontFamily: 'monospace', fontSize: '14px' }} className="font-bold mt-1">
+                                  GST NO.: 08AAHCE7406Q1Z2
+                                </p>
+                              </div>
+                              <div style={{ width: '100px', height: '100px' }} className="shrink-0"></div>
+                            </div>
+                          </div>
 
-            {/* Items Table */}
-            <table className="w-full border-collapse border border-slate-900 text-xs mb-6">
-              <thead>
-                <tr className="bg-slate-100 font-bold border-b border-slate-900">
-                  <th className="border border-slate-900 p-2 text-center w-10">S.No</th>
-                  <th className="border border-slate-900 p-2 text-center w-28">Item Code</th>
-                  <th className="border border-slate-900 p-2">Description & Make</th>
-                  <th className="border border-slate-900 p-2 text-center w-20">Received Qty</th>
-                  <th className="border border-slate-900 p-2 text-center w-16">Unit</th>
-                  <th className="border border-slate-900 p-2 w-44">Storage Location (Shelf / Rack)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(selectedGrn.items || []).map((item, idx) => (
-                  <tr key={item.id} className="border-b border-slate-400">
-                    <td className="border border-slate-900 p-2 text-center font-mono">{idx + 1}</td>
-                    <td className="border border-slate-900 p-2 text-center font-mono font-bold text-indigo-900">
-                      {item.item_type?.code || '-'}
-                    </td>
-                    <td className="border border-slate-900 p-2 font-medium">
-                      {item.item_type?.full_description || item.item_type?.name || 'Material Item'}
-                      {item.item_type?.full_description && item.item_type?.name && item.item_type.name !== item.item_type.full_description && (
-                        <span className="block text-[11px] text-slate-600">({item.item_type.name})</span>
-                      )}
-                      {item.item_type?.cat_no && <span className="block text-[11px] text-slate-600">Cat: {item.item_type.cat_no}</span>}
-                      {item.item_type?.make && <span className="block text-[11px] text-indigo-700 font-semibold">Make: {item.item_type.make}</span>}
-                    </td>
-                    <td className="border border-slate-900 p-2 text-center font-mono font-bold text-slate-900">{item.received_qty}</td>
-                    <td className="border border-slate-900 p-2 text-center">{item.item_type?.unit || 'Nos'}</td>
-                    <td className="border border-slate-900 p-2 font-semibold text-slate-800">
-                      {item.shelf ? (
-                        <span>
-                          {item.shelf.name} ({item.shelf.code})
-                          {item.rack && <span className="block text-[11px] text-indigo-700">→ {item.rack.name} ({item.rack.rack_code})</span>}
-                        </span>
+                          {/* Document Title Ribbon */}
+                          <div style={{ backgroundColor: '#0f172a', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', padding: '6px 0', fontSize: '16px', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '14px' }}>
+                            GOODS RECEIPT NOTE (GRN)
+                          </div>
+
+                          {/* GRN Meta Info Grid */}
+                          <div className="grid grid-cols-2 gap-4 rounded-sm" style={{ border: '1.5px solid #1e293b', padding: '14px', marginBottom: '18px', fontSize: '13.5px', fontFamily: 'sans-serif', backgroundColor: '#fafafa' }}>
+                            <div style={{ borderRight: '1.5px solid #cbd5e1', paddingRight: '14px' }} className="space-y-1.5">
+                              <div><span style={{ color: '#0f172a', fontWeight: 'bold' }}>GRN No:</span> <span style={{ color: '#312e81', fontWeight: 'bold', fontFamily: 'monospace', fontSize: '15px' }}>{selectedGrn.grn_number}</span></div>
+                              <div><span style={{ color: '#0f172a', fontWeight: '600' }}>Receipt Date:</span> <span style={{ color: '#334155' }}>{dayjs(selectedGrn.received_date).format('DD/MM/YYYY')}</span></div>
+                              <div><span style={{ color: '#0f172a', fontWeight: '600' }}>Supplier / Vendor:</span> <span style={{ color: '#334155' }}>{selectedGrn.purchase_order?.vendor?.name || 'N/A'}</span></div>
+                              <div><span style={{ color: '#0f172a', fontWeight: '600' }}>Project / Site:</span> <span style={{ color: '#334155' }}>{selectedGrn.project?.name || selectedGrn.purchase_order?.project?.name || 'General Stock'}</span></div>
+                            </div>
+                            <div className="space-y-1.5 pl-2">
+                              <div><span style={{ color: '#0f172a', fontWeight: 'bold' }}>PO Ref No:</span> <span style={{ color: '#312e81', fontWeight: 'bold', fontFamily: 'monospace', fontSize: '15px' }}>{selectedGrn.purchase_order?.po_number || 'N/A'}</span></div>
+                              <div><span style={{ color: '#0f172a', fontWeight: '600' }}>Invoice / Challan No:</span> <span style={{ color: '#334155' }}>{selectedGrn.challan_no || 'N/A'}</span></div>
+                              <div><span style={{ color: '#0f172a', fontWeight: '600' }}>Vehicle No:</span> <span style={{ color: '#334155' }}>{selectedGrn.vehicle_no || 'N/A'}</span></div>
+                              <div><span style={{ color: '#0f172a', fontWeight: '600' }}>Received By:</span> <span style={{ color: '#334155' }}>{selectedGrn.received_by_user?.username || 'Admin'}</span></div>
+                            </div>
+                          </div>
+                        </>
                       ) : (
-                        <span className="text-slate-400 italic">Unassigned</span>
+                        /* PAGE 2+ HEADER BAR */
+                        <div style={{ borderBottom: '2px solid #0f172a', paddingBottom: '10px', marginBottom: '14px' }} className="flex justify-between items-center">
+                          <div style={{ fontSize: '15px', color: '#0f172a' }} className="font-extrabold uppercase">
+                            EFFICIENT ELECTRICAL ENERGY & AUTOMATION PVT. LTD.
+                          </div>
+                          <div style={{ fontSize: '13px', color: '#312e81' }} className="font-bold font-mono">
+                            GRN No: {selectedGrn.grn_number} (Page {pageIdx + 1} of {pagesData.length})
+                          </div>
+                        </div>
                       )}
-                    </td>
-                  </tr>
+
+                      {/* ITEMS TABLE */}
+                      {pageData.tableItems.length > 0 && (
+                        <table style={{ borderCollapse: 'collapse', border: '1.5px solid #1e293b', width: '100%', fontSize: '13px', fontFamily: 'sans-serif', marginBottom: '18px' }}>
+                          <thead>
+                            <tr style={{ backgroundColor: '#f1f5f9', color: '#0f172a', fontWeight: 'bold', borderBottom: '1.5px solid #1e293b' }}>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '45px', fontSize: '13px' }}>S.No</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '110px', fontSize: '13px' }}>Item Code</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 8px', textAlign: 'left', fontSize: '13px' }}>Description & Specification</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '80px', fontSize: '13px' }}>Received Qty</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '60px', fontSize: '13px' }}>Unit</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 8px', textAlign: 'left', width: '160px', fontSize: '13px' }}>Storage Location</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pageData.tableItems.map((item, idx) => {
+                              const overallIndex = (selectedGrn.items || []).indexOf(item) + 1;
+                              return (
+                                <tr key={item.id || idx} style={{ borderBottom: '1px solid #cbd5e1' }}>
+                                  <td style={{ border: '1px solid #1e293b', padding: '9px 6px', textAlign: 'center', fontFamily: 'monospace', fontSize: '13px', color: '#0f172a' }}>
+                                    {overallIndex > 0 ? overallIndex : idx + 1}
+                                  </td>
+                                  <td style={{ border: '1px solid #1e293b', padding: '9px 6px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', color: '#312e81', fontSize: '13px' }}>
+                                    {item.item_type?.code || '-'}
+                                  </td>
+                                  <td style={{ border: '1px solid #1e293b', padding: '9px 8px', color: '#0f172a' }}>
+                                    <div style={{ fontWeight: '600', color: '#0f172a' }}>{item.item_type?.full_description || item.item_type?.name || 'Material Item'}</div>
+                                    {item.item_type?.cat_no && (
+                                      <div style={{ fontSize: '11.5px', color: '#475569' }}>Cat No: {item.item_type.cat_no}</div>
+                                    )}
+                                    {item.item_type?.make && (
+                                      <div style={{ fontSize: '11.5px', color: '#312e81', fontWeight: '600' }}>Make: {item.item_type.make}</div>
+                                    )}
+                                  </td>
+                                  <td style={{ border: '1px solid #1e293b', padding: '9px 6px', textAlign: 'center', fontFamily: 'monospace', fontWeight: 'bold', color: '#0f172a', fontSize: '13.5px' }}>
+                                    {item.received_qty}
+                                  </td>
+                                  <td style={{ border: '1px solid #1e293b', padding: '9px 6px', textAlign: 'center', color: '#334155' }}>
+                                    {item.item_type?.unit || 'Nos'}
+                                  </td>
+                                  <td style={{ border: '1px solid #1e293b', padding: '9px 8px', color: '#0f172a' }}>
+                                    {item.shelf ? (
+                                      <div>
+                                        <span style={{ fontWeight: '600' }}>{item.shelf.name} ({item.shelf.code})</span>
+                                        {item.rack && <div style={{ fontSize: '11.5px', color: '#312e81' }}>→ {item.rack.name} ({item.rack.rack_code})</div>}
+                                      </div>
+                                    ) : (
+                                      <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Unassigned</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      )}
+
+                      {/* SIGNATURE & REMARKS BLOCK ON LAST PAGE */}
+                      {pageData.showSignature && (
+                        <div style={{ marginTop: '20px' }}>
+                          {selectedGrn.remarks && (
+                            <div style={{ border: '1px solid #cbd5e1', padding: '10px', marginBottom: '24px', fontSize: '12px', backgroundColor: '#f8fafc', color: '#0f172a', borderRadius: '4px' }}>
+                              <strong style={{ color: '#0f172a' }}>Remarks:</strong> {selectedGrn.remarks}
+                            </div>
+                          )}
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '35px', fontSize: '12px', color: '#0f172a' }}>
+                            <div style={{ textAlign: 'center', width: '180px', borderTop: '1px solid #0f172a', paddingTop: '6px', fontWeight: '600' }}>
+                              Store Incharge / Receiver
+                            </div>
+                            <div style={{ textAlign: 'center', width: '180px', borderTop: '1px solid #0f172a', paddingTop: '6px', fontWeight: '600' }}>
+                              Verified By
+                            </div>
+                            <div style={{ textAlign: 'center', width: '220px' }}>
+                              <div style={{ borderTop: '1px solid #0f172a', paddingTop: '6px', fontWeight: 'bold' }}>
+                                For EFFICIENT ELECTRICAL ENERGY AND AUTOMATION PRIVATE LIMITED
+                              </div>
+                              <div style={{ fontSize: '10px', color: '#64748b', marginTop: '20px' }}>(Authorised Signatory)</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-
-            {/* Remarks */}
-            {selectedGrn.remarks && (
-              <div className="border border-slate-300 p-2.5 mb-6 text-xs bg-slate-50 rounded">
-                <strong>Remarks:</strong> {selectedGrn.remarks}
-              </div>
-            )}
-
-            {/* Signatures */}
-            <div className="flex justify-between items-end pt-8 text-xs font-semibold text-center">
-              <div className="w-40 border-t border-slate-700 pt-1">
-                Store Incharge / Receiver
-              </div>
-              <div className="w-40 border-t border-slate-700 pt-1">
-                Verified By
-              </div>
-              <div className="w-56 border-t border-slate-900 pt-1 font-bold">
-                For EFFICIENT ELECTRICAL ENERGY AND AUTOMATION PRIVATE LIMITED
-                <span className="block text-[10px] font-normal text-slate-600 mt-4">(Authorised Signatory)</span>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </Modal>
     </AppLayout>
   );
