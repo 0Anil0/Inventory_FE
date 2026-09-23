@@ -295,12 +295,12 @@ export const TermsAndConditionsPage: React.FC = () => {
         <Card className="shadow-2xl flex-1 flex flex-col h-auto lg:h-full overflow-visible lg:overflow-hidden">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-200 dark:border-white/10 shrink-0">
             <Input
-              placeholder="Search Templates by Title, Payment Terms, or Clauses..."
+              placeholder="Search Templates..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               allowClear
-              className="flex-1 max-w-lg"
+              className="w-44 sm:w-52 max-w-xs"
             />
             <span className="text-xs font-bold text-indigo-500 shrink-0">Total Templates: {totalCount}</span>
           </div>

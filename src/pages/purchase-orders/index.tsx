@@ -997,7 +997,7 @@ export const PurchaseOrdersPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-3 pb-3 border-b border-slate-200 dark:border-white/10 shrink-0">
             <div className="flex items-center gap-3 w-full sm:w-auto flex-1">
               <Input
-                placeholder="Search PO Number, Vendor Name, or Project Code..."
+                placeholder="Search PO Number, Vendor..."
                 prefix={<SearchOutlined className="text-slate-400" />}
                 value={searchQuery}
                 onChange={(e) => {
@@ -1005,7 +1005,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                   setPage(1);
                 }}
                 allowClear
-                className="max-w-md"
+                className="w-44 sm:w-52 max-w-xs"
               />
               <Select
                 value={statusFilter}

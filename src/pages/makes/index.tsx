@@ -239,12 +239,12 @@ export const MakesPage: React.FC = () => {
         <Card className="shadow-2xl flex-1 flex flex-col h-auto lg:h-full overflow-visible lg:overflow-hidden">
           <div className="flex flex-col sm:flex-row items-center gap-3 mb-3 shrink-0">
             <Input
-              placeholder="Search Brand Make on Server..."
+              placeholder="Search Brand Make..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               allowClear
-              className="flex-1"
+              className="w-44 sm:w-52 max-w-xs"
             />
 
             <Tooltip title="Open Advanced Filters">

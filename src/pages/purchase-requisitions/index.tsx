@@ -716,7 +716,7 @@ export const PurchaseRequisitionsPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 allowClear
-                className="w-full sm:w-64"
+                className="w-44 sm:w-52 max-w-xs"
               />
               <Select
                 placeholder="Select Project"

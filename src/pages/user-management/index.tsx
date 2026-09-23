@@ -456,11 +456,11 @@ export const UserManagementPage: React.FC = () => {
 
                       <div className="flex items-center gap-2 max-w-lg">
                         <Input
-                          placeholder="Search users by name or email on server..."
+                          placeholder="Search users..."
                           prefix={<SearchOutlined className="text-gray-400" />}
                           value={searchQuery}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSearchChange(e.target.value)}
-                          className="w-full"
+                          className="w-44 sm:w-52 max-w-xs"
                           allowClear
                         />
 

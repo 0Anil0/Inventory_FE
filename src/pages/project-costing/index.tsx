@@ -12,6 +12,7 @@ import {
   Progress,
   Modal,
   Typography,
+  Tooltip,
   message,
 } from 'antd';
 
@@ -566,7 +567,7 @@ export const ProjectCostingPage: React.FC = () => {
                 <SearchOutlined style={{ marginRight: 6 }} /> SEARCH MATERIAL ITEMS OR SITES
               </div>
               <Input
-                placeholder="Search by Item Code, Name, Make, Cat No, or Sub-Project..."
+                placeholder="Search Item, Cat No..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -574,7 +575,7 @@ export const ProjectCostingPage: React.FC = () => {
                 }}
                 onPressEnter={handleSearch}
                 allowClear
-                size="large"
+                className="w-44 sm:w-56 max-w-xs"
               />
             </Col>
             <Col xs={24} sm={24} md={4} style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>

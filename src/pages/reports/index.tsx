@@ -896,11 +896,12 @@ export const ReportsPage: React.FC = () => {
           {/* Filter Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4 shrink-0 print:hidden">
             <Input
-              placeholder="Search by Item Name, Code, Cat No, Make..."
+              placeholder="Search Item, Cat No..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               allowClear
+              className="w-44 sm:w-56 max-w-xs"
             />
 
             <Select

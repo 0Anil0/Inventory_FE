@@ -258,12 +258,12 @@ export const UnitsPage: React.FC = () => {
           {/* Search Bar & Filter Trigger */}
           <div className="flex flex-col sm:flex-row items-center gap-3 mb-3 shrink-0">
             <Input
-              placeholder="Search Unit Code, Name, Description on Server..."
+              placeholder="Search Unit..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               allowClear
-              className="flex-1"
+              className="w-44 sm:w-52 max-w-xs"
             />
 
             <Tooltip title="Open Advanced Filters">

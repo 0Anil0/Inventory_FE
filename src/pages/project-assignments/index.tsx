@@ -606,12 +606,12 @@ export const ProjectAssignmentsPage: React.FC = () => {
           {/* Filters Toolbar */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <Input
-              placeholder="Search by Ref #, project, or person..."
+              placeholder="Search Ref #, project..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               allowClear
-              className="w-full"
+              className="w-44 sm:w-56 max-w-xs"
             />
 
             <Select

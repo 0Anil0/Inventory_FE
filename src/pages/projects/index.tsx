@@ -469,7 +469,7 @@ export const ProjectsPage: React.FC = () => {
 
           <div className="flex items-center gap-3">
             <Tooltip title="Refresh Project Tree">
-              <Button shape="circle" icon={<ReloadOutlined />} onClick={fetchProjects} loading={loading} />
+              <Button shape="circle" icon={<ReloadOutlined />} onClick={() => fetchProjects()} loading={loading} />
             </Tooltip>
             <Tooltip title="Add Main Project / Sub-Site Master">
               <Button
@@ -539,7 +539,7 @@ export const ProjectsPage: React.FC = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 allowClear
-                className="w-64"
+                className="w-44 sm:w-52 max-w-xs"
               />
 
               {viewMode === 'TREE_TABLE' && (

@@ -623,12 +623,12 @@ const GRNPage: React.FC = () => {
           <Row gutter={[16, 16]} justify="space-between" align="middle">
             <Col xs={24} sm={16} md={12} className="flex gap-2">
               <Input
-                placeholder="Search GRN No, PO No, Vendor, Challan..."
+                placeholder="Search GRN, PO, Vendor..."
                 prefix={<SearchOutlined className="text-slate-400" />}
                 value={searchText}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 allowClear
-                className="w-full"
+                className="w-44 sm:w-52 max-w-xs"
               />
               <Tooltip title="Open Filter Dialog">
                 <Badge count={activeFiltersCount} offset={[-3, 3]}>

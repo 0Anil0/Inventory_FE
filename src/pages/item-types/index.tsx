@@ -628,12 +628,12 @@ export const ItemTypesPage: React.FC = () => {
           {/* Search Bar & Filter Modal Trigger */}
           <div className="flex flex-col sm:flex-row items-center gap-3 mb-3 shrink-0">
             <Input
-              placeholder="Search on Server by Cat No, Item Number, Item, Make, Unit..."
+              placeholder="Search Items..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               allowClear
-              className="flex-1"
+              className="w-44 sm:w-56 max-w-xs"
             />
 
             <Tooltip title="Open Advanced Filters">

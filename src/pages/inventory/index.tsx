@@ -533,12 +533,12 @@ export const InventoryTrackerPage: React.FC = () => {
           {/* Full Enterprise Toolbar: Keyword Search + Date Range + Filters */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <Input
-              placeholder="Search by code, CAT NO, name, location, rating..."
+              placeholder="Search Code, Cat No..."
               prefix={<SearchOutlined className="text-gray-400" />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               allowClear
-              className="w-full"
+              className="w-44 sm:w-56 max-w-xs"
             />
 
             <RangePicker

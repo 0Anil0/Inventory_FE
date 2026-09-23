@@ -407,13 +407,12 @@ export const StorageLocationsPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
           <div className="flex flex-wrap items-center gap-3 flex-1">
             <Input
-              placeholder="Search shelf code, rack code, name or zone..."
+              placeholder="Search shelf, rack..."
               prefix={<SearchOutlined className="text-slate-400" />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-xs"
+              className="w-44 sm:w-52 max-w-xs"
               allowClear
-              size="large"
             />
 
             <Select

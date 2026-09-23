@@ -580,12 +580,13 @@ export const POItemTrackingPage: React.FC = () => {
             <Col xs={24} sm={12} md={6} lg={4}>
               <div className="text-[11px] font-semibold text-slate-500 mb-0.5">Search Keywords:</div>
               <Input
-                placeholder="Cat No, Make, HSN..."
+                placeholder="Cat No, Make..."
                 prefix={<SearchOutlined className="text-slate-400" />}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 onPressEnter={handleSearch}
                 allowClear
+                className="w-44 sm:w-52 max-w-xs"
               />
             </Col>
 
