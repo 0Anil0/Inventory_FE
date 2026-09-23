@@ -495,29 +495,32 @@ export const ProjectCostingPage: React.FC = () => {
             </Col>
             <Col xs={24} md={8} style={{ textAlign: 'right' }}>
               <Space wrap size="middle">
-                <Button
-                  icon={<ReloadOutlined />}
-                  onClick={() => fetchReport()}
-                  loading={loading}
-                  style={{ borderRadius: '8px', background: 'rgba(255, 255, 255, 0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
-                >
-                  Refresh
-                </Button>
-                <Button
-                  icon={<DownloadOutlined />}
-                  onClick={handleExportCSV}
-                  style={{ borderRadius: '8px', background: '#0284c7', color: '#fff', border: 'none' }}
-                >
-                  Export CSV
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<PrinterOutlined />}
-                  onClick={() => setIsPrintModalOpen(true)}
-                  style={{ borderRadius: '8px', background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)', border: 'none' }}
-                >
-                  Print Certificate
-                </Button>
+                <Tooltip title="Refresh Financial Costing Report">
+                  <Button
+                    shape="circle"
+                    icon={<ReloadOutlined />}
+                    onClick={() => fetchReport()}
+                    loading={loading}
+                    style={{ background: 'rgba(255, 255, 255, 0.1)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}
+                  />
+                </Tooltip>
+                <Tooltip title="Export Costing Data to CSV">
+                  <Button
+                    shape="circle"
+                    icon={<DownloadOutlined />}
+                    onClick={handleExportCSV}
+                    style={{ background: '#0284c7', color: '#fff', border: 'none' }}
+                  />
+                </Tooltip>
+                <Tooltip title="View & Download Official Financial Certificate PDF">
+                  <Button
+                    type="primary"
+                    shape="circle"
+                    icon={<PrinterOutlined />}
+                    onClick={() => setIsPrintModalOpen(true)}
+                    style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)', border: 'none' }}
+                  />
+                </Tooltip>
               </Space>
             </Col>
           </Row>

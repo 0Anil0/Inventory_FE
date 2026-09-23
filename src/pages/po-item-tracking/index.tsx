@@ -418,21 +418,23 @@ export const POItemTrackingPage: React.FC = () => {
             </div>
           </div>
           <Space wrap className="justify-end">
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => fetchTrackingData()}
-              loading={loading}
-            >
-              Refresh
-            </Button>
-            <Button
-              type="primary"
-              icon={<FileExcelOutlined />}
-              onClick={handleExportExcel}
-              className="bg-emerald-600 hover:bg-emerald-500 border-none shadow-xs font-semibold"
-            >
-              Export Excel
-            </Button>
+            <Tooltip title="Refresh Tracker Data">
+              <Button
+                shape="circle"
+                icon={<ReloadOutlined />}
+                onClick={() => fetchTrackingData()}
+                loading={loading}
+              />
+            </Tooltip>
+            <Tooltip title="Export History & Tracker to Excel">
+              <Button
+                type="primary"
+                shape="circle"
+                icon={<FileExcelOutlined />}
+                onClick={handleExportExcel}
+                className="bg-emerald-600 hover:bg-emerald-500 border-none shadow-xs"
+              />
+            </Tooltip>
           </Space>
         </div>
 
@@ -588,19 +590,22 @@ export const POItemTrackingPage: React.FC = () => {
             </Col>
 
             <Col xs={24} sm={12} md={6} lg={3} className="flex items-end gap-1.5 pt-3">
-              <Button
-                type="primary"
-                icon={<FilterOutlined />}
-                onClick={handleSearch}
-                className="bg-indigo-600 hover:bg-indigo-500 border-none"
-              >
-                Apply
-              </Button>
-              <Button
-                icon={<ClearOutlined />}
-                onClick={handleResetFilters}
-                title="Reset all filters"
-              />
+              <Tooltip title="Apply Filters">
+                <Button
+                  type="primary"
+                  shape="circle"
+                  icon={<FilterOutlined />}
+                  onClick={handleSearch}
+                  className="bg-indigo-600 hover:bg-indigo-500 border-none"
+                />
+              </Tooltip>
+              <Tooltip title="Reset All Filters">
+                <Button
+                  shape="circle"
+                  icon={<ClearOutlined />}
+                  onClick={handleResetFilters}
+                />
+              </Tooltip>
             </Col>
           </Row>
         </Card>

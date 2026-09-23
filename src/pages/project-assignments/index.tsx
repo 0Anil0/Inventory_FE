@@ -538,18 +538,19 @@ export const ProjectAssignmentsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button icon={<ReloadOutlined />} onClick={fetchAssignments} loading={loading}>
-              Refresh
-            </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleOpenCreateModal}
-              size="middle"
-              className="shadow-lg shadow-indigo-500/30"
-            >
-              New Project Assignment
-            </Button>
+            <Tooltip title="Refresh Material Assignments">
+              <Button shape="circle" icon={<ReloadOutlined />} onClick={fetchAssignments} loading={loading} />
+            </Tooltip>
+            <Tooltip title="New Project Material Assignment">
+              <Button
+                type="primary"
+                shape="circle"
+                icon={<PlusOutlined />}
+                onClick={handleOpenCreateModal}
+                size="middle"
+                className="shadow-lg shadow-indigo-500/30"
+              />
+            </Tooltip>
           </div>
         </div>
 

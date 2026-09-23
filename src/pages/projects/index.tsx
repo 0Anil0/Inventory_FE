@@ -468,18 +468,19 @@ export const ProjectsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <Button icon={<ReloadOutlined />} onClick={fetchProjects} loading={loading}>
-              Refresh
-            </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => handleOpenCreateModal()}
-              size="middle"
-              className="shadow-lg shadow-indigo-500/30"
-            >
-              Add Project Master
-            </Button>
+            <Tooltip title="Refresh Project Tree">
+              <Button shape="circle" icon={<ReloadOutlined />} onClick={fetchProjects} loading={loading} />
+            </Tooltip>
+            <Tooltip title="Add Main Project / Sub-Site Master">
+              <Button
+                type="primary"
+                shape="circle"
+                icon={<PlusOutlined />}
+                onClick={() => handleOpenCreateModal()}
+                size="middle"
+                className="shadow-lg shadow-indigo-500/30"
+              />
+            </Tooltip>
           </div>
         </div>
 

@@ -250,19 +250,20 @@ export const ApproverConfigPage: React.FC = () => {
             </div>
           </div>
 
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            size="middle"
-            className="bg-indigo-600 hover:bg-indigo-500 font-bold border-none shadow-md"
-            onClick={() => {
-              setEditingApprover(null);
-              form.resetFields();
-              setIsModalOpen(true);
-            }}
-          >
-            Add PO Approver
-          </Button>
+          <Tooltip title="Designate New PO Approver">
+            <Button
+              type="primary"
+              shape="circle"
+              icon={<PlusOutlined />}
+              size="middle"
+              className="bg-indigo-600 hover:bg-indigo-500 font-bold border-none shadow-md"
+              onClick={() => {
+                setEditingApprover(null);
+                form.resetFields();
+                setIsModalOpen(true);
+              }}
+            />
+          </Tooltip>
         </div>
 
         {/* Approver List Table */}

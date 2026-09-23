@@ -575,18 +575,19 @@ const GRNPage: React.FC = () => {
       fixed: 'right' as const,
       render: (record: GoodsReceiptNote) => (
         <Space>
-          <Button
-            type="primary"
-            ghost
-            size="middle"
-            icon={<PrinterOutlined />}
-            onClick={() => {
-              setSelectedGrn(record);
-              setViewModalVisible(true);
-            }}
-          >
-            GRN Slip
-          </Button>
+          <Tooltip title="View & Download GRN Slip PDF">
+            <Button
+              type="primary"
+              ghost
+              size="middle"
+              shape="circle"
+              icon={<PrinterOutlined style={{ fontSize: '15px' }} />}
+              onClick={() => {
+                setSelectedGrn(record);
+                setViewModalVisible(true);
+              }}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -605,15 +606,16 @@ const GRNPage: React.FC = () => {
               Record goods receipts against approved POs, partial shipments, unlisted item additions, and bind stock to Shelves & Racks.
             </Text>
           </div>
-          <Button
-            type="primary"
-            size="middle"
-            icon={<PlusOutlined />}
-            style={{ backgroundColor: '#312e81', borderColor: '#312e81' }}
-            onClick={() => openCreateModalForPO()}
-          >
-            Create GRN / Stock Inward
-          </Button>
+          <Tooltip title="Create Goods Receipt Note / Stock Inward">
+            <Button
+              type="primary"
+              shape="circle"
+              size="middle"
+              icon={<PlusOutlined />}
+              style={{ backgroundColor: '#312e81', borderColor: '#312e81' }}
+              onClick={() => openCreateModalForPO()}
+            />
+          </Tooltip>
         </div>
 
         {/* Filter & Search Bar Controls */}
@@ -628,19 +630,20 @@ const GRNPage: React.FC = () => {
                 allowClear
                 className="w-full"
               />
-              <Badge count={activeFiltersCount} offset={[-5, 5]}>
-                <Button
-                  icon={<FilterOutlined />}
-                  onClick={() => setFilterModalVisible(true)}
-                  type={activeFiltersCount > 0 ? 'primary' : 'default'}
-                  style={activeFiltersCount > 0 ? { backgroundColor: '#312e81', borderColor: '#312e81' } : {}}
-                >
-                  Filters
-                </Button>
-              </Badge>
+              <Tooltip title="Open Filter Dialog">
+                <Badge count={activeFiltersCount} offset={[-3, 3]}>
+                  <Button
+                    shape="circle"
+                    icon={<FilterOutlined />}
+                    onClick={() => setFilterModalVisible(true)}
+                    type={activeFiltersCount > 0 ? 'primary' : 'default'}
+                    style={activeFiltersCount > 0 ? { backgroundColor: '#312e81', borderColor: '#312e81' } : {}}
+                  />
+                </Badge>
+              </Tooltip>
               {activeFiltersCount > 0 && (
                 <Tooltip title="Clear Active Filters">
-                  <Button icon={<ClearOutlined />} onClick={resetFilters} danger />
+                  <Button shape="circle" icon={<ClearOutlined />} onClick={resetFilters} danger />
                 </Tooltip>
               )}
             </Col>

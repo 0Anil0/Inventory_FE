@@ -14,6 +14,7 @@ import {
   Row,
   Col,
   Statistic,
+  Tooltip,
   message,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -761,12 +762,12 @@ export const ReportsPage: React.FC = () => {
           </div>
 
           <Space wrap className="justify-start sm:justify-end">
-            <Button icon={<ReloadOutlined />} onClick={fetchReportData} loading={loading} size="small">
-              Refresh
-            </Button>
-            <Button type="primary" icon={<DownloadOutlined />} onClick={handleExportCSV} size="small">
-              Export CSV
-            </Button>
+            <Tooltip title="Refresh Analytics Data">
+              <Button shape="circle" icon={<ReloadOutlined />} onClick={fetchReportData} loading={loading} size="small" />
+            </Tooltip>
+            <Tooltip title="Export Report to CSV">
+              <Button type="primary" shape="circle" icon={<DownloadOutlined />} onClick={handleExportCSV} size="small" />
+            </Tooltip>
           </Space>
 
         </div>

@@ -282,12 +282,12 @@ export const TermsAndConditionsPage: React.FC = () => {
           </div>
 
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={() => fetchTemplates(currentPage, pageSize, searchQuery)} loading={loading}>
-              Refresh
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30">
-              Create T&C Template
-            </Button>
+            <Tooltip title="Refresh Templates">
+              <Button shape="circle" icon={<ReloadOutlined />} onClick={() => fetchTemplates(currentPage, pageSize, searchQuery)} loading={loading} />
+            </Tooltip>
+            <Tooltip title="Create T&C Template">
+              <Button type="primary" shape="circle" icon={<PlusOutlined />} onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30" />
+            </Tooltip>
           </Space>
         </div>
 

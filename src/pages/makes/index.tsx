@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, Modal, Form, Popconfirm, Space, Tag, Badge, message } from 'antd';
+import { Table, Card, Button, Input, Modal, Form, Popconfirm, Space, Tag, Badge, Tooltip, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -227,12 +227,12 @@ export const MakesPage: React.FC = () => {
           </div>
 
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={() => fetchMakes(currentPage, pageSize, appliedFilters, searchQuery)} loading={loading}>
-              Refresh
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30">
-              Add New Brand Make
-            </Button>
+            <Tooltip title="Refresh Brand Makes">
+              <Button shape="circle" icon={<ReloadOutlined />} onClick={() => fetchMakes(currentPage, pageSize, appliedFilters, searchQuery)} loading={loading} />
+            </Tooltip>
+            <Tooltip title="Add New Brand Make">
+              <Button type="primary" shape="circle" icon={<PlusOutlined />} onClick={handleOpenAdd} className="shadow-lg shadow-indigo-500/30" />
+            </Tooltip>
           </Space>
         </div>
 
@@ -247,18 +247,21 @@ export const MakesPage: React.FC = () => {
               className="flex-1"
             />
 
-            <Button
-              icon={<FilterOutlined />}
-              onClick={() => setIsFilterModalOpen(true)}
-              className={activeFilterCount > 0 ? 'border-indigo-500 text-indigo-600 font-bold' : ''}
-            >
-              Filter Modal {activeFilterCount > 0 && <Badge count={activeFilterCount} className="ml-1" />}
-            </Button>
+            <Tooltip title="Open Advanced Filters">
+              <Badge count={activeFilterCount} offset={[-3, 3]}>
+                <Button
+                  shape="circle"
+                  icon={<FilterOutlined />}
+                  onClick={() => setIsFilterModalOpen(true)}
+                  className={activeFilterCount > 0 ? 'border-indigo-500 text-indigo-600 font-bold' : ''}
+                />
+              </Badge>
+            </Tooltip>
 
             {activeFilterCount > 0 && (
-              <Button icon={<ClearOutlined />} danger onClick={handleResetFilters}>
-                Reset
-              </Button>
+              <Tooltip title="Reset Filters">
+                <Button shape="circle" icon={<ClearOutlined />} danger onClick={handleResetFilters} />
+              </Tooltip>
             )}
 
             <span className="text-xs font-bold text-indigo-500 shrink-0">Total Brands: {totalMakes}</span>

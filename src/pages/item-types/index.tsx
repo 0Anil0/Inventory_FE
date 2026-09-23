@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, InputNumber, Modal, Form, Select, Popconfirm, Space, Tag, Badge, Upload, message, Typography } from 'antd';
+import { Table, Card, Button, Input, InputNumber, Modal, Form, Select, Popconfirm, Space, Tag, Badge, Upload, Tooltip, message, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   PlusOutlined,
@@ -575,39 +575,43 @@ export const ItemTypesPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleOpenAdd}
-              className="bg-indigo-600 shadow-md shadow-indigo-500/20 font-semibold"
-            >
-              Add New Item
-            </Button>
-            <Button
-              icon={<UploadOutlined />}
-              onClick={() => {
-                setParsedImportData([]);
-                setFileList([]);
-                setIsUploadModalOpen(true);
-              }}
-              className="border-indigo-500 text-indigo-600 font-semibold"
-            >
-              Upload Excel Data
-            </Button>
-            <Button
-              icon={<DownloadOutlined />}
-              onClick={handleDownloadTemplate}
-              className="border-emerald-500 text-emerald-600 hover:text-emerald-500 font-semibold"
-            >
-              Download Template
-            </Button>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => fetchItems(currentPage, pageSize, appliedFilters, searchQuery)}
-              loading={loading}
-            >
-              Refresh
-            </Button>
+            <Tooltip title="Add New Item Master">
+              <Button
+                type="primary"
+                shape="circle"
+                icon={<PlusOutlined />}
+                onClick={handleOpenAdd}
+                className="bg-indigo-600 shadow-md shadow-indigo-500/20"
+              />
+            </Tooltip>
+            <Tooltip title="Upload Excel Data">
+              <Button
+                shape="circle"
+                icon={<UploadOutlined />}
+                onClick={() => {
+                  setParsedImportData([]);
+                  setFileList([]);
+                  setIsUploadModalOpen(true);
+                }}
+                className="border-indigo-500 text-indigo-600"
+              />
+            </Tooltip>
+            <Tooltip title="Download Template">
+              <Button
+                shape="circle"
+                icon={<DownloadOutlined />}
+                onClick={handleDownloadTemplate}
+                className="border-emerald-500 text-emerald-600 hover:text-emerald-500"
+              />
+            </Tooltip>
+            <Tooltip title="Refresh Item List">
+              <Button
+                shape="circle"
+                icon={<ReloadOutlined />}
+                onClick={() => fetchItems(currentPage, pageSize, appliedFilters, searchQuery)}
+                loading={loading}
+              />
+            </Tooltip>
           </div>
         </div>
 
@@ -632,18 +636,21 @@ export const ItemTypesPage: React.FC = () => {
               className="flex-1"
             />
 
-            <Button
-              icon={<FilterOutlined />}
-              onClick={() => setIsFilterModalOpen(true)}
-              className={activeFilterCount > 0 ? 'border-indigo-500 text-indigo-600 font-bold' : ''}
-            >
-              Filter Modal {activeFilterCount > 0 && <Badge count={activeFilterCount} className="ml-1" />}
-            </Button>
+            <Tooltip title="Open Advanced Filters">
+              <Badge count={activeFilterCount} offset={[-3, 3]}>
+                <Button
+                  shape="circle"
+                  icon={<FilterOutlined />}
+                  onClick={() => setIsFilterModalOpen(true)}
+                  className={activeFilterCount > 0 ? 'border-indigo-500 text-indigo-600 font-bold' : ''}
+                />
+              </Badge>
+            </Tooltip>
 
             {activeFilterCount > 0 && (
-              <Button icon={<ClearOutlined />} danger onClick={handleResetFilters}>
-                Reset
-              </Button>
+              <Tooltip title="Reset Filters">
+                <Button shape="circle" icon={<ClearOutlined />} danger onClick={handleResetFilters} />
+              </Tooltip>
             )}
           </div>
 

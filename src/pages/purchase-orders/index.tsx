@@ -985,9 +985,9 @@ export const PurchaseOrdersPage: React.FC = () => {
           </div>
 
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={fetchPurchaseOrders} loading={loading}>
-              Refresh
-            </Button>
+            <Tooltip title="Refresh Purchase Orders">
+              <Button shape="circle" icon={<ReloadOutlined />} onClick={fetchPurchaseOrders} loading={loading} />
+            </Tooltip>
           </Space>
         </div>
 

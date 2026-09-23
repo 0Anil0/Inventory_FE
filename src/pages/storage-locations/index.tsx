@@ -388,18 +388,19 @@ export const StorageLocationsPage: React.FC = () => {
             </div>
           </div>
 
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            size="middle"
-            className="bg-indigo-600 hover:bg-indigo-500 font-bold border-none shadow-md"
-            onClick={() => {
-              setEditingShelf(null);
-              setIsShelfModalOpen(true);
-            }}
-          >
-            Create Shelf
-          </Button>
+          <Tooltip title="Create Storage Shelf Stand">
+            <Button
+              type="primary"
+              shape="circle"
+              icon={<PlusOutlined />}
+              size="middle"
+              className="bg-indigo-600 hover:bg-indigo-500 font-bold border-none shadow-md"
+              onClick={() => {
+                setEditingShelf(null);
+                setIsShelfModalOpen(true);
+              }}
+            />
+          </Tooltip>
         </div>
 
         {/* Search, Filter & View Controls */}

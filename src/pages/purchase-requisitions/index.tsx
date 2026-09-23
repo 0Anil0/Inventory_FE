@@ -593,16 +593,15 @@ export const PurchaseRequisitionsPage: React.FC = () => {
 
           {/* Convert to PO Action */}
           {(record.status === 'APPROVED' || record.status === 'PARTIALLY_APPROVED' || record.status === 'PENDING_APPROVAL') && (
-            <Tooltip title="Convert PR to PO">
+            <Tooltip title="Convert PR to Purchase Order">
               <Button
                 type="primary"
                 size="small"
-                icon={<ShoppingCartOutlined />}
-                className="bg-emerald-600 hover:bg-emerald-700 text-[11px]"
+                shape="circle"
+                icon={<ShoppingCartOutlined style={{ fontSize: '14px' }} />}
+                className="bg-emerald-600 hover:bg-emerald-700 border-none text-white shadow-xs"
                 onClick={() => handleOpenConvert(record.id)}
-              >
-                PO
-              </Button>
+              />
             </Tooltip>
           )}
 
@@ -639,25 +638,27 @@ export const PurchaseRequisitionsPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              icon={<FileExcelOutlined />}
-              onClick={handleExportExcel}
-              className="bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950 dark:border-emerald-800 dark:text-emerald-300"
-            >
-              Export Excel
-            </Button>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                createForm.resetFields();
-                setCreateItems([]);
-                setIsCreateModalOpen(true);
-              }}
-              className="bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-500/20"
-            >
-              Create New PR
-            </Button>
+            <Tooltip title="Export Purchase Requisitions to Excel">
+              <Button
+                shape="circle"
+                icon={<FileExcelOutlined />}
+                onClick={handleExportExcel}
+                className="bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950 dark:border-emerald-800 dark:text-emerald-300"
+              />
+            </Tooltip>
+            <Tooltip title="Create New Purchase Requisition">
+              <Button
+                type="primary"
+                shape="circle"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  createForm.resetFields();
+                  setCreateItems([]);
+                  setIsCreateModalOpen(true);
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-500/20"
+              />
+            </Tooltip>
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Button, Input, Tag, Popconfirm, Avatar, Space, Badge, Tabs, message } from 'antd';
+import { Table, Card, Button, Input, Tag, Popconfirm, Avatar, Space, Badge, Tabs, Tooltip, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   UserAddOutlined,
@@ -403,26 +403,28 @@ export const UserManagementPage: React.FC = () => {
           </div>
 
           <Space>
-            <Button icon={<ReloadOutlined />} onClick={() => fetchUsers(currentPage, pageSize, activeFilters, searchQuery)} loading={loading}>
-              Refresh
-            </Button>
+            <Tooltip title="Refresh User List">
+              <Button shape="circle" icon={<ReloadOutlined />} onClick={() => fetchUsers(currentPage, pageSize, activeFilters, searchQuery)} loading={loading} />
+            </Tooltip>
 
             {activeTab === 'users' ? (
-              <Button
-                type="primary"
-                icon={<UserAddOutlined />}
-                onClick={handleOpenAddUser}
-              >
-                Add New User
-              </Button>
+              <Tooltip title="Add New User Account">
+                <Button
+                  type="primary"
+                  shape="circle"
+                  icon={<UserAddOutlined />}
+                  onClick={handleOpenAddUser}
+                />
+              </Tooltip>
             ) : (
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleOpenAddRole}
-              >
-                Create System Role
-              </Button>
+              <Tooltip title="Create System Role">
+                <Button
+                  type="primary"
+                  shape="circle"
+                  icon={<PlusOutlined />}
+                  onClick={handleOpenAddRole}
+                />
+              </Tooltip>
             )}
           </Space>
         </div>
@@ -462,15 +464,16 @@ export const UserManagementPage: React.FC = () => {
                           allowClear
                         />
 
-                        <Badge count={activeFilterCount} offset={[-4, 4]}>
-                          <Button
-                            icon={<FilterOutlined />}
-                            onClick={() => setIsFilterModalOpen(true)}
-                            className={activeFilterCount > 0 ? 'border-indigo-500 text-indigo-400 font-bold' : ''}
-                          >
-                            Filter Modal
-                          </Button>
-                        </Badge>
+                        <Tooltip title="Open Advanced Filters">
+                          <Badge count={activeFilterCount} offset={[-3, 3]}>
+                            <Button
+                              shape="circle"
+                              icon={<FilterOutlined />}
+                              onClick={() => setIsFilterModalOpen(true)}
+                              className={activeFilterCount > 0 ? 'border-indigo-500 text-indigo-400 font-bold' : ''}
+                            />
+                          </Badge>
+                        </Tooltip>
                       </div>
                     </div>
 
@@ -510,9 +513,9 @@ export const UserManagementPage: React.FC = () => {
                       <p className="text-xs text-slate-400 mb-0">
                         Configure system access roles (e.g., admin, manager, user) to assign permissions.
                       </p>
-                      <Button type="primary" ghost icon={<PlusOutlined />} onClick={handleOpenAddRole}>
-                        Add Role
-                      </Button>
+                      <Tooltip title="Add System Role">
+                        <Button type="primary" ghost shape="circle" icon={<PlusOutlined />} onClick={handleOpenAddRole} />
+                      </Tooltip>
                     </div>
 
                     <div className="flex-1 overflow-visible lg:overflow-hidden">

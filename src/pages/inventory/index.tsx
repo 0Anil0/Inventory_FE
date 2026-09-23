@@ -12,6 +12,7 @@ import {
   Space,
   DatePicker,
   Badge,
+  Tooltip,
   message,
 } from 'antd';
 
@@ -415,29 +416,33 @@ export const InventoryTrackerPage: React.FC = () => {
               </Select>
             </div>
 
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => fetchProjectInventory(selectedProjectId)}
-              loading={loading}
-              title="Refresh stock list"
-            />
+            <Tooltip title="Refresh Stock List">
+              <Button
+                shape="circle"
+                icon={<ReloadOutlined />}
+                onClick={() => fetchProjectInventory(selectedProjectId)}
+                loading={loading}
+              />
+            </Tooltip>
 
-            <Button
-              icon={<SwapOutlined />}
-              onClick={() => setIsTransferModalOpen(true)}
-              type="primary"
-              className="bg-indigo-600 hover:bg-indigo-700 font-semibold shadow-md border-none"
-            >
-              Transfer Stock
-            </Button>
+            <Tooltip title="Transfer Stock between Locations">
+              <Button
+                shape="circle"
+                icon={<SwapOutlined />}
+                onClick={() => setIsTransferModalOpen(true)}
+                type="primary"
+                className="bg-indigo-600 hover:bg-indigo-700 shadow-md border-none"
+              />
+            </Tooltip>
 
-            <Button
-              icon={<HistoryOutlined />}
-              onClick={() => setIsLedgerOpen(true)}
-              className="border-indigo-500/40 text-indigo-600 dark:text-indigo-400 font-medium"
-            >
-              Stock Ledger
-            </Button>
+            <Tooltip title="View Stock Movement Audit Ledger">
+              <Button
+                shape="circle"
+                icon={<HistoryOutlined />}
+                onClick={() => setIsLedgerOpen(true)}
+                className="border-indigo-500/40 text-indigo-600 dark:text-indigo-400"
+              />
+            </Tooltip>
           </div>
         </div>
 
