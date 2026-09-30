@@ -829,7 +829,7 @@ export const PurchaseOrdersPage: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
-      width: 170,
+      width: 230,
       align: 'right',
       fixed: 'right',
       className: 'whitespace-nowrap',
@@ -1078,7 +1078,7 @@ export const PurchaseOrdersPage: React.FC = () => {
         destroyOnClose
         centered
         width={1160}
-        style={{ top: 20, maxWidth: '95vw' }}
+        style={{ maxWidth: '95vw' }}
         styles={{
           body: {
             maxHeight: 'calc(85vh - 100px)',
@@ -1474,7 +1474,7 @@ export const PurchaseOrdersPage: React.FC = () => {
         open={isPreviewModalOpen}
         onCancel={() => setIsPreviewModalOpen(false)}
         width={980}
-        style={{ top: 20, maxWidth: '95vw' }}
+        style={{ maxWidth: '95vw' }}
         styles={{
           body: {
             maxHeight: 'calc(85vh - 80px)',

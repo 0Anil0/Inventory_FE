@@ -22,6 +22,7 @@ import {
   ShoppingOutlined,
   SearchOutlined,
   ReloadOutlined,
+  ClearOutlined,
   DownloadOutlined,
   PrinterOutlined,
   FilterOutlined,
@@ -537,8 +538,8 @@ export const ProjectCostingPage: React.FC = () => {
           }}
           bodyStyle={{ padding: '18px 24px' }}
         >
-          <Row gutter={[16, 16]} align="middle">
-            <Col xs={24} sm={12} md={10}>
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[240px]">
               <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>
                 <FilterOutlined style={{ marginRight: 6 }} /> SELECT PROJECT / CONTRACT
               </div>
@@ -551,7 +552,6 @@ export const ProjectCostingPage: React.FC = () => {
                   setSelectedProjectId(val);
                   setPage(1);
                 }}
-                size="large"
                 showSearch
                 filterOption={filterSelectOption}
               >
@@ -561,8 +561,9 @@ export const ProjectCostingPage: React.FC = () => {
                   </Select.Option>
                 ))}
               </Select>
-            </Col>
-            <Col xs={24} sm={12} md={10}>
+            </div>
+
+            <div className="flex-1 min-w-[200px] max-w-xs">
               <div style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 6 }}>
                 <SearchOutlined style={{ marginRight: 6 }} /> SEARCH MATERIAL ITEMS OR SITES
               </div>
@@ -575,18 +576,31 @@ export const ProjectCostingPage: React.FC = () => {
                 }}
                 onPressEnter={handleSearch}
                 allowClear
-                className="w-44 sm:w-56 max-w-xs"
+                className="w-full"
               />
-            </Col>
-            <Col xs={24} sm={24} md={4} style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-              <Button type="primary" onClick={handleSearch} size="large" style={{ flex: 1, borderRadius: '8px', background: '#0f172a' }}>
-                Search
-              </Button>
-              <Button onClick={handleReset} size="large" style={{ borderRadius: '8px' }}>
-                Reset
-              </Button>
-            </Col>
-          </Row>
+            </div>
+
+            <div className="flex items-center gap-2 pb-0.5">
+              <Tooltip title="Apply Search Filter">
+                <Button
+                  type="primary"
+                  shape="circle"
+                  icon={<SearchOutlined />}
+                  onClick={handleSearch}
+                  className="bg-slate-900 hover:bg-slate-800 border-none shrink-0"
+                />
+              </Tooltip>
+              <Tooltip title="Reset Costing Filters">
+                <Button
+                  shape="circle"
+                  icon={<ClearOutlined />}
+                  danger
+                  onClick={handleReset}
+                  className="shrink-0"
+                />
+              </Tooltip>
+            </div>
+          </div>
         </Card>
 
         {/* Executive KPI Cards */}

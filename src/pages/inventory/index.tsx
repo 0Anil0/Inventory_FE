@@ -350,6 +350,7 @@ export const InventoryTrackerPage: React.FC = () => {
     {
       title: 'Actions',
       key: 'actions',
+      width: 140,
       align: 'right',
       fixed: 'right',
       render: (_, record) => (

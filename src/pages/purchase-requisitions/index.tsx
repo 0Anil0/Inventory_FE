@@ -563,7 +563,8 @@ export const PurchaseRequisitionsPage: React.FC = () => {
       title: 'Action',
       key: 'action',
       fixed: 'right',
-      width: 170,
+      width: 220,
+      align: 'right',
       render: (_, record) => (
         <Space size="small">
           <Tooltip title="View PR Details">
@@ -811,6 +812,7 @@ export const PurchaseRequisitionsPage: React.FC = () => {
           width={800}
           okText="Submit PR"
           centered
+          styles={{ body: { maxHeight: 'calc(80vh - 80px)', overflowY: 'auto', paddingRight: '8px' } }}
         >
           <Form form={createForm} layout="vertical" className="pt-2">
             <Row gutter={16}>

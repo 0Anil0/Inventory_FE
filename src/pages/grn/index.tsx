@@ -572,6 +572,8 @@ const GRNPage: React.FC = () => {
     {
       title: 'Action',
       key: 'action',
+      width: 180,
+      align: 'right',
       fixed: 'right' as const,
       render: (record: GoodsReceiptNote) => (
         <Space>
@@ -796,6 +798,8 @@ const GRNPage: React.FC = () => {
       {/* CREATE GRN MODAL */}
       <Modal
         centered
+        width={960}
+        styles={{ body: { maxHeight: 'calc(80vh - 80px)', overflowY: 'auto', paddingRight: '8px' } }}
         title={
           <div className="flex items-center justify-between text-indigo-900 font-bold text-lg border-b pb-3 pr-6">
             <div className="flex items-center gap-2">

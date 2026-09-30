@@ -685,7 +685,8 @@ export const ProjectAssignmentsPage: React.FC = () => {
         okText={editingAssignment ? 'Save Changes' : 'Dispatch & Assign Material'}
         width={920}
         destroyOnClose
-        className="top-6"
+        centered
+        styles={{ body: { maxHeight: 'calc(80vh - 80px)', overflowY: 'auto', paddingRight: '8px' } }}
       >
         <Form form={form} layout="vertical" onFinish={handleFormFinish} className="mt-4 flex flex-col gap-2">
           {/* STEP 1: TARGET PROJECT SELECTION (REQUIRED FIRST) */}
