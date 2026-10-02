@@ -46,7 +46,6 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
   onSuccess,
   projects,
   currentProjectId,
-  currentInventory,
 }) => {
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState<string>('transfer');
@@ -66,7 +65,6 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
   const [selectedItem, setSelectedItem] = useState<ProjectInventory | null>(null);
   const [availableLots, setAvailableLots] = useState<InventoryLot[]>([]);
   const [loadingLots, setLoadingLots] = useState<boolean>(false);
-  const [selectedLotId, setSelectedLotId] = useState<number | undefined>(undefined);
   const [selectedLot, setSelectedLot] = useState<InventoryLot | null>(null);
   const [transferQty, setTransferQty] = useState<number | undefined>(undefined);
 
@@ -88,7 +86,6 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
       form.setFieldsValue({ from_project_id: defaultFrom, to_project_id: undefined });
       setSelectedItemTypeId(null);
       setSelectedItem(null);
-      setSelectedLotId(undefined);
       setSelectedLot(null);
       setTransferQty(undefined);
       setAvailableLots([]);
@@ -134,7 +131,6 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
     setSelectedFromProjectId(val);
     setSelectedItemTypeId(null);
     setSelectedItem(null);
-    setSelectedLotId(undefined);
     setSelectedLot(null);
     setTransferQty(undefined);
     setAvailableLots([]);
@@ -150,7 +146,6 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
     setSelectedItemTypeId(itemTypeId);
     const inv = sourceInventory.find((i) => i.item_type_id === itemTypeId);
     setSelectedItem(inv || null);
-    setSelectedLotId(undefined);
     setSelectedLot(null);
     setTransferQty(undefined);
     form.setFieldsValue({ lot_id: undefined, quantity: undefined });
@@ -163,7 +158,8 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
           item_type_id: itemTypeId,
         });
         if (res.success && res.lots) {
-          setAvailableLots(res.lots.filter((l) => l.available_qty > 0));
+          // Exclude general stock (project_id null or 0) for Inter-Project Transfer
+          setAvailableLots(res.lots.filter((l: any) => l.available_qty > 0 && l.project_id !== null && l.project_id !== 0));
         }
       } catch (err) {
         console.error('Failed to load lots for item:', err);
@@ -174,7 +170,6 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
   };
 
   const handleLotChange = (lotId: number | undefined) => {
-    setSelectedLotId(lotId);
     if (lotId) {
       const lot = availableLots.find((l) => l.id === lotId);
       setSelectedLot(lot || null);
@@ -188,7 +183,6 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
   };
 
   const allLocations = [
-    { id: 0, name: 'General Stock / Main Store', code: 'MAIN-STORE' },
     ...projects,
   ];
 
@@ -654,7 +648,7 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
                     <div className="lg:col-span-5">
                       <Card
                         className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl border border-indigo-500/30 shadow-2xl h-full flex flex-col justify-between"
-                        bodyStyle={{ padding: '16px', display: 'flex', flexDirection: 'column', justifyBetween: 'space-between', height: '100%' }}
+                        bodyStyle={{ padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}
                       >
                         <div className="flex flex-col gap-3">
                           <div className="flex items-center justify-between border-b border-white/10 pb-2">

@@ -893,7 +893,12 @@ export const PurchaseRequisitionsPage: React.FC = () => {
                         className="w-full"
                         filterOption={filterSelectOption}
                       >
-                        {itemTypes.map((it) => (
+                        {itemTypes
+                          .filter((it) => {
+                            if (item.item_type_id === it.id) return true;
+                            return !createItems.some((ci) => ci.item_type_id === it.id);
+                          })
+                          .map((it) => (
                           <Select.Option key={it.id} value={it.id}>
                             {it.code} - {it.name} {it.full_description ? `| ${it.full_description}` : ''} {it.cat_no ? `(Cat No: ${it.cat_no})` : ''} {it.make ? `[${it.make}]` : ''}
                           </Select.Option>
