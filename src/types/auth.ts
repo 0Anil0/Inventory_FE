@@ -1,3 +1,5 @@
+import type { Plant } from './plant';
+
 export interface Role {
   id: number;
   name: string;
@@ -10,6 +12,7 @@ export interface User {
   email: string | null;
   role_id: number;
   role?: Role | string;
+  plants?: Plant[];
   createdAt?: string;
 }
 
@@ -36,6 +39,7 @@ export interface CreateUserData {
   email?: string;
   password: string;
   role_id: number;
+  plantIds?: number[];
 }
 
 export interface UpdateUserData {
@@ -43,4 +47,5 @@ export interface UpdateUserData {
   email?: string;
   password?: string;
   role_id?: number;
+  plantIds?: number[];
 }

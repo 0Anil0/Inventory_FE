@@ -1,5 +1,5 @@
 import { API_BASE_URL, AUTH_ENDPOINTS, USER_ENDPOINTS } from '../constants/api.constants';
-import type { User, Role, AuthResponse, LoginCredentials, SignupCredentials } from '../types/auth';
+import type { User, Role, AuthResponse, LoginCredentials, SignupCredentials, CreateUserData, UpdateUserData } from '../types/auth';
 import type {
   ItemType,
   Project,
@@ -21,14 +21,18 @@ import type {
 } from '../types/inventory';
 
 import type { StorageShelf, StorageRack } from '../types/storage';
+import type { Plant } from '../types/plant';
 
 
 // Token Helper
 const getAuthHeaders = (): HeadersInit => {
   const token = localStorage.getItem('inventory_token');
+  const plantId = localStorage.getItem('inventory_active_plant_id');
+  
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(plantId ? { 'X-Plant-Id': plantId } : {}),
   };
 };
 
@@ -101,12 +105,7 @@ export const userApi = {
     return handleResponse(res);
   },
 
-  createUser: async (data: {
-    username: string;
-    email?: string;
-    password: string;
-    role_id: number;
-  }): Promise<{ success: boolean; message?: string; user?: User }> => {
+  createUser: async (data: CreateUserData): Promise<{ success: boolean; message?: string; user?: User }> => {
     const res = await fetch(`${API_BASE_URL}${USER_ENDPOINTS.USERS}`, {
       method: 'POST',
       headers: getAuthHeaders(),
@@ -117,7 +116,7 @@ export const userApi = {
 
   updateUser: async (
     id: number,
-    data: { username?: string; email?: string; password?: string; role_id?: number }
+    data: UpdateUserData
   ): Promise<{ success: boolean; message?: string; user?: User }> => {
     const res = await fetch(`${API_BASE_URL}${USER_ENDPOINTS.USERS}/${id}`, {
       method: 'PUT',
@@ -155,6 +154,53 @@ export const userApi = {
 
   deleteRole: async (id: number): Promise<{ success: boolean; message?: string }> => {
     const res = await fetch(`${API_BASE_URL}${USER_ENDPOINTS.ROLES}/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+};
+
+// Plant Master API Client
+export const plantApi = {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: 'active' | 'inactive';
+  }): Promise<{ success: boolean; plants: Plant[]; total?: number; page?: number; limit?: number; totalPages?: number }> => {
+    const query = new URLSearchParams();
+    if (params?.page) query.append('page', String(params.page));
+    if (params?.limit) query.append('limit', String(params.limit));
+    if (params?.search) query.append('search', params.search);
+    if (params?.status) query.append('status', params.status);
+
+    const res = await fetch(`${API_BASE_URL}/plants?${query.toString()}`, {
+      headers: getAuthHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  create: async (data: { name: string; code: string; address?: string; status?: 'active' | 'inactive' }): Promise<{ success: boolean; plant: Plant }> => {
+    const res = await fetch(`${API_BASE_URL}/plants`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  update: async (id: number, data: { name?: string; code?: string; address?: string; status?: 'active' | 'inactive' }): Promise<{ success: boolean; plant: Plant }> => {
+    const res = await fetch(`${API_BASE_URL}/plants/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  delete: async (id: number): Promise<{ success: boolean; message: string }> => {
+    const res = await fetch(`${API_BASE_URL}/plants/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });

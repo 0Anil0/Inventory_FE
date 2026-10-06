@@ -86,7 +86,7 @@ export const StockLedgerDrawer: React.FC<StockLedgerDrawerProps> = ({
     }
   };
 
-  const parseTransferNotes = (notes?: string) => {
+  const parseTransferNotes = (notes?: string | null) => {
     if (!notes) return { ref: null, text: null, lot: null, remarks: null };
 
     const refMatch = notes.match(/\[Ref:\s*([^\]]+)\]/);

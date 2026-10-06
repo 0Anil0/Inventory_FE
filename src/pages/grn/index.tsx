@@ -573,7 +573,7 @@ const GRNPage: React.FC = () => {
       title: 'Action',
       key: 'action',
       width: 180,
-      align: 'right',
+      align: 'right' as const,
       fixed: 'right' as const,
       render: (record: GoodsReceiptNote) => (
         <Space>
@@ -832,7 +832,6 @@ const GRNPage: React.FC = () => {
             Save & Inward Stock
           </Button>,
         ]}
-        width={950}
         destroyOnClose
       >
         <Form form={form} layout="vertical" className="mt-4">

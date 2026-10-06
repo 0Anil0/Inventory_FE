@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Avatar, Tag, Dropdown, Button, Drawer, Tooltip } from 'antd';
+import { Layout, Menu, Avatar, Tag, Dropdown, Button, Drawer, Tooltip, Select } from 'antd';
 import type { MenuProps } from 'antd';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -28,6 +28,8 @@ import {
   DashboardOutlined,
   AppstoreOutlined,
   HistoryOutlined,
+  EnvironmentOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 
 const { Header, Sider, Content } = Layout;
@@ -37,7 +39,7 @@ interface AppLayoutProps {
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, activePlant, setActivePlant } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -57,10 +59,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const rootSubMenuKeys = ['sub-masters', 'sub-projects-inventory', 'sub-procurement', 'sub-analytics', 'sub-admin'];
 
   const getSubmenuKeyForPath = (path: string): string => {
-    if (['/item-types', '/makes', '/units', '/vendors', '/storage-locations'].includes(path)) {
+    if (['/item-types', '/makes', '/units', '/vendors', '/storage-locations', '/plants'].includes(path)) {
       return 'sub-masters';
     }
-    if (['/projects', '/project-assignments', '/inventory', '/grn'].includes(path)) {
+    if (['/projects', '/project-assignments', '/inventory', '/grn', '/item-locator'].includes(path)) {
       return 'sub-projects-inventory';
     }
     if (['/purchase-requisitions', '/purchase-orders', '/po-item-tracking', '/approver-config', '/terms-and-conditions'].includes(path)) {
@@ -165,6 +167,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           },
         },
         {
+          key: '/plants',
+          icon: <EnvironmentOutlined style={{ fontSize: '16px' }} />,
+          label: 'Plant Master',
+          onClick: () => {
+            navigate('/plants');
+            setMobileDrawerOpen(false);
+          },
+        },
+        {
           key: '/units',
           icon: <TagsOutlined style={{ fontSize: '16px' }} />,
           label: 'Unit Master (UOM)',
@@ -222,6 +233,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           label: 'Central Stock Tracker',
           onClick: () => {
             navigate('/inventory');
+            setMobileDrawerOpen(false);
+          },
+        },
+        {
+          key: '/item-locator',
+          icon: <SearchOutlined style={{ fontSize: '16px' }} />,
+          label: 'Item/Stock Locator',
+          onClick: () => {
+            navigate('/item-locator');
             setMobileDrawerOpen(false);
           },
         },
@@ -362,6 +382,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       case '/projects': return 'Project & Sub-Project Master';
       case '/project-assignments': return 'Project Stock Assignments';
       case '/inventory': return 'Inventory Stock Items & Tracker';
+      case '/item-locator': return 'Global Item Locator';
       case '/vendors': return 'Vendor Master';
       case '/users': return 'User Management';
       case '/terms-and-conditions': return 'Terms & Conditions Templates';
@@ -492,6 +513,25 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
           {/* Header Right: Theme Toggle & Profile Dropdown */}
           <div className="flex items-center gap-4">
+            {user?.plants && user.plants.length > 0 && (
+              <div className="hidden sm:flex items-center bg-slate-50 dark:bg-slate-800/50 px-3 py-1 rounded-xl border border-slate-200 dark:border-white/10">
+                <EnvironmentOutlined className="text-indigo-500 mr-2 text-lg" />
+                <Select
+                  value={activePlant?.id}
+                  onChange={(val) => {
+                    const plant = user.plants!.find(p => p.id === val);
+                    if (plant) setActivePlant(plant);
+                  }}
+                  variant="borderless"
+                  style={{ minWidth: 200 }}
+                  popupMatchSelectWidth={false}
+                  dropdownStyle={{ minWidth: 240, borderRadius: '12px' }}
+                  options={user.plants.map(p => ({ label: `${p.name} (${p.code})`, value: p.id }))}
+                  className="font-medium text-slate-700 dark:text-slate-200"
+                />
+              </div>
+            )}
+
             <Tooltip title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
               <Button
                 type="text"

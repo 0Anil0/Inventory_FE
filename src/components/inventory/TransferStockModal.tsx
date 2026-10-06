@@ -180,6 +180,10 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
     } else {
       setSelectedLot(null);
     }
+    // Re-validate quantity when max allowed changes
+    setTimeout(() => {
+      form.validateFields(['quantity']).catch(() => {});
+    }, 0);
   };
 
   const allLocations = [
@@ -563,20 +567,27 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
                               filterOption={filterSelectOption}
                               onChange={handleLotChange}
                               size="middle"
+                              optionLabelProp="label"
+                              popupMatchSelectWidth={false}
+                              listHeight={250}
                             >
                               {availableLots.map((lot) => (
-                                <Select.Option key={lot.id} value={lot.id}>
-                                  <div className="flex items-center justify-between py-0.5 font-mono text-xs">
-                                    <span>
+                                <Select.Option 
+                                  key={lot.id} 
+                                  value={lot.id}
+                                  label={`Lot #${lot.lot_number || lot.id} | Qty: ${lot.available_qty} ${selectedItem?.item_type?.unit}`}
+                                >
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between py-1 gap-1 font-mono text-xs whitespace-normal min-w-[300px]">
+                                    <span className="flex-1">
                                       📦 <strong>Lot #{lot.lot_number || lot.id}</strong>
                                       {lot.purchase_order?.po_number && (
                                         <Tag color="purple" className="font-mono text-[10px] ml-2 border-none">
                                           PO: {lot.purchase_order.po_number}
                                         </Tag>
                                       )}
-                                      <span className="text-slate-400 text-[11px] ml-2">@ ₹{lot.unit_price}/unit</span>
+                                      <span className="text-slate-400 text-[11px] ml-1">@ ₹{lot.unit_price}/unit</span>
                                     </span>
-                                    <Tag color="emerald" className="font-mono font-bold text-[11px] border-none">
+                                    <Tag color="emerald" className="font-mono font-bold text-[11px] border-none shrink-0 self-start sm:self-auto m-0">
                                       Lot Avail: {lot.available_qty} {selectedItem?.item_type?.unit}
                                     </Tag>
                                   </div>
@@ -624,7 +635,6 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
                             >
                               <InputNumber
                                 min={0.01}
-                                max={maxAllowedQty}
                                 onChange={(val) => setTransferQty(val || undefined)}
                                 className="w-full font-mono font-bold text-base"
                                 size="middle"
@@ -647,12 +657,12 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
                     {/* RIGHT COLUMN: EXECUTIVE LIVE PREVIEW CARD (5 Cols) */}
                     <div className="lg:col-span-5">
                       <Card
-                        className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl border border-indigo-500/30 shadow-2xl h-full flex flex-col justify-between"
+                        className="bg-slate-50 dark:bg-slate-900 rounded-2xl border border-indigo-100 dark:border-indigo-500/30 shadow-sm h-full flex flex-col justify-between"
                         bodyStyle={{ padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}
                       >
                         <div className="flex flex-col gap-3">
-                          <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                            <span className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5">
+                          <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-2">
+                            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
                               <SafetyCertificateOutlined /> Transfer Summary
                             </span>
                             <Tag color="purple" className="font-mono text-[10px] font-bold border-none px-2">
@@ -661,14 +671,14 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
                           </div>
 
                           {/* ROUTING FLOW */}
-                          <div className="bg-white/5 border border-white/10 rounded-xl p-2.5">
-                            <div className="text-[10px] text-slate-400 uppercase font-medium mb-1">Stock Movement Route</div>
+                          <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-2.5">
+                            <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-medium mb-1">Stock Movement Route</div>
                             <div className="flex items-center justify-between text-xs">
-                              <div className="font-bold text-indigo-300 max-w-[100px] truncate" title={sourceLocationName}>
+                              <div className="font-bold text-indigo-600 dark:text-indigo-300 max-w-[100px] truncate" title={sourceLocationName}>
                                 🏬 {sourceLocationName}
                               </div>
                               <ArrowRightOutlined className="text-indigo-400 text-xs" />
-                              <div className="font-bold text-emerald-300 max-w-[100px] truncate" title={targetLocationName}>
+                              <div className="font-bold text-emerald-600 dark:text-emerald-300 max-w-[100px] truncate" title={targetLocationName}>
                                 🏗️ {targetLocationName}
                               </div>
                             </div>
@@ -676,49 +686,49 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
 
                           {/* SELECTED MATERIAL ITEM */}
                           {selectedItem ? (
-                            <div className="bg-white/5 border border-white/10 rounded-xl p-2.5 flex flex-col gap-1">
-                              <div className="text-[10px] text-slate-400 uppercase font-medium">Selected Material Item</div>
-                              <div className="font-bold text-xs text-white font-['Outfit']">
+                            <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-2.5 flex flex-col gap-1">
+                              <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-medium">Selected Material Item</div>
+                              <div className="font-bold text-xs text-slate-900 dark:text-white font-['Outfit']">
                                 {selectedItem.item_type?.name}
                               </div>
-                              <div className="flex items-center justify-between text-[11px] font-mono text-indigo-300">
+                              <div className="flex items-center justify-between text-[11px] font-mono text-indigo-600 dark:text-indigo-300">
                                 <span>Code: {selectedItem.item_type?.code}</span>
                                 <span>Unit: {selectedItem.item_type?.unit || 'pcs'}</span>
                               </div>
                               {selectedLot && (
-                                <div className="mt-1 pt-1 border-t border-white/10 text-[10px] font-mono text-amber-300 flex items-center justify-between">
+                                <div className="mt-1 pt-1 border-t border-slate-200 dark:border-white/10 text-[10px] font-mono text-amber-600 dark:text-amber-300 flex items-center justify-between">
                                   <span>Lot #{selectedLot.lot_number || selectedLot.id}</span>
                                   <span>₹{selectedLot.unit_price}/unit</span>
                                 </div>
                               )}
                             </div>
                           ) : (
-                            <div className="bg-white/5 border border-dashed border-white/20 rounded-xl p-3 text-center text-slate-400 text-xs">
+                            <div className="bg-white dark:bg-white/5 border border-dashed border-slate-300 dark:border-white/20 rounded-xl p-3 text-center text-slate-500 dark:text-slate-400 text-xs">
                               Select a material item to view valuation summary
                             </div>
                           )}
 
                           {/* FINANCIAL VALUATION STATS */}
                           {selectedItem && transferQty && transferQty > 0 ? (
-                            <div className="bg-indigo-500/10 border border-indigo-500/30 rounded-xl p-3 flex flex-col gap-1.5">
+                            <div className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 rounded-xl p-3 flex flex-col gap-1.5">
                               <div className="flex items-center justify-between text-xs">
-                                <span className="text-slate-300">Transfer Qty:</span>
-                                <span className="font-mono font-bold text-white">
+                                <span className="text-slate-600 dark:text-slate-300">Transfer Qty:</span>
+                                <span className="font-mono font-bold text-slate-900 dark:text-white">
                                   {transferQty} {selectedItem.item_type?.unit || 'pcs'}
                                 </span>
                               </div>
                               <div className="flex items-center justify-between text-xs">
-                                <span className="text-slate-300">Unit Price:</span>
-                                <span className="font-mono text-slate-200">
+                                <span className="text-slate-600 dark:text-slate-300">Unit Price:</span>
+                                <span className="font-mono text-slate-700 dark:text-slate-200">
                                   ₹{unitRate.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                 </span>
                               </div>
-                              <Divider className="my-0.5 border-white/10" />
+                              <Divider className="my-0.5 border-slate-200 dark:border-white/10" />
                               <div className="flex items-center justify-between text-xs">
-                                <span className="font-bold text-indigo-300 flex items-center gap-1">
+                                <span className="font-bold text-indigo-600 dark:text-indigo-300 flex items-center gap-1">
                                   <DollarOutlined /> Total Valuation:
                                 </span>
-                                <span className="font-mono font-extrabold text-emerald-400 text-sm">
+                                <span className="font-mono font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">
                                   ₹{estimatedValuation.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                 </span>
                               </div>
@@ -727,15 +737,15 @@ export const TransferStockModal: React.FC<TransferStockModalProps> = ({
                         </div>
 
                         {/* SUBMIT BUTTON */}
-                        <div className="mt-3 pt-2 border-t border-white/10">
+                        <div className="mt-3 pt-2 border-t border-slate-200 dark:border-white/10">
                           <Button
                             type="primary"
                             size="large"
                             icon={<SwapOutlined />}
                             onClick={() => form.submit()}
                             loading={loading}
-                            disabled={!selectedToProjectId || !selectedItemTypeId || !transferQty || transferQty <= 0}
-                            className="w-full bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 h-10 text-xs font-bold shadow-xl border-none rounded-xl flex items-center justify-center"
+                            disabled={!selectedToProjectId || !selectedItemTypeId || !transferQty || transferQty <= 0 || transferQty > maxAllowedQty}
+                            className={`w-full h-10 text-xs font-bold shadow-xl border-none rounded-xl flex items-center justify-center ${(!selectedToProjectId || !selectedItemTypeId || !transferQty || transferQty <= 0 || transferQty > maxAllowedQty) ? 'bg-slate-300 dark:bg-slate-700 text-slate-500' : 'bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white'}`}
                           >
                             Execute Stock Transfer Now
                           </Button>

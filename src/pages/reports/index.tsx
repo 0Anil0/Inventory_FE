@@ -954,7 +954,7 @@ export const ReportsPage: React.FC = () => {
                   ? poColumns
                   : auditColumns
               }
-              dataSource={reportType === 'procurement-distribution' ? procurementData : otherReportData}
+              dataSource={reportType === 'procurement-distribution' ? filteredProcurementData : filteredOtherReportData}
               rowKey="id"
               loading={loading}
               scroll={{ x: 800 }}

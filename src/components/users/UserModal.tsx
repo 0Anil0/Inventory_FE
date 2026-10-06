@@ -4,6 +4,7 @@ import { UserOutlined, MailOutlined, LockOutlined, SafetyOutlined } from '@ant-d
 import type { User, Role } from '../../types/auth';
 import { encryptPasswordPayload } from '../../utils/crypto.utils';
 import { filterSelectOption } from '../../utils/select.utils';
+import type { Plant } from '../../types/plant';
 
 interface UserModalProps {
   isOpen: boolean;
@@ -13,9 +14,11 @@ interface UserModalProps {
     email?: string;
     password?: string;
     role_id: number;
+    plantIds?: number[];
   }) => Promise<void>;
   userToEdit?: User | null;
   roles: Role[];
+  plants: Plant[];
 }
 
 export const UserModal: React.FC<UserModalProps> = ({
@@ -24,6 +27,7 @@ export const UserModal: React.FC<UserModalProps> = ({
   onSubmit,
   userToEdit,
   roles,
+  plants,
 }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = React.useState<boolean>(false);
@@ -35,12 +39,14 @@ export const UserModal: React.FC<UserModalProps> = ({
           username: userToEdit.username,
           email: userToEdit.email || '',
           role_id: userToEdit.role_id,
+          plantIds: userToEdit.plants ? userToEdit.plants.map(p => p.id) : [],
           password: '',
         });
       } else {
         form.resetFields();
         form.setFieldsValue({
           role_id: roles[0]?.id || 1,
+          plantIds: [],
         });
       }
     }
@@ -55,6 +61,7 @@ export const UserModal: React.FC<UserModalProps> = ({
         email: values.email?.trim() || undefined,
         password: encryptedPass,
         role_id: Number(values.role_id),
+        plantIds: values.plantIds,
       });
       message.success(userToEdit ? 'User updated successfully' : 'User created successfully');
       onClose();
@@ -119,6 +126,24 @@ export const UserModal: React.FC<UserModalProps> = ({
               <Select.Option key={r.id} value={r.id}>
                 <span className="font-semibold">{r.name.toUpperCase()}</span>
                 {r.description && <span className="text-xs text-gray-400 ml-2">- {r.description}</span>}
+              </Select.Option>
+            ))}
+          </Select>
+        </Form.Item>
+
+        <Form.Item
+          name="plantIds"
+          label="Assigned Plants"
+        >
+          <Select 
+            mode="multiple"
+            placeholder="Select plants..."
+            filterOption={filterSelectOption}
+            allowClear
+          >
+            {plants.map((p) => (
+              <Select.Option key={p.id} value={p.id}>
+                {p.name} ({p.code})
               </Select.Option>
             ))}
           </Select>

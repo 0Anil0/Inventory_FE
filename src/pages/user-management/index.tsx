@@ -14,7 +14,8 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import type { User, Role } from '../../types/auth';
-import { userApi } from '../../services/api';
+import type { Plant } from '../../types/plant';
+import { userApi, plantApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { UserModal } from '../../components/users/UserModal';
 import { RoleModal } from '../../components/users/RoleModal';
@@ -26,6 +27,7 @@ export const UserManagementPage: React.FC = () => {
 
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [plants, setPlants] = useState<Plant[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Responsive desktop check (>= 1024px)
@@ -86,8 +88,20 @@ export const UserManagementPage: React.FC = () => {
     }
   };
 
+  const fetchPlants = async () => {
+    try {
+      const res = await plantApi.getAll({ limit: 1000 });
+      if (res.success && res.plants) {
+        setPlants(res.plants);
+      }
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchRoles();
+    fetchPlants();
     fetchUsers(1, pageSize, activeFilters, searchQuery);
   }, []);
 
@@ -130,6 +144,7 @@ export const UserManagementPage: React.FC = () => {
     email?: string;
     password?: string;
     role_id: number;
+    plantIds?: number[];
   }) => {
     if (userToEdit) {
       const res = await userApi.updateUser(userToEdit.id, data);
@@ -143,6 +158,7 @@ export const UserManagementPage: React.FC = () => {
         email: data.email,
         password: data.password,
         role_id: data.role_id,
+        plantIds: data.plantIds,
       });
       if (res.success) {
         message.success('User created successfully');
@@ -282,6 +298,21 @@ export const UserManagementPage: React.FC = () => {
           </Tag>
         );
       },
+    },
+    {
+      title: 'Assigned Plants',
+      key: 'plants',
+      render: (_: any, record: User) => (
+        <Space size={[0, 4]} wrap>
+          {record.plants && record.plants.length > 0 ? (
+            record.plants.map(plant => (
+              <Tag color="geekblue" key={plant.id}>{plant.code}</Tag>
+            ))
+          ) : (
+            <span className="text-slate-400 italic text-xs">No plants</span>
+          )}
+        </Space>
+      ),
     },
     {
       title: 'Created Date',
@@ -545,6 +576,7 @@ export const UserManagementPage: React.FC = () => {
         onSubmit={handleUserFormSubmit}
         userToEdit={userToEdit}
         roles={roles}
+        plants={plants}
       />
 
       <RoleModal
