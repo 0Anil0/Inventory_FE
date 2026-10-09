@@ -11,6 +11,7 @@ import {
   Tag,
   Tooltip,
   Avatar,
+  InputNumber,
 } from 'antd';
 import {
   SafetyCertificateOutlined,
@@ -83,11 +84,14 @@ export const ApproverConfigPage: React.FC = () => {
         form.setFieldsValue({
           user_id: editingApprover.user_id,
           is_active: Boolean(editingApprover.is_active),
+          min_amount: editingApprover.min_amount || 0,
+          max_amount: editingApprover.max_amount,
         });
       } else {
         form.resetFields();
         form.setFieldsValue({
           is_active: true,
+          min_amount: 0,
         });
       }
     }
@@ -104,6 +108,8 @@ export const ApproverConfigPage: React.FC = () => {
       if (editingApprover) {
         const res = await poApproverApi.update(editingApprover.id, {
           is_active: Boolean(values.is_active),
+          min_amount: values.min_amount,
+          max_amount: values.max_amount,
         });
         if (res.success) {
           message.success('PO Approver updated successfully!');
@@ -115,6 +121,8 @@ export const ApproverConfigPage: React.FC = () => {
       } else {
         const res = await poApproverApi.create({
           user_id: values.user_id,
+          min_amount: values.min_amount,
+          max_amount: values.max_amount,
         });
         if (res.success) {
           message.success('PO Approver designated successfully!');
@@ -172,6 +180,27 @@ export const ApproverConfigPage: React.FC = () => {
               </div>
               <div className="text-xs text-slate-400 font-mono">{email}</div>
             </div>
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Approval Limit',
+      key: 'limits',
+      render: (_, record) => {
+        if (record.max_amount) {
+          return (
+            <div className="text-sm">
+              <span className="text-slate-500">₹ {record.min_amount?.toLocaleString() || 0}</span>
+              <span className="mx-1 text-slate-300">-</span>
+              <span className="font-bold text-indigo-600">₹ {record.max_amount.toLocaleString()}</span>
+            </div>
+          );
+        }
+        return (
+          <div className="text-sm">
+            <span className="text-slate-500">From ₹ {record.min_amount?.toLocaleString() || 0}</span>
+            <Tag color="purple" className="ml-2 font-bold text-[10px] border-none">NO LIMIT</Tag>
           </div>
         );
       },
@@ -347,6 +376,38 @@ export const ApproverConfigPage: React.FC = () => {
                 </Select>
               </Form.Item>
             )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <Form.Item
+                name="min_amount"
+                label="Min Amount (₹)"
+                rules={[{ required: true, message: 'Required' }]}
+              >
+                <InputNumber
+                  className="w-full"
+                  size="large"
+                  min={0}
+                  step={1000}
+                  formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(value) => Number(value!.replace(/\$\s?|(\.*)/g, '').replace(/,/g, '')) as any}
+                />
+              </Form.Item>
+              <Form.Item
+                name="max_amount"
+                label="Max Amount (₹)"
+                tooltip="Leave empty for unlimited approval rights"
+              >
+                <InputNumber
+                  className="w-full"
+                  size="large"
+                  min={0}
+                  step={1000}
+                  placeholder="No Limit"
+                  formatter={(value) => (value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '')}
+                  parser={(value) => Number(value!.replace(/\$\s?|(\.*)/g, '').replace(/,/g, '')) as any}
+                />
+              </Form.Item>
+            </div>
 
             <div className="flex justify-end gap-3 mt-6">
               <Button

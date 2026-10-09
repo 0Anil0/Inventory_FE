@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Table,
   Card,
@@ -537,8 +538,10 @@ export const ReportsPage: React.FC = () => {
       key: 'po',
       render: (_, r) => (
         <div>
-          <div className="font-mono font-bold text-indigo-500">{r.po_number}</div>
-          <div className="text-xs text-slate-400 font-mono">
+          <Link to={`/purchase-orders/${r.id}`} className="font-mono font-bold text-indigo-500 hover:text-indigo-700 hover:underline">
+            {r.po_number}
+          </Link>
+          <div className="text-xs text-slate-400 font-mono mt-0.5">
             {r.order_date ? new Date(r.order_date).toLocaleDateString() : 'N/A'}
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Input, Table, Tag, Button, Empty } from 'antd';
+import { Card, Input, Table, Tag, Empty } from 'antd';
 import { SearchOutlined, EnvironmentOutlined, BarcodeOutlined } from '@ant-design/icons';
 import { inventoryApi } from '../../services/api';
 import type { ProjectInventory } from '../../types/inventory';

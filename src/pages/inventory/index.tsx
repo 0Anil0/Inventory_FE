@@ -361,7 +361,7 @@ export const InventoryTrackerPage: React.FC = () => {
           size="small"
           onClick={() => handleOpenQuantityModal(record)}
         >
-          Update Stock
+          Update Threshold
         </Button>
       ),
     },
@@ -507,27 +507,38 @@ export const InventoryTrackerPage: React.FC = () => {
             </div>
 
             <Space className="justify-between sm:justify-end flex-wrap">
-              <Button
-                icon={<SwapOutlined />}
-                onClick={() => setIsTransferModalOpen(true)}
-                className="border-indigo-500/40 text-indigo-600 dark:text-indigo-400 font-semibold"
-              >
-                Transfer Stock
-              </Button>
+              <Tooltip title={selectedProjectId < 0 ? "Please select a specific Project or General Stock to transfer items" : ""}>
+                <div>
+                  <Button
+                    icon={<SwapOutlined />}
+                    onClick={() => setIsTransferModalOpen(true)}
+                    className="border-indigo-500/40 text-indigo-600 dark:text-indigo-400 font-semibold"
+                    disabled={selectedProjectId === undefined || selectedProjectId === null || selectedProjectId < 0}
+                    style={selectedProjectId < 0 ? { pointerEvents: 'none' } : {}}
+                  >
+                    Transfer Stock
+                  </Button>
+                </div>
+              </Tooltip>
 
               <Button icon={<DownloadOutlined />} onClick={exportCSV}>
                 Export CSV Report
               </Button>
 
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => setIsAddItemModalOpen(true)}
-                disabled={selectedProjectId === undefined || selectedProjectId === null}
-                className="shadow-lg shadow-indigo-500/30"
-              >
-                {selectedProjectId === 0 ? 'Add Stock Items' : 'Add Items to Project'}
-              </Button>
+              <Tooltip title={selectedProjectId < 0 ? "Please select a specific Project or General Stock to add items" : ""}>
+                <div>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => setIsAddItemModalOpen(true)}
+                    disabled={selectedProjectId === undefined || selectedProjectId === null || selectedProjectId < 0}
+                    className="shadow-lg shadow-indigo-500/30"
+                    style={selectedProjectId < 0 ? { pointerEvents: 'none' } : {}}
+                  >
+                    {selectedProjectId === 0 ? 'Add Stock Items' : 'Add Items to Project'}
+                  </Button>
+                </div>
+              </Tooltip>
             </Space>
           </div>
 

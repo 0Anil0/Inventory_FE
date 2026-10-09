@@ -43,7 +43,7 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { useAuth } from '../../context/AuthContext';
 import { filterSelectOption } from '../../utils/select.utils';
-import type { PurchaseOrder, Vendor, Project, ItemType, TermsAndConditions } from '../../types/inventory';
+import type { PurchaseOrder, Vendor, Project, ItemType, TermsAndConditions, POApprover } from '../../types/inventory';
 import type { StorageShelf } from '../../types/storage';
 import { poApi, vendorApi, projectApi, itemTypeApi, termsApi, poApproverApi, grnApi, storageApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
@@ -275,7 +275,7 @@ export const PurchaseOrdersPage: React.FC = () => {
   const [itemTypes, setItemTypes] = useState<ItemType[]>([]);
   const [termsTemplates, setTermsTemplates] = useState<TermsAndConditions[]>([]);
   const [, setSelectedTerms] = useState<TermsAndConditions | null>(null);
-  const [approverUserIds, setApproverUserIds] = useState<number[]>([]);
+  const [approversList, setApproversList] = useState<POApprover[]>([]);
 
   // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
@@ -444,7 +444,7 @@ export const PurchaseOrdersPage: React.FC = () => {
         if (defaultTerms) setSelectedTerms(defaultTerms);
       }
       if (appRes.success && appRes.approvers) {
-        setApproverUserIds(appRes.approvers.map((a) => a.user_id));
+        setApproversList(appRes.approvers);
       }
     } catch (err: any) {
       console.error('Error fetching master data:', err);
@@ -531,8 +531,14 @@ export const PurchaseOrdersPage: React.FC = () => {
     }
   };
 
-  const userRoleStr = (typeof user?.role === 'object' ? user.role.name : user?.role || 'user').toUpperCase();
-  const isApproverUser = userRoleStr === 'ADMIN' || (user?.id ? approverUserIds.includes(user.id) : false);
+  const isUserApproverForAmount = (amount: number) => {
+    if (!user?.id) return false;
+    const approver = approversList.find((a) => a.user_id === user.id && a.is_active);
+    if (!approver) return false;
+    if (approver.min_amount !== null && approver.min_amount !== undefined && amount < approver.min_amount) return false;
+    if (approver.max_amount !== null && approver.max_amount !== undefined && amount > approver.max_amount) return false;
+    return true;
+  };
 
   const handleApprovePO = async (poId: number) => {
     try {
@@ -876,7 +882,7 @@ export const PurchaseOrdersPage: React.FC = () => {
               />
             </Tooltip>
 
-            {isApproverUser && isPendingOrDraft && (
+            {isUserApproverForAmount(record.total_amount || 0) && isPendingOrDraft && (
               <>
                 <Popconfirm
                   title="Approve Purchase Order?"
@@ -1194,7 +1200,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                   <div className="truncate text-center">Unit Price (₹)</div>
                   <div className="truncate text-center">Disc %</div>
                   <div className="truncate text-center">GST %</div>
-                  <div className="truncate text-center">Net Subtotal</div>
+                  <div className="truncate text-center">Basic Amount</div>
                   <div className="text-center truncate">Act</div>
                 </div>
 
@@ -1205,11 +1211,8 @@ export const PurchaseOrdersPage: React.FC = () => {
                         const currentQty = createForm.getFieldValue(['items', name, 'ordered_qty']) || 0;
                         const currentRate = createForm.getFieldValue(['items', name, 'unit_price']) || 0;
                         const currentDisc = createForm.getFieldValue(['items', name, 'discount_percent']) || 0;
-                        const currentGst = createForm.getFieldValue(['items', name, 'gst_percent']) || 0;
                         
                         const lineSubtotal = currentQty * currentRate * (1 - currentDisc / 100);
-                        const lineTax = lineSubtotal * (currentGst / 100);
-                        const lineNet = lineSubtotal + lineTax;
 
                         return (
                           <div
@@ -1344,7 +1347,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                               <div className="min-w-0">
                                 <Form.Item className="mb-0">
                                   <Input
-                                    value={`₹${(isNaN(lineNet) ? 0 : lineNet).toFixed(2)}`}
+                                    value={`₹${(isNaN(lineSubtotal) ? 0 : lineSubtotal).toFixed(2)}`}
                                     disabled
                                     style={{ width: '100%', minWidth: 0 }}
                                     className="font-mono text-xs font-bold text-center bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400"
@@ -1638,7 +1641,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                               <th style={{ border: '1px solid #1e293b', padding: '10px 8px', textAlign: 'right', width: '80px', fontSize: '13px' }}>Unit Rate</th>
                               <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '55px', fontSize: '13px' }}>Disc %</th>
                               <th style={{ border: '1px solid #1e293b', padding: '10px 6px', textAlign: 'center', width: '55px', fontSize: '13px' }}>GST %</th>
-                              <th style={{ border: '1px solid #1e293b', padding: '10px 8px', textAlign: 'right', width: '100px', fontSize: '13px' }}>Net Amount</th>
+                              <th style={{ border: '1px solid #1e293b', padding: '10px 8px', textAlign: 'right', width: '100px', fontSize: '13px' }}>Basic Amount</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1670,7 +1673,7 @@ export const PurchaseOrdersPage: React.FC = () => {
                                   <td style={{ border: '1px solid #1e293b', padding: '9px 6px', textAlign: 'center', fontFamily: 'monospace', fontSize: '13px', verticalAlign: 'middle' }}>{item.discount_percent || 0}%</td>
                                   <td style={{ border: '1px solid #1e293b', padding: '9px 6px', textAlign: 'center', fontWeight: 'bold', fontFamily: 'monospace', color: '#312e81', fontSize: '13px', verticalAlign: 'middle' }}>{item.gst_percent !== undefined ? item.gst_percent : 0}%</td>
                                   <td style={{ border: '1px solid #1e293b', padding: '9px 8px', textAlign: 'right', fontWeight: 'bold', fontFamily: 'monospace', fontSize: '13.5px', verticalAlign: 'middle' }}>
-                                    ₹{((item.total_price || 0) + (item.tax_amount || ((item.total_price || 0) * ((item.gst_percent || 0) / 100)))).toFixed(2)}
+                                    ₹{(item.total_price || 0).toFixed(2)}
                                   </td>
                                 </tr>
                               );
@@ -1680,28 +1683,81 @@ export const PurchaseOrdersPage: React.FC = () => {
                       )}
 
                       {/* CALCULATIONS BREAKDOWN BOX */}
-                      {pageData.showCalculationBox && (
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '18px', fontFamily: 'sans-serif', fontSize: '13.5px' }}>
-                          <div style={{ width: '350px', border: '1.5px solid #1e293b', padding: '10px 14px', backgroundColor: '#f8fafc' }} className="space-y-1.5 rounded-sm">
-                            <div className="flex justify-between items-center">
-                              <span>Sub Total (Basic Amount):</span>
-                              <span className="font-mono font-bold">₹{documentSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      {pageData.showCalculationBox && (() => {
+                        const taxSummary: Record<number, { taxableValue: number, cgst: number, sgst: number, lineTotal: number }> = {};
+                        (selectedPO.items || []).forEach((item) => {
+                          const gst = item.gst_percent !== undefined ? item.gst_percent : 0;
+                          const taxableValue = item.total_price || 0;
+                          const taxAmount = item.tax_amount || (taxableValue * (gst / 100));
+                          const cgst = taxAmount / 2;
+                          const sgst = taxAmount / 2;
+                          const lineTotal = taxableValue + taxAmount;
+                        
+                          if (!taxSummary[gst]) {
+                            taxSummary[gst] = { taxableValue: 0, cgst: 0, sgst: 0, lineTotal: 0 };
+                          }
+                          taxSummary[gst].taxableValue += taxableValue;
+                          taxSummary[gst].cgst += cgst;
+                          taxSummary[gst].sgst += sgst;
+                          taxSummary[gst].lineTotal += lineTotal;
+                        });
+                        const taxRates = Object.keys(taxSummary).sort((a, b) => Number(a) - Number(b));
+
+                        return (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px', fontFamily: 'sans-serif', fontSize: '12px' }}>
+                            {/* TAX BREAKDOWN TABLE */}
+                            <div style={{ width: '55%' }}>
+                              {taxRates.length > 0 && (
+                                <table style={{ borderCollapse: 'collapse', border: '1.5px solid #1e293b', width: '100%', fontSize: '11px', backgroundColor: '#f8fafc' }}>
+                                  <thead>
+                                    <tr style={{ backgroundColor: '#1e293b', color: '#ffffff', fontWeight: 'bold' }}>
+                                      <th style={{ border: '1px solid #cbd5e1', padding: '6px', textAlign: 'center' }}>GST %</th>
+                                      <th style={{ border: '1px solid #cbd5e1', padding: '6px', textAlign: 'right' }}>Taxable Value</th>
+                                      <th style={{ border: '1px solid #cbd5e1', padding: '6px', textAlign: 'right' }}>CGST</th>
+                                      <th style={{ border: '1px solid #cbd5e1', padding: '6px', textAlign: 'right' }}>SGST</th>
+                                      <th style={{ border: '1px solid #cbd5e1', padding: '6px', textAlign: 'right' }}>Line Total</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {taxRates.map((rate) => {
+                                      const row = taxSummary[Number(rate)];
+                                      return (
+                                        <tr key={rate} style={{ borderBottom: '1px solid #cbd5e1' }}>
+                                          <td style={{ border: '1px solid #cbd5e1', padding: '6px', textAlign: 'center', fontWeight: 'bold', color: '#0f172a' }}>{rate}%</td>
+                                          <td style={{ border: '1px solid #cbd5e1', padding: '6px', textAlign: 'right', fontFamily: 'monospace' }}>₹{row.taxableValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                          <td style={{ border: '1px solid #cbd5e1', padding: '6px', textAlign: 'right', fontFamily: 'monospace' }}>₹{row.cgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                          <td style={{ border: '1px solid #cbd5e1', padding: '6px', textAlign: 'right', fontFamily: 'monospace' }}>₹{row.sgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                          <td style={{ border: '1px solid #cbd5e1', padding: '6px', textAlign: 'right', fontWeight: 'bold', fontFamily: 'monospace', color: '#0f172a' }}>₹{row.lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              )}
                             </div>
-                            <div style={{ color: '#334155' }} className="flex justify-between items-center">
-                              <span>Add CGST:</span>
-                              <span className="font-mono">₹{(documentTax / 2).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            </div>
-                            <div style={{ color: '#334155' }} className="flex justify-between items-center">
-                              <span>Add SGST:</span>
-                              <span className="font-mono">₹{(documentTax / 2).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            </div>
-                            <div style={{ borderTop: '1.5px solid #1e293b', paddingTop: '6px', marginTop: '6px', color: '#0f172a' }} className="flex justify-between items-center font-bold text-base">
-                              <span>Grand Total:</span>
-                              <span className="font-mono text-base">₹{documentGrandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+
+                            {/* GRAND TOTAL BOX */}
+                            <div style={{ width: '300px', border: '1.5px solid #1e293b', padding: '10px 14px', backgroundColor: '#f8fafc', fontSize: '13.5px' }} className="space-y-1.5 rounded-sm">
+                              <div className="flex justify-between items-center">
+                                <span>Sub Total (Basic Amount):</span>
+                                <span className="font-mono font-bold">₹{documentSubtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              </div>
+                              <div style={{ color: '#334155' }} className="flex justify-between items-center">
+                                <span>Add CGST:</span>
+                                <span className="font-mono">₹{(documentTax / 2).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              </div>
+                              <div style={{ color: '#334155' }} className="flex justify-between items-center">
+                                <span>Add SGST:</span>
+                                <span className="font-mono">₹{(documentTax / 2).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              </div>
+                              <div style={{ borderTop: '1.5px solid #1e293b', paddingTop: '6px', marginTop: '6px', color: '#0f172a' }} className="flex justify-between items-center font-bold text-base">
+                                <span>Grand Total:</span>
+                                <span className="font-mono text-base">₹{documentGrandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* TERMS & CONDITIONS SECTION */}
                       {(pageData.showTermsHeader || pageData.clauses.length > 0) && (

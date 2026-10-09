@@ -41,21 +41,19 @@ export const QuantityModal: React.FC<QuantityModalProps> = ({
   }, [isOpen, inventoryItem, form]);
 
   const handleFinish = async (values: any) => {
-    const newQty = Number(values.quantity);
-
     setLoading(true);
     try {
       await onSubmit({
         project_id: projectId,
         item_type_id: inventoryItem!.item_type_id,
-        quantity: newQty,
+        quantity: currentProjectQty,
         min_quantity: values.min_quantity !== undefined ? Number(values.min_quantity) : undefined,
         notes: values.notes,
       });
-      message.success('Item stock updated successfully');
+      message.success('Threshold updated successfully');
       onClose();
     } catch (err: any) {
-      message.error(err.message || 'Failed to update quantity');
+      message.error(err.message || 'Failed to update threshold');
     } finally {
       setLoading(false);
     }
@@ -66,14 +64,14 @@ export const QuantityModal: React.FC<QuantityModalProps> = ({
       title={
         <div className="flex items-center gap-2">
           <EditOutlined className="text-indigo-400" />
-          <span>Update Stock: <strong className="text-indigo-600 dark:text-indigo-400">{itemType?.name || 'Item'}</strong></span>
+          <span>Update Threshold: <strong className="text-indigo-600 dark:text-indigo-400">{itemType?.name || 'Item'}</strong></span>
         </div>
       }
       open={isOpen}
       onCancel={onClose}
       onOk={() => form.submit()}
       confirmLoading={loading}
-      okText="Save Quantity Update"
+      okText="Save Threshold"
       destroyOnClose
       centered
     >
@@ -105,32 +103,18 @@ export const QuantityModal: React.FC<QuantityModalProps> = ({
       </div>
 
       <Form form={form} layout="vertical" onFinish={handleFinish}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Form.Item
-            name="quantity"
-            label={`Updated Stock Quantity (${itemType?.unit || 'pcs'})`}
-            rules={[{ required: true, message: 'Please enter quantity' }]}
-          >
-            <InputNumber
-              min={0}
-              size="large"
-              className="w-full font-mono font-bold"
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="min_quantity"
-            label={
-              <span className="flex items-center gap-1">
-                <AlertOutlined className="text-amber-400" /> Min Reorder Threshold
-              </span>
-            }
-            tooltip="Triggers Low-Stock Alert when item quantity falls to or below this amount"
-            rules={[{ required: true, message: 'Please enter min threshold' }]}
-          >
-            <InputNumber min={0} size="large" className="w-full font-mono" />
-          </Form.Item>
-        </div>
+        <Form.Item
+          name="min_quantity"
+          label={
+            <span className="flex items-center gap-1">
+              <AlertOutlined className="text-amber-400" /> Min Reorder Threshold
+            </span>
+          }
+          tooltip="Triggers Low-Stock Alert when item quantity falls to or below this amount"
+          rules={[{ required: true, message: 'Please enter min threshold' }]}
+        >
+          <InputNumber min={0} size="large" className="w-full font-mono" />
+        </Form.Item>
 
         <Form.Item name="notes" label="Audit Reason / Reference Notes (Optional)">
           <Input.TextArea placeholder="e.g. Physical audit count adjustment / Usage update" rows={2} />

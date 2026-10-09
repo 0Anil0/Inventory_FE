@@ -67,6 +67,7 @@ export interface ProjectAssignmentRecord {
     full_description?: string;
     unit: string;
     quantity: number;
+    lot?: InventoryLot | null;
   }>;
 }
 
@@ -159,6 +160,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
               full_description: i.item_type?.full_description || i.item_type?.description || undefined,
               unit: i.item_type?.unit || 'pcs',
               quantity: i.quantity,
+              lot: i.lot,
             })),
           }))
         );
@@ -189,14 +191,33 @@ export const ProjectAssignmentsPage: React.FC = () => {
     } else {
       setAvailableLots([]);
     }
-  }, [selectedTargetProjectId, isModalOpen]);
+  }, [selectedTargetProjectId, isModalOpen, editingAssignment]);
 
   const loadLotsForProject = async (projId: number) => {
     setLoadingLots(true);
     try {
       const res = await inventoryLotApi.getAvailableLots({ project_id: projId });
       if (res.success && res.lots) {
-        setAvailableLots(res.lots);
+        let fetchedLots = [...res.lots];
+
+        if (editingAssignment && editingAssignment.target_project_id === projId) {
+          editingAssignment.items.forEach((item) => {
+            if (item.lot_id && item.lot) {
+              const existingLot = fetchedLots.find((l) => l.id === item.lot_id);
+              if (existingLot) {
+                existingLot.available_qty = Number(existingLot.available_qty) + Number(item.quantity);
+              } else {
+                fetchedLots.push({
+                  ...item.lot,
+                  available_qty: Number(item.lot.available_qty) + Number(item.quantity),
+                  purchase_order: item.purchase_order as any,
+                });
+              }
+            }
+          });
+        }
+
+        setAvailableLots(fetchedLots);
       }
     } catch (err: any) {
       console.error('Failed to load stock lots for project:', err);
@@ -218,11 +239,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
 
   const handleOpenEditModal = (record: ProjectAssignmentRecord) => {
     setEditingAssignment(record);
-    form.setFieldsValue({
-      target_project_id: record.target_project_id,
-      assigned_to_person: record.assigned_to_person,
-      notes: record.notes,
-    });
+    
     const idsSet = new Set<number>();
     const lMap: Record<number, number> = {};
     record.items.forEach((i) => {
@@ -231,7 +248,17 @@ export const ProjectAssignmentsPage: React.FC = () => {
         lMap[i.lot_id] = i.quantity;
       }
     });
-    setSelectedItemIds(Array.from(idsSet));
+    
+    const itemIds = Array.from(idsSet);
+    
+    form.setFieldsValue({
+      target_project_id: record.target_project_id,
+      assigned_to_person: record.assigned_to_person,
+      notes: record.notes,
+      selected_item_ids: itemIds,
+    });
+    
+    setSelectedItemIds(itemIds);
     setLotQuantities(lMap);
     setIsItemSelectOpen(false);
     setIsModalOpen(true);
@@ -264,6 +291,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
     new Set([
       ...availableLots.filter((l) => l.available_qty > 0).map((l) => l.item_type_id),
       ...(editingAssignment ? editingAssignment.items.map((i) => i.item_type_id) : []),
+      ...selectedItemIds, // Also include any already selected items
     ])
   );
 
@@ -426,30 +454,30 @@ export const ProjectAssignmentsPage: React.FC = () => {
             return (
               <div
                 key={idx}
-                className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/5 text-xs"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-white/5 text-xs"
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0">
                   <span className="font-bold text-slate-900 dark:text-slate-100">{item.item_name}</span>
                   <span className="font-mono text-[11px] text-indigo-600 dark:text-indigo-400">({item.item_code})</span>
                   {item.cat_no && (
-                    <Tag color="emerald" className="font-mono text-[10px] px-1 py-0 border-none font-semibold">
+                    <Tag color="emerald" className="font-mono text-[10px] px-1 py-0 border-none font-semibold m-0">
                       Cat: {item.cat_no}
                     </Tag>
                   )}
                   {item.purchase_order?.po_number && (
-                    <Tag color="purple" className="font-mono text-[10px] px-1 py-0 border-none font-semibold">
+                    <Tag color="purple" className="font-mono text-[10px] px-1 py-0 border-none font-semibold m-0 max-w-[120px] truncate" title={item.purchase_order.po_number}>
                       {item.purchase_order.po_number}
                     </Tag>
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 font-mono font-bold shrink-0">
+                <div className="flex items-center gap-1.5 font-mono font-bold shrink-0 self-start sm:self-auto bg-white dark:bg-slate-800/50 px-1.5 py-0.5 rounded border border-slate-100 dark:border-white/5">
                   <span className="text-cyan-600 dark:text-cyan-400">
                     {item.quantity} {item.unit}
                   </span>
                   {lotRate > 0 && (
                     <span className="text-slate-500 text-[11px]">
-                      @ ₹{lotRate.toLocaleString('en-IN')}/unit = <span className="text-emerald-600 dark:text-emerald-400 font-bold">₹{lineTotal.toLocaleString('en-IN')}</span>
+                      @ ₹{lotRate.toLocaleString('en-IN')} = <span className="text-emerald-600 dark:text-emerald-400 font-bold">₹{lineTotal.toLocaleString('en-IN')}</span>
                     </span>
                   )}
                 </div>
@@ -813,7 +841,7 @@ export const ProjectAssignmentsPage: React.FC = () => {
                   const totalAvail = itemLots.reduce((sum, l) => sum + Number(l.available_qty || 0), 0);
 
                   return (
-                    <Select.Option key={itemTypeId} value={itemTypeId}>
+                    <Select.Option key={itemTypeId} value={itemTypeId} label={`${name} (${code})`}>
                       <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/50 last:border-none">
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-slate-800 dark:text-slate-100 text-sm">{name}</span>
@@ -940,7 +968,8 @@ export const ProjectAssignmentsPage: React.FC = () => {
                                     </span>
                                   )}
                                   <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                                    Avail: <strong className="text-indigo-600 dark:text-indigo-400">{lot.available_qty} {unitStr}</strong>
+                                    Stock Left: <strong className="text-indigo-600 dark:text-indigo-400">{lot.available_qty - currentLotQty} {unitStr}</strong>
+                                    <span className="text-[10px] ml-1 opacity-70">(Limit: {lot.available_qty})</span>
                                   </span>
                                   <Tag color="emerald" className="font-mono text-xs font-bold border-none py-0.5 px-2">
                                     Rate: ₹{rate.toLocaleString('en-IN')}/{unitStr}

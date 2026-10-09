@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Form, Select, InputNumber, Input, Button, Card, Tag, Row, Col, message } from 'antd';
-import { PlusOutlined, CodeSandboxOutlined, CheckSquareOutlined, DatabaseOutlined, TagOutlined } from '@ant-design/icons';
+import { PlusOutlined, CodeSandboxOutlined, CheckSquareOutlined, TagOutlined } from '@ant-design/icons';
 import type { ItemType } from '../../types/inventory';
 
 interface AddItemModalProps {
@@ -108,21 +108,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       return;
     }
 
-    // Validate quantities if allocating to a project (not general store)
-    if (!isGeneralStore) {
-      for (const id of selectedIds) {
-        const item = availableItemTypes.find((t) => t.id === id);
-        const allocatedQty = itemQuantities[id] || 0;
-        const masterAvailable = item?.total_quantity || 0;
-
-        if (allocatedQty > masterAvailable) {
-          message.error(
-            `Cannot allocate ${allocatedQty} ${item?.unit} for "${item?.name}". Maximum available in Main Store: ${masterAvailable} ${item?.unit}`
-          );
-          return;
-        }
-      }
-    }
+    // Removed maxStock validation since this is for direct/opening stock entry at any location.
 
     setLoading(true);
     try {
@@ -157,8 +143,8 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           <PlusOutlined className="text-indigo-400" />
           <span>
             {isGeneralStore
-              ? 'Add / Update Stock Items: General Store (Opening Stock & Lots)'
-              : `Allocate Items to Project: ${projectName || 'Project'}`}
+              ? 'Add / Update Opening Stock: General Store'
+              : `Add Opening Stock to Project: ${projectName || 'Project'}`}
           </span>
         </div>
       }
@@ -252,15 +238,10 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                       )}
                     </div>
                   </div>
-                  {isGeneralStore ? (
-                    <Tag color="purple" className="font-mono text-xs border-none font-bold shrink-0">
-                      Unit: {item.unit}
-                    </Tag>
-                  ) : (
-                    <Tag color="cyan" icon={<DatabaseOutlined />} className="font-mono text-xs border-none font-bold shrink-0">
-                      Avail: {(item.total_quantity || 0).toLocaleString()} {item.unit}
-                    </Tag>
-                  )}
+                  {/* Removed max stock display since it's opening stock */}
+                  <Tag color="purple" className="font-mono text-xs border-none font-bold shrink-0">
+                    Unit: {item.unit}
+                  </Tag>
                 </div>
               </Select.Option>
             ))}
@@ -271,28 +252,20 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
         {selectedItemTypes.length > 0 && (
           <div className="mt-4 flex flex-col gap-3 max-h-96 overflow-y-auto pr-1">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">
-              {isGeneralStore
-                ? `Set Initial Quantity, Purchase Rate & Batch Info (${selectedItemTypes.length}):`
-                : `Enter Quantity to Allocate to Project (${selectedItemTypes.length}):`}
+              Set Initial Quantity, Purchase Rate & Batch Info ({selectedItemTypes.length}):
             </div>
 
             {selectedItemTypes.map((item) => {
-              const maxStock = item.total_quantity || 0;
               const currentVal = itemQuantities[item.id] || 0;
               const currentRate = itemRates[item.id] !== undefined ? itemRates[item.id] : Number(item.unit_rate || 0);
               const currentLot = itemLots[item.id] || `LOT-OPENING-${Date.now().toString().slice(-4)}`;
               const currentMin = itemMinQtys[item.id] !== undefined ? itemMinQtys[item.id] : 10;
-              const isExceeded = !isGeneralStore && currentVal > maxStock;
 
               return (
                 <Card
                   key={item.id}
                   size="small"
-                  className={`bg-slate-50 dark:bg-slate-900/60 border rounded-xl transition-all ${
-                    isExceeded
-                      ? 'border-rose-500/80 bg-rose-50 dark:bg-rose-950/20'
-                      : 'border-slate-200 dark:border-white/10'
-                  }`}
+                  className={`bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-xl transition-all`}
                 >
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-white/5 pb-2">
@@ -310,30 +283,22 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                           </Tag>
                         )}
                       </div>
-                      {!isGeneralStore && (
-                        <Tag color="cyan" icon={<DatabaseOutlined />} className="font-mono text-xs border-none font-bold">
-                          Main Store Avail: {maxStock.toLocaleString()} {item.unit}
-                        </Tag>
-                      )}
+                      {/* Removed maxStock display here */}
                     </div>
 
                     <Row gutter={[12, 12]}>
                       <Col xs={24} sm={6}>
                         <div className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 mb-0.5">
-                          {isGeneralStore ? `Stock Qty (${item.unit})` : `Allocate Qty (${item.unit})`}
+                          Opening Stock Qty ({item.unit})
                         </div>
                         <InputNumber
                           min={0}
-                          max={isGeneralStore ? undefined : maxStock}
                           value={currentVal}
                           onChange={(v) => updateItemQty(item.id, v || 0)}
-                          status={isExceeded ? 'error' : ''}
                           className="w-full"
                         />
                       </Col>
 
-                      {isGeneralStore && (
-                        <>
                           <Col xs={12} sm={6}>
                             <div className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 mb-0.5">
                               Purchase Rate (₹/unit)
@@ -371,15 +336,9 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                               className="w-full font-mono"
                             />
                           </Col>
-                        </>
-                      )}
                     </Row>
                   </div>
-                  {isExceeded && (
-                    <div className="text-[11px] text-rose-500 dark:text-rose-400 mt-2 font-semibold">
-                      ⚠️ Error: Entered quantity exceeds available stock in Main Store ({maxStock} {item.unit})
-                    </div>
-                  )}
+                  {/* Error display removed */}
                 </Card>
               );
             })}
