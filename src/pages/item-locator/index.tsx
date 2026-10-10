@@ -82,26 +82,57 @@ export const ItemLocatorPage: React.FC = () => {
     {
       title: 'Exact Location (Shelf / Rack)',
       key: 'location',
-      render: (_, record) => (
-        <div>
-          {record.shelf ? (
-            <div className="flex flex-col gap-1 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg p-2 border border-indigo-100 dark:border-indigo-500/20 w-fit">
-              <span className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-1.5 text-sm">
-                <BarcodeOutlined className="text-indigo-500" /> Shelf: {record.shelf.name} <span className="text-[11px] text-slate-500 font-mono">({record.shelf.code})</span>
-              </span>
-              {record.rack && (
-                <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-mono flex items-center gap-1 ml-5">
-                  ↳ Rack: {record.rack.name} ({record.rack.rack_code})
-                </span>
-              )}
+      render: (_, record) => {
+        const locs = (record as any).locations;
+        if (locs && Array.isArray(locs) && locs.length > 0) {
+          return (
+            <div className="flex flex-col gap-1.5">
+              {locs.map((loc: any, idx: number) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between gap-3 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg p-2 border border-indigo-100 dark:border-indigo-500/20 w-fit min-w-[220px]"
+                >
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-1.5 text-sm">
+                      <BarcodeOutlined className="text-indigo-500" />
+                      {loc.shelf ? `Shelf: ${loc.shelf.name} (${loc.shelf.code})` : 'Shelf Unassigned'}
+                    </span>
+                    {loc.rack && (
+                      <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-mono ml-5">
+                        ↳ Rack: {loc.rack.name} ({loc.rack.rack_code})
+                      </span>
+                    )}
+                  </div>
+                  <Tag color="cyan" className="font-mono font-bold text-xs border-none px-2 py-0.5">
+                    {loc.quantity} {record.item_type?.unit || 'pcs'}
+                  </Tag>
+                </div>
+              ))}
             </div>
-          ) : (
-            <Tag className="border-dashed bg-slate-50 text-slate-400 border-slate-200">
-              No specific shelf assigned
-            </Tag>
-          )}
-        </div>
-      ),
+          );
+        }
+
+        return (
+          <div>
+            {record.shelf ? (
+              <div className="flex flex-col gap-1 bg-indigo-50 dark:bg-indigo-500/10 rounded-lg p-2 border border-indigo-100 dark:border-indigo-500/20 w-fit">
+                <span className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-1.5 text-sm">
+                  <BarcodeOutlined className="text-indigo-500" /> Shelf: {record.shelf.name} <span className="text-[11px] text-slate-500 font-mono">({record.shelf.code})</span>
+                </span>
+                {record.rack && (
+                  <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-mono flex items-center gap-1 ml-5">
+                    ↳ Rack: {record.rack.name} ({record.rack.rack_code})
+                  </span>
+                )}
+              </div>
+            ) : (
+              <Tag className="border-dashed bg-slate-50 text-slate-400 border-slate-200">
+                No specific shelf assigned
+              </Tag>
+            )}
+          </div>
+        );
+      },
     },
   ];
 

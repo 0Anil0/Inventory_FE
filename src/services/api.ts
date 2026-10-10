@@ -39,7 +39,16 @@ const getAuthHeaders = (): HeadersInit => {
 const handleResponse = async (response: Response) => {
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.message || 'API request failed');
+    let errMsg = data.message;
+    if (Array.isArray(data.errors) && data.errors.length > 0) {
+      errMsg = data.errors.map((e: any) => (typeof e === 'string' ? e : e.message || JSON.stringify(e))).join('; ');
+    } else if (data.error && typeof data.error === 'string') {
+      errMsg = data.error;
+    }
+    if (!errMsg || errMsg === 'Validation error') {
+      errMsg = 'Validation error: Duplicate entry or invalid input details.';
+    }
+    throw new Error(errMsg);
   }
   return data;
 };

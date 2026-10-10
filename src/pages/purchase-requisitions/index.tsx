@@ -333,7 +333,7 @@ export const PurchaseRequisitionsPage: React.FC = () => {
           hsn_code: item.hsn_code || item.item_type?.hsn_code || '-',
           requested_qty: Number(item.requested_qty || 0),
           ordered_qty: item.allowed_po_qty !== null && item.allowed_po_qty !== undefined ? Number(item.allowed_po_qty) : Number(item.requested_qty || 0),
-          unit_price: Number(item.item_type?.unit_rate || item.item_type?.base_price || item.estimated_unit_price || 0),
+          unit_price: Number(item.estimated_unit_price || item.item_type?.unit_rate || item.item_type?.base_price || 0),
           discount_percent: 0,
           gst_percent: 18,
         }));

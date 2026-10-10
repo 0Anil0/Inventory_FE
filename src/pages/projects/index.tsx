@@ -41,8 +41,11 @@ import { projectApi } from '../../services/api';
 import { AppLayout } from '../../components/layout/AppLayout';
 import { filterSelectOption } from '../../utils/select.utils';
 
+
+
 export const ProjectsPage: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [allMainProjects, setAllMainProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'MAIN' | 'SUB'>('ALL');
@@ -63,6 +66,18 @@ export const ProjectsPage: React.FC = () => {
   const [totalCount, setTotalCount] = useState<number>(0);
   const [mainCount, setMainCount] = useState<number>(0);
   const [subCount, setSubCount] = useState<number>(0);
+
+  // Fetch all main projects for parent selection in dropdowns
+  const fetchAllMainProjects = async () => {
+    try {
+      const res = await projectApi.getAll({ category: 'MAIN' });
+      if (res.success && res.projects) {
+        setAllMainProjects(res.projects);
+      }
+    } catch (err) {
+      console.error('Failed to load main projects:', err);
+    }
+  };
 
   // Fetch all projects from backend with search, category, and pagination
   const fetchProjects = async (
@@ -95,39 +110,49 @@ export const ProjectsPage: React.FC = () => {
 
   useEffect(() => {
     fetchProjects(searchQuery, typeFilter, 1, pageSize);
+    fetchAllMainProjects();
     setCurrentPage(1);
   }, [searchQuery, typeFilter]);
+
+  // Set form field values after Modal & Form component mount into DOM
+  useEffect(() => {
+    if (isModalOpen) {
+      if (editingProject) {
+        const isSub = !!editingProject.parent_id;
+        const parentId = editingProject.parent_id ? Number(editingProject.parent_id) : undefined;
+        form.setFieldsValue({
+          code: editingProject.code,
+          name: editingProject.name,
+          location: editingProject.location || '',
+          description: editingProject.description || '',
+          project_category: isSub ? 'SUB' : 'MAIN',
+          parent_id: parentId,
+        });
+      } else if (subProjectParentId) {
+        form.setFieldsValue({
+          project_category: 'SUB',
+          parent_id: Number(subProjectParentId),
+        });
+      } else {
+        form.setFieldsValue({
+          project_category: 'MAIN',
+          parent_id: undefined,
+        });
+      }
+    }
+  }, [isModalOpen, editingProject, subProjectParentId, form]);
 
   // Open modal for Create / Edit
   const handleOpenCreateModal = (parentId?: number) => {
     setEditingProject(null);
-    form.resetFields();
-    if (parentId) {
-      setSubProjectParentId(parentId);
-      form.setFieldsValue({
-        project_category: 'SUB',
-        parent_id: parentId,
-      });
-    } else {
-      setSubProjectParentId(null);
-      form.setFieldsValue({
-        project_category: 'MAIN',
-        parent_id: undefined,
-      });
-    }
+    fetchAllMainProjects();
+    setSubProjectParentId(parentId ? Number(parentId) : null);
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (project: Project) => {
     setEditingProject(project);
-    form.setFieldsValue({
-      code: project.code,
-      name: project.name,
-      location: project.location || '',
-      description: project.description || '',
-      project_category: project.parent_id ? 'SUB' : 'MAIN',
-      parent_id: project.parent_id || undefined,
-    });
+    fetchAllMainProjects();
     setIsModalOpen(true);
   };
 
@@ -677,25 +702,33 @@ export const ProjectsPage: React.FC = () => {
             </Form.Item>
           )}
 
-          {projectTypeWatch === 'SUB' && mainProjects.length > 0 && (
-            <Form.Item
-              name="parent_id"
-              label="Select Parent Main Project"
-              rules={[{ required: true, message: 'Please select parent project' }]}
-              tooltip="The main project under which this sub-project/site belongs"
-            >
-              <Select placeholder="Select Parent Project" showSearch filterOption={filterSelectOption}>
-                {mainProjects
-                  .filter((p) => !editingProject || p.id !== editingProject.id)
+          <Form.Item
+            name="parent_id"
+            label="Select Parent Main Project"
+            hidden={projectTypeWatch !== 'SUB'}
+            rules={[{ required: projectTypeWatch === 'SUB', message: 'Please select parent project' }]}
+            tooltip="The main project under which this sub-project/site belongs"
+          >
+            <Select placeholder="Select Parent Project" showSearch filterOption={filterSelectOption}>
+              {(() => {
+                const parentOptions = [...allMainProjects];
+                if (
+                  editingProject?.parent &&
+                  !parentOptions.some((p) => Number(p.id) === Number(editingProject.parent!.id))
+                ) {
+                  parentOptions.push(editingProject.parent as Project);
+                }
+                return parentOptions
+                  .filter((p) => !editingProject || Number(p.id) !== Number(editingProject.id))
                   .map((p) => (
-                    <Select.Option key={p.id} value={p.id}>
+                    <Select.Option key={p.id} value={Number(p.id)}>
                       <span className="font-semibold text-slate-800">{p.name}</span>{' '}
                       <span className="text-xs font-mono text-indigo-600">({p.code})</span>
                     </Select.Option>
-                  ))}
-              </Select>
-            </Form.Item>
-          )}
+                  ));
+              })()}
+            </Select>
+          </Form.Item>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Form.Item

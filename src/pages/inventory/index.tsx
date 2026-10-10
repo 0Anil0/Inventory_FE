@@ -325,22 +325,43 @@ export const InventoryTrackerPage: React.FC = () => {
     {
       title: 'Storage Location',
       key: 'location',
-      render: (_, record) => (
-        <div>
-          {record.shelf ? (
-            <span className="font-semibold text-slate-800 dark:text-slate-200">
-              {record.shelf.name} <span className="font-mono text-xs text-slate-500">({record.shelf.code})</span>
-              {record.rack && (
-                <span className="block text-xs text-indigo-600 dark:text-indigo-400 font-mono">
-                  → {record.rack.name} ({record.rack.rack_code})
-                </span>
-              )}
-            </span>
-          ) : (
-            <span className="text-slate-400 italic text-xs">Unassigned</span>
-          )}
-        </div>
-      ),
+      render: (_, record) => {
+        const locs = (record as any).locations;
+        if (locs && Array.isArray(locs) && locs.length > 0) {
+          return (
+            <div className="flex flex-col gap-1">
+              {locs.map((loc: any, idx: number) => (
+                <div key={idx} className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400 font-mono">
+                    📍 {loc.shelf ? `${loc.shelf.name} (${loc.shelf.code})` : 'Unassigned'}
+                    {loc.rack && ` → ${loc.rack.name} (${loc.rack.rack_code})`}
+                  </span>
+                  <Tag color="cyan" className="font-mono font-bold text-[10px] ml-1.5 py-0 px-1 border-none">
+                    {loc.quantity} {record.item_type?.unit || 'pcs'}
+                  </Tag>
+                </div>
+              ))}
+            </div>
+          );
+        }
+
+        return (
+          <div>
+            {record.shelf ? (
+              <span className="font-semibold text-slate-800 dark:text-slate-200">
+                {record.shelf.name} <span className="font-mono text-xs text-slate-500">({record.shelf.code})</span>
+                {record.rack && (
+                  <span className="block text-xs text-indigo-600 dark:text-indigo-400 font-mono">
+                    → {record.rack.name} ({record.rack.rack_code})
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span className="text-slate-400 italic text-xs">Unassigned</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: 'Status',
@@ -408,12 +429,14 @@ export const InventoryTrackerPage: React.FC = () => {
                 <Select.Option key={0} value={0}>
                   <span className="font-semibold text-indigo-600">📦 General Stock / Main Store</span>
                 </Select.Option>
-                {projects.map((p) => (
-                  <Select.Option key={p.id} value={p.id}>
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">🏗️ {p.name}</span>{' '}
-                    <span className="text-xs text-slate-400">({p.code})</span>
-                  </Select.Option>
-                ))}
+                {projects
+                  .filter((p) => !p.parent_id)
+                  .map((p) => (
+                    <Select.Option key={p.id} value={p.id}>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">🏗️ {p.name}</span>{' '}
+                      <span className="text-xs text-slate-400">({p.code})</span>
+                    </Select.Option>
+                  ))}
               </Select>
             </div>
 
